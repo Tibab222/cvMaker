@@ -3,7 +3,11 @@ import { VectorDatabase } from './database';
 import { cosineSimilarity, bufferToFloat32Array } from '../utils/math';
 import { Experience } from '../../shared/Experience.interface';
 import { Project } from '../../shared/projects.interface';
+import path from 'path';
+import { app } from 'electron';
 
+env.localModelPath = ''; 
+env.allowRemoteModels = true;
 env.allowLocalModels = true;
 env.useBrowserCache = false;
 
@@ -28,6 +32,8 @@ export class VectorService {
    */
   private async initModel() {
     if (!this.embedder) {
+      env.cacheDir = path.join(app.getPath('userData'), '.cache');
+      env.allowRemoteModels = true;
       this.embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
     }
   }

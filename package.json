@@ -9,12 +9,12 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "rebuild": "electron-rebuild -f",
     "start": "npm run rebuild && electron-forge start",
     "package": "npm run rebuild && electron-forge package",
     "clean": "rimraf out",
     "build-all": "npm run clean && npm run build",
-    "make": "npm run build-all && npm run rebuild && electron-forge make"
+    "make": "npm run clean && npm run build && npx electron-rebuild -f -w better-sqlite3,sharp && electron-forge make"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
@@ -41,6 +41,7 @@
     "react-dom": "^19.2.4",
     "react-window": "^2.2.7",
     "shadcn": "^4.6.0",
+    "sharp": "^0.34.5",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
