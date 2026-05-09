@@ -105,7 +105,6 @@ export function registerIpcHandlers() {
     });
 
     ipcMain.handle('analyseMandate', async (event, rawMandate: string) => {
-        // 1. ask mistral to analyse the mandate (the key words I guess) and send an update to the renderer with the result
         const mistral = MistralService.getInstance();
         const isAvailable = await mistral.checkAvailability();
         if (!isAvailable) {

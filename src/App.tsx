@@ -1,4 +1,3 @@
-// import { motion } from 'framer-motion'
 import { Toaster } from 'sonner';
 import './App.css'
 import Home from './components/general/Home'

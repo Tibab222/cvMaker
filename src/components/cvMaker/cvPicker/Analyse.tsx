@@ -18,7 +18,6 @@ export default function Analyse() {
     return (
         <motion.div className="p-4">
             {
-                // status messages
                 AIanalysis.isCurrentJob && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
                         <Card>

@@ -11,7 +11,6 @@ export default function SkillsPicker() {
   const { toggleSkill, selection } = useCVSelection();
   const [search, setSearch] = useState("");
 
-  // Filtrage intelligent
   const filteredSkills = useMemo(() => {
     return skills.filter((s) =>
       s.name.toLowerCase().includes(search.toLowerCase())

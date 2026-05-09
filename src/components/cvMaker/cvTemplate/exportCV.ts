@@ -5,12 +5,10 @@ export const exportToPdf = async () => {
   const element = document.getElementById("cv-content");
   if (!element) return;
 
-  // On récupère TOUS les styles chargés dans la page (Tailwind, etc.)
   const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
     .map(s => s.outerHTML)
     .join('');
 
-  // On construit un document HTML complet "propre"
   const fullHTML = `
     <!DOCTYPE html>
     <html>

@@ -17,7 +17,6 @@ export class MistralService {
       const response = await fetch('http://127.0.0.1:11434/api/tags');
       if (response.ok) {
         const data = await response.json();
-        // On vérifie si "mistral" est dans la liste des modèles téléchargés
         this.isAvailable = data.models.some((m: { name: string | string[] }) => m.name.includes('mistral'));
         console.log(this.isAvailable ? "Mistral via Ollama est prêt." : "Ollama tourne mais 'mistral' n'est pas installé.");
       }
@@ -73,14 +72,11 @@ export class MistralService {
 
       const chunk = decoder.decode(value, { stream: true });
       try {
-        // Ollama envoie des objets JSON ligne par ligne en stream
         const json = JSON.parse(chunk);
-        // On envoie le fragment de texte au Renderer via le canal 'ai-chunk'
         event.sender.send('ai-chunk', json.response);
         
         if (json.done) break;
       } catch (e: Error | unknown) {
-        // Parfois un chunk peut être coupé au milieu d'un JSON, on ignore
         console.warn("Chunk JSON mal formé ignoré.", e instanceof Error ? e.message : e);
       }
     }

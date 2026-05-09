@@ -1,4 +1,3 @@
-// src/main/services/VectorService.ts
 import { pipeline, FeatureExtractionPipeline, env } from '@xenova/transformers';
 import { VectorDatabase } from './database';
 import { cosineSimilarity, bufferToFloat32Array } from '../utils/math';
@@ -61,25 +60,22 @@ export class VectorService {
   }
 
   /**
-   * 2. Ranking des Projets via leurs Bullets (Plus précis)
+   * Project ranking
    */
   public async rankProjectsByBullets(jobDescription: string, topKBullets: number = 10) {
     const queryVector = await this.generateEmbedding(jobDescription);
     const bullets = this.db.getAllProjectBullets();
 
-    // On score chaque bullet individuellement
     const scoredBullets = bullets.map(b => ({
       local_bullet_id: b.local_bullet_id,
       local_project_id: b.local_project_id,
       score: cosineSimilarity(queryVector, bufferToFloat32Array(b.vector))
     }));
 
-    // On trie par les meilleurs bullets
     const topBullets = scoredBullets
       .sort((a, b) => b.score - a.score)
       .slice(0, topKBullets);
 
-    // Optionnel : On peut aussi "grouper" pour voir quels projets reviennent le plus
     const projectRelevance: Record<string, number> = {};
     topBullets.forEach(b => {
       projectRelevance[b.local_project_id] = (projectRelevance[b.local_project_id] || 0) + b.score;

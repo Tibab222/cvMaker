@@ -5,7 +5,6 @@ import { LinkIcon } from "lucide-react";
 export default function CVProject({ projects }: { projects: Project[] }) {
   const { selection } = useCVSelection();
 
-  // On ne garde que les projets qui ont au moins un bullet sélectionné
   const activeProjects = projects.filter(project => 
     selection.selectedProjectIds.includes(project.id)
   );
@@ -20,7 +19,6 @@ export default function CVProject({ projects }: { projects: Project[] }) {
 
       <div className="flex flex-col gap-3">
         {activeProjects.map((project) => {
-          // Filtrage des bullets pour ne garder que ceux cochés dans le side-menu
           const selectedBullets = project.bullets.filter(b => 
             selection.selectedBullets[project.id]?.includes(b.id)
           );

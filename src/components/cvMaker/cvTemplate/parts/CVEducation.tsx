@@ -4,9 +4,8 @@ import { useCVSelection } from "../../provider/hook";
 export default function CVEducation({ educations }: { educations: Education[] }) {
   const { selection } = useCVSelection();
 
-  // On trie par date de fin (la plus récente en premier)
   const sortedEducation = [...educations]
-    .filter(edu => selection.selectedEducationIds.includes(edu.id)) // Si tu as un sélecteur
+    .filter(edu => selection.selectedEducationIds.includes(edu.id))
     .sort((a, b) => {
       if (a.endDate === 'Present') return -1;
       if (b.endDate === 'Present') return 1;

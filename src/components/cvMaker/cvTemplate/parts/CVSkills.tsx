@@ -4,7 +4,6 @@ import { useCVSelection } from "../../provider/hook";
 export default function CVSkills({ skills }: { skills: Skills[] }) {
   const { selection } = useCVSelection();
 
-  // On ne garde que les compétences sélectionnées dans la sidebar
   const selectedSkills = skills.filter((s) =>
     selection.selectedSkillsIds.includes(s.id)
   );
@@ -30,7 +29,6 @@ export default function CVSkills({ skills }: { skills: Skills[] }) {
               </span>
             )}
 
-            {/* Séparateur visuel (ne s'affiche pas pour le dernier élément) */}
             {index < selectedSkills.length - 1 && (
               <span className="text-slate-300 font-light ml-2">|</span>
             )}

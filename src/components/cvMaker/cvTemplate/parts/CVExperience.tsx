@@ -2,12 +2,10 @@ import type { Experience } from "@shared/Experience.interface";
 
 export default function CVExperience({ experiences }: { experiences: Experience[] }) {
 
-  // Formattage des dates en français (ex: mai 2023)
   const formatDate = (date: Date | string | undefined) => {
     if (!date) return "";
     if (date === "Present") return "Présent";
     
-    // S'assurer qu'on a bien un objet Date
     const d = typeof date === "string" ? new Date(date) : date;
     
     return d.toLocaleDateString("fr-FR", {
