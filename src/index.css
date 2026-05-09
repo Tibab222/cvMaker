@@ -359,7 +359,7 @@
     background: white !important;
   } */
 
-  article, section, .avoid-break {
+  article, .avoid-break {
     page-break-inside: avoid;
     break-inside: avoid;
   }

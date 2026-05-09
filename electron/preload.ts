@@ -1,4 +1,6 @@
+import { Experience } from "../shared/Experience.interface";
 import { ProfilesData } from "../shared/profilesData.interface";
+import { Project } from "../shared/projects.interface";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { contextBridge, ipcRenderer } = require('electron');
@@ -10,6 +12,14 @@ contextBridge.exposeInMainWorld('api', {
   getProfilesList: () => ipcRenderer.invoke('getProfilesList'),
   addProfile: (firstname: string, lastname: string) => ipcRenderer.invoke('addProfile', firstname, lastname),
   loadProfile: (profileId: string) => ipcRenderer.invoke('loadProfile', profileId),
+  checkMistral: () => ipcRenderer.invoke('checkMistral'),
   updateSection: (id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => ipcRenderer.invoke('updateSection', id, section, newData),
   generatePDF: (html: string, fileName: string) => ipcRenderer.invoke('generatePdf', html, fileName),
+  syncDb: (profileId: string, experiences: Experience[], projects: Project[]) => ipcRenderer.invoke('syncDb', profileId, experiences, projects),
+  analyseMandate: (rawMandate: string) => ipcRenderer.invoke('analyseMandate', rawMandate),
+  onAnalysisStatus: (callback: (status: unknown) => void) => {
+    const listener = (_event: unknown, value: unknown) => callback(value);
+    ipcRenderer.on('analysis-status', listener);
+    return () => ipcRenderer.removeListener('analysis-status', listener);
+  },
 });

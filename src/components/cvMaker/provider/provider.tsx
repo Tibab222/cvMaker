@@ -1,18 +1,25 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import type { CVSelection } from './CVselection';
 import { CVSelectionContext } from './context';
+import { type AIAnalysis } from './AIAnalysis';
+import { api } from '@/api';
+import { AIAnalysisStatus } from '@shared/AIAnalysisStatus';
+import { useProfileStore } from '@/store/profile';
 
 export interface CVSelectionContextType {
   selection: CVSelection;
+  AIanalysis: AIAnalysis;
   toggleExperience: (id: string) => void;
   toggleProject: (id: string) => void;
   toggleBullet: (parentId: string, bulletId: string) => void;
   isBulletSelected: (parentId: string, bulletId: string) => boolean;
   toggleSkill: (id: string) => void;
   toggleEducation: (id: string) => void;
+  runFullAnalysis: (rawMandate: string) => Promise<void>;
 }
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
+  const { education } = useProfileStore();
   const [selection, setSelection] = useState<CVSelection>({
     selectedExpIds: [],
     selectedProjectIds: [],
@@ -20,6 +27,70 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     selectedSkillsIds: [],
     selectedEducationIds: []
   });
+  const [AIanalysis, setAIAnalysis] = useState<AIAnalysis>({
+    rawMandate: '',
+    keywords: [],
+    status: AIAnalysisStatus.Idle,
+    jobTitle: '',
+    focus: '',
+    isCurrentJob: false
+  });
+
+  const runFullAnalysis = useCallback(async (rawMandate: string) => {
+    setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Loading, rawMandate, isCurrentJob: true }));
+    await api.analyseMandate(rawMandate);
+  }, []);
+
+  useEffect(() => {
+    const removeStatus = api.onAnalysisStatus((data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => {
+      switch (data.status) {
+        case AIAnalysisStatus.Analyzing:
+          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Analyzing }));
+          break;
+        case AIAnalysisStatus.Analyze_Result:
+          { const analysisData = data.data as { job_title: string; skills: string[]; key_focus: string };
+          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Analyze_Result, keywords: analysisData.skills, jobTitle: analysisData.job_title, focus: analysisData.key_focus }));
+          break; }
+        case AIAnalysisStatus.MatchesExperiences:{
+          const matches = data.data as { local_id: string; score: number }[]; // localId corresponds to experiences id
+          setSelection(prev => ({
+            ...prev,
+            selectedExpIds: matches.map(m => m.local_id)
+          }));
+          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.MatchesExperiences }));
+          break;}
+        case AIAnalysisStatus.MatchesProjects:{
+          const matches = data.data as { bestBullets: { local_bullet_id: string; local_project_id: string; score: number }[] ; suggestedProjects: string[] ;};
+          setSelection(prev => ({
+            ...prev,
+            selectedProjectIds: matches.suggestedProjects,
+            selectedBullets: matches.bestBullets.reduce((acc, bullet) => {
+              if (!acc[bullet.local_project_id]) {
+                acc[bullet.local_project_id] = [];
+              }
+              acc[bullet.local_project_id].push(bullet.local_bullet_id);
+              return acc;
+            }, {} as Record<string, string[]>)
+          }));
+          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.MatchesProjects }));
+          break;}
+        case AIAnalysisStatus.Success:
+          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Success, isCurrentJob: false }));
+          setSelection(prev => ({
+            ...prev,
+            selectedEducationIds: education.map(e => e.id)
+          }));
+          break;
+        default:
+          console.warn("Received unknown analysis status:", data);
+          break;
+      }
+    });
+
+    return () => {
+      removeStatus();
+    };
+  }, []);
 
   const toggleExperience = useCallback((id: string) => {
     setSelection(prev => ({
@@ -88,12 +159,14 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   return (
     <CVSelectionContext.Provider value={{ 
       selection, 
+      AIanalysis,
       toggleExperience, 
       toggleProject, 
       toggleBullet,
       toggleSkill,
       toggleEducation,
-      isBulletSelected 
+      isBulletSelected,
+      runFullAnalysis
     }}>
       {children}
     </CVSelectionContext.Provider>

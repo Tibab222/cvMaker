@@ -106,6 +106,14 @@ Le JSON est limité pour la recherche. SQLite te permettra de stocker les Embedd
 
     Vectorisation : Pour chaque expérience/projet, génère son vecteur une seule fois avec le modèle all-MiniLM-L6-v2 et stocke-le dans une colonne embedding (type BLOB).
 
+    --> ce qu'on a fait pour ça:
+    services:
+    - Database.ts: chargé de la connexion avec la bdd local pour stocker les vecteurs (lien avec SQLite)
+    - transformer.js: moteur d'embedding (embedding avec Xenova/all-MiniLM-L6-v2)
+    - Similarity: logique de calcul (fichier utils/math)
+    - VectorService: Orchestrateur des 3 avant
+    Constat: le bouton sync est super rapide: il supprime la bdd, lit les json, et re-remplit la bdd. En production sur des millions d'infos, je pense que c catastrophique, mais là, l'appli est destinée à usage perso, ce qui rend le systeme tres rapide pour traiter peu d'informations.
+
 Étape 2 : Le module d'Analyse de Mandat (Input)
 
 Il te faut une porte d'entrée pour l'offre d'emploi.

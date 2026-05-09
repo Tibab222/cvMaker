@@ -5,6 +5,18 @@ import { createProfile } from './functions/createProfile';
 import { ProfilesData } from '../shared/profilesData.interface';
 import { updateSection } from './functions/updateSection';
 import { generatePdf } from './functions/generatePdf';
+import { VectorDatabase } from './services/database';
+import { VectorService } from './services/VectorService';
+import path from 'path';
+import { Experience } from '../shared/Experience.interface';
+import { Project } from '../shared/projects.interface';
+import { MistralService } from './services/MistralService';
+import { FRENCH_PROMPTS } from './prompts/fr';
+import { AIAnalysisStatus } from '../shared/AIAnalysisStatus';
+
+export const vectorDb = VectorDatabase.getInstance();
+export const vectorService = VectorService.getInstance();
+export const mistralService = MistralService.getInstance();
 
 export function registerIpcHandlers() {
     ipcMain.on('minimize', (event) => {
@@ -43,7 +55,10 @@ export function registerIpcHandlers() {
     ipcMain.handle('addProfile', async (event, firstname: string, lastname: string) => createProfile(firstname, lastname));
 
     ipcMain.handle('loadProfile', async (event, profileId: string) => {
-        const profilePath = `${profilesDir}/${profileId}`;
+        const profilePath = path.join(profilesDir, profileId);
+
+        vectorDb.connect(profilePath);
+
         const profileData = await fs.promises.readFile(`${profilePath}/infos.json`, 'utf-8');
         const educationData = await fs.promises.readFile(`${profilePath}/edu.json`, 'utf-8');
         const experienceData = await fs.promises.readFile(`${profilePath}/exp.json`, 'utf-8');
@@ -58,7 +73,12 @@ export function registerIpcHandlers() {
             projects: JSON.parse(projectsData) || [],
             skills: JSON.parse(skillsData) || []
         } as ProfilesData;
+
         return profile;
+    });
+
+    ipcMain.handle('checkMistral', async () => {
+        return await mistralService.checkAvailability();
     });
 
     ipcMain.handle('updateSection', async (event, id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => {
@@ -67,6 +87,51 @@ export function registerIpcHandlers() {
 
     ipcMain.handle('generatePdf', async (event, htmlContent, fileName) => {
         return await generatePdf(htmlContent, fileName);
+    });
+
+    ipcMain.handle('syncDb', async (event, profileId: string, experiences: Experience[], projects: Project[]) => {
+        try {
+            const profilePath = path.join(profilesDir, profileId);
+            vectorDb.connect(profilePath);
+            console.log('Starting sync for:', profileId);
+
+            await vectorService.rebuildVectorIndex(profilePath, experiences, projects);
+
+            return { success: true };
+        } catch (error) {
+            console.error('Sync failed:', error);
+            throw error;
+        }
+    });
+
+    ipcMain.handle('analyseMandate', async (event, rawMandate: string) => {
+        // 1. ask mistral to analyse the mandate (the key words I guess) and send an update to the renderer with the result
+        const mistral = MistralService.getInstance();
+        const isAvailable = await mistral.checkAvailability();
+        if (!isAvailable) {
+            return { error: "Mistral is not available" };
+        }
+
+        try {
+            event.sender.send('analysis-status', { status: AIAnalysisStatus.Analyzing, message: 'Analysing the mandate...' });
+            const prompt = FRENCH_PROMPTS.ANALYZING(rawMandate);
+            const analysisResult = (await mistral.analyze(prompt)) as { job_title: string; skills: string[]; key_focus: string };
+            event.sender.send('analysis-status', { status: AIAnalysisStatus.Analyze_Result, data: analysisResult });
+            event.sender.send('analysis-status', { status: AIAnalysisStatus.Matching, message: 'Matching experiences and projects...' });
+            const queryText = `${analysisResult.job_title} ${analysisResult.skills.join(' ')} ${analysisResult.key_focus}`;
+            const matchesExp = await vectorService.rankExperiences(queryText);
+            event.sender.send('analysis-status', {status: AIAnalysisStatus.MatchesExperiences, data: matchesExp});
+            
+            const matchesProj = await vectorService.rankProjectsByBullets(queryText);
+            console.log("Matches projects:", matchesProj);
+            event.sender.send('analysis-status', {status: AIAnalysisStatus.MatchesProjects, data: matchesProj});
+            event.sender.send('analysis-status', { status: AIAnalysisStatus.Success, message: 'Analysis completed' });
+            return { success: true };
+        } catch (error) {
+            console.error('Analysis failed:', error);
+            event.sender.send('analysis-status', { status: 'error', message: 'Analysis failed' });
+            return { error: 'Analysis failed' };
+        }
     });
 
 }

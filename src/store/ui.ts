@@ -12,11 +12,17 @@ export enum Tabs {
 }
 
 type UiState = {
+  aiAvailable: boolean
+  setAiAvailable: (available: boolean) => void
   selectedTab: Tabs
   setSelectedTab: (tab: Tabs) => void
 }
 
 export const useUiStore = create<UiState>((set) => ({
+  aiAvailable: false,
+  setAiAvailable: (available: boolean) => {
+    set({ aiAvailable: available })
+  },
   selectedTab: Tabs.PROFILE_SELECTOR,
   setSelectedTab: (tab: Tabs) => {
     set({ selectedTab: tab })

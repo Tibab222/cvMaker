@@ -16,6 +16,9 @@ import { Tabs, useUiStore } from "@/store/ui";
 import { motion } from "framer-motion";
 import { BicepsFlexed, BookCheck, File, Landmark, PersonStanding, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Button } from "../ui/button";
+import { api } from "@/api";
+import { toast } from "sonner";
 
 const FUNNY_QUOTES = [
     "The only way to do great work is to love what you do. - Steve Jobs",
@@ -31,7 +34,7 @@ const FUNNY_QUOTES = [
 export default function SideBar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const [quote, setQuote] = useState<string>("");
     const { setSelectedTab } = useUiStore();
-    const { profile } = useProfileStore();
+    const { profile, experience, projects, id } = useProfileStore();
 
     useEffect(() => {
         const setRandom = () => setQuote(FUNNY_QUOTES[Math.floor(Math.random() * FUNNY_QUOTES.length)]);
@@ -42,11 +45,20 @@ export default function SideBar({ ...props }: React.ComponentProps<typeof Sideba
         return () => clearInterval(id);
     }, []);
 
+    const handleSync = () => {
+        if (!id) return;
+        console.log('Syncing database for profile:', id);
+        api.syncDb(id, experience, projects).then(() => {
+            console.log('Database synced successfully');
+            toast.success('Database synced successfully!');
+        })
+    }
+
     return (
         <Sidebar side="left" {...props}>
             <SidebarHeader>
                 <h1 className="text-2xl font-bold text-gray-700">CV Maker</h1>
-                <h3>{profile?.firstName || "tot"} {profile?.lastName}</h3>
+                <h3 className="text-center text-sm">{profile?.firstName || "tot"} {profile?.lastName}</h3>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
@@ -98,6 +110,9 @@ export default function SideBar({ ...props }: React.ComponentProps<typeof Sideba
                 >
                     {quote}
                 </motion.p>
+                <Button variant={"ghost"} className="text-[10px] italic h-5 cursor-pointer text-gray-400" onClick={handleSync}>
+                    Sync Database
+                </Button>
             </SidebarFooter>
         </Sidebar>
     )

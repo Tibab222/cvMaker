@@ -13,12 +13,12 @@ export default function CVProject({ projects }: { projects: Project[] }) {
   if (activeProjects.length === 0) return null;
 
   return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 border-b-2 border-slate-900 pb-1">
+    <section className="flex flex-col gap-2">
+      <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 border-b-2 border-slate-900 pb-0">
         Projets & Réalisations
       </h2>
 
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3">
         {activeProjects.map((project) => {
           // Filtrage des bullets pour ne garder que ceux cochés dans le side-menu
           const selectedBullets = project.bullets.filter(b => 

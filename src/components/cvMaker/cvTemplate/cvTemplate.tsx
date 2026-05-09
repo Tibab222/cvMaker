@@ -22,7 +22,7 @@ export default function CVTemplate() {
     // Le id="cv-content" est crucial pour l'export PDF plus tard
     <div 
       id="cv-content" 
-      className="w-[210mm] min-h-[297mm] bg-white p-[15mm] text-slate-900 shadow-sm flex flex-col gap-6 font-sans antialiased"
+      className="w-[210mm] min-h-[297mm] bg-white p-[15mm] text-slate-900 shadow-sm flex flex-col gap-3 font-sans antialiased"
       style={{ boxSizing: 'border-box' }}
     >
       <CVHeader profile={profile} />
@@ -31,7 +31,7 @@ export default function CVTemplate() {
       <CVProject projects={projects} />
       <CVSkills skills={skills} />
 
-      <div className="mt-auto flex justify-end items-center pt-4 opacity-30 hover:opacity-100 transition-opacity">
+      <div className="mt-auto flex justify-end items-center pt-2 opacity-70 hover:opacity-100 transition-opacity">
         <a 
           href="https://thibautdlh.me"
           className="text-[8px] font-mono tracking-tighter text-slate-400 hover:text-primary flex items-center gap-1"

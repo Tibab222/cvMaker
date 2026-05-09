@@ -21,7 +21,7 @@ export default function Home() {
 const ExistingProfilesCard = ({setNewProfileMode}: {setNewProfileMode: (mode: boolean) => void}) => {
     const [profiles, setProfiles] = useState<{id: string, firstName: string; lastName: string}[]>([]);
     const { loadProfile } = useProfileStore();
-    const { setSelectedTab } = useUiStore();
+    const { setSelectedTab, setAiAvailable } = useUiStore();
 
     useEffect(() => {
         const fetchProfiles = async () => {
@@ -36,6 +36,14 @@ const ExistingProfilesCard = ({setNewProfileMode}: {setNewProfileMode: (mode: bo
         }
         fetchProfiles();
     }, []);
+
+    useEffect(() => {
+        const checkAI = async () => {
+            const isMistralAvailable = await api.checkMistral();
+            setAiAvailable(isMistralAvailable);
+        }
+        checkAI();
+    }, [setAiAvailable]);
 
     const handleProfileSelect = (profileId: string) => {
         const selectedProfile = profiles.find(profile => profile.id === profileId);
