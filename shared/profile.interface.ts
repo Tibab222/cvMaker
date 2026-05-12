@@ -1,3 +1,8 @@
+export enum Language {
+    FRENCH = 'fr',
+    ENGLISH = 'en',
+}
+
 export interface Profile {
     firstName: string;
     lastName: string;
@@ -6,4 +11,5 @@ export interface Profile {
     portfolio: string;
     linkedin: string;
     github: string;
+    language: Language; // langue du profil (va générer le CV dans cette langue), ex: Language.FRENCH ou Language.ENGLISH
 }

@@ -7,11 +7,12 @@ CONSIGNE STRICTE :
 1. Tu dois répondre UNIQUEMENT en français.
 2. Le format de sortie doit être un JSON valide.
 3. Les valeurs du JSON doivent être traduites en français (ex: "Software Engineer" devient "Ingénieur Logiciel").
+4. Les skills extraits doivent être des compétences spécifiques et pertinentes pour le poste (ex: "JavaScript", "Gestion de projet", "Communication efficace").
 
 Format attendu :
 {
   "job_title": "Titre du poste en français",
-  "skills": ["Compétence 1", "Compétence 2"],
+  "skills": ["Compétence 1", "Compétence 2", ...],
   "key_focus": "Description courte du focus principal en français"
 }
 

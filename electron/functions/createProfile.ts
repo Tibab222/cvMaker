@@ -1,9 +1,10 @@
 import { profilesDir } from "../main.dev";
 import path from "path";
 import * as fs from "fs";
+import { Language } from "../../shared/profile.interface";
 
-export function createProfile(firstname: string, lastname: string) {
-    const profileName = `${firstname}_${lastname}`;
+export function createProfile(firstname: string, lastname: string, language: Language): { success: boolean; error?: string } {
+    const profileName = `${firstname}_${lastname}_${language}`;
     const profilePath = path.join(profilesDir, profileName);
 
   try {
@@ -23,6 +24,7 @@ export function createProfile(firstname: string, lastname: string) {
       const infosData = {
         firstName: firstname,
         lastName: lastname,
+        language: language
       };
       fs.writeFileSync(infosPath, JSON.stringify(infosData, null, 2));
       

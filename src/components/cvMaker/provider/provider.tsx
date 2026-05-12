@@ -5,6 +5,7 @@ import { type AIAnalysis } from './AIAnalysis';
 import { api } from '@/api';
 import { AIAnalysisStatus } from '@shared/AIAnalysisStatus';
 import { useProfileStore } from '@/store/profile';
+import { Language } from '@shared/profile.interface';
 
 export interface CVSelectionContextType {
   selection: CVSelection;
@@ -19,7 +20,7 @@ export interface CVSelectionContextType {
 }
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
-  const { education } = useProfileStore();
+  const { education, profile } = useProfileStore();
   const [selection, setSelection] = useState<CVSelection>({
     selectedExpIds: [],
     selectedProjectIds: [],
@@ -38,7 +39,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
 
   const runFullAnalysis = useCallback(async (rawMandate: string) => {
     setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Loading, rawMandate, isCurrentJob: true }));
-    await api.analyseMandate(rawMandate);
+    await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH);
   }, []);
 
   useEffect(() => {

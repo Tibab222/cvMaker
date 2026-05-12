@@ -14,7 +14,7 @@ import {
 import { useProfileStore } from "@/store/profile";
 import { Tabs, useUiStore } from "@/store/ui";
 import { motion } from "framer-motion";
-import { BicepsFlexed, BookCheck, File, Landmark, PersonStanding, Plus } from "lucide-react";
+import { BicepsFlexed, BookCheck, File, Landmark, LogOut, PersonStanding, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { api } from "@/api";
@@ -34,7 +34,7 @@ const FUNNY_QUOTES = [
 export default function SideBar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const [quote, setQuote] = useState<string>("");
     const { setSelectedTab } = useUiStore();
-    const { profile, experience, projects, id } = useProfileStore();
+    const { profile, experience, projects, id, logout } = useProfileStore();
 
     useEffect(() => {
         const setRandom = () => setQuote(FUNNY_QUOTES[Math.floor(Math.random() * FUNNY_QUOTES.length)]);
@@ -54,11 +54,19 @@ export default function SideBar({ ...props }: React.ComponentProps<typeof Sideba
         })
     }
 
+    const handleLogout = () => {
+        logout();
+        setSelectedTab(Tabs.PROFILE_SELECTOR);
+    }
+
     return (
         <Sidebar side="left" {...props}>
             <SidebarHeader>
                 <h1 className="text-2xl font-bold text-gray-700">CV Maker</h1>
                 <h3 className="text-center text-sm">{profile?.firstName || "tot"} {profile?.lastName}</h3>
+                <Button variant={"destructive"} onClick={handleLogout}>
+                    <LogOut />
+                </Button>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>

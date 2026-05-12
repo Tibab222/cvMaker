@@ -13,11 +13,11 @@ export const exportToPdf = async () => {
     <!DOCTYPE html>
     <html>
       <head>
+      <title>CV</title>
         <meta charset="utf-8">
         ${styles}
         <style>
           body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
-          /* On force le conteneur à ne pas avoir d'ombres sur le PDF */
           #cv-content { box-shadow: none !important; border: none !important; }
         </style>
       </head>

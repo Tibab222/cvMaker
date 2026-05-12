@@ -1,8 +1,10 @@
 import type { Skills } from "@shared/Skills.interface";
 import { useCVSelection } from "../../provider/hook";
+import { i18n } from "../i18n";
 
-export default function CVSkills({ skills }: { skills: Skills[] }) {
+export default function CVSkills({ skills, lang = 'en' }: { skills: Skills[]; lang?: string }) {
   const { selection } = useCVSelection();
+  const t = i18n[lang as keyof typeof i18n];
 
   const selectedSkills = skills.filter((s) =>
     selection.selectedSkillsIds.includes(s.id)
@@ -13,7 +15,7 @@ export default function CVSkills({ skills }: { skills: Skills[] }) {
   return (
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 border-b-2 border-slate-900 pb-1">
-        Compétences & Langues
+        {t.skillsTitle || "Compétences & Langues"}
       </h2>
 
       <div className="flex flex-wrap gap-x-4 gap-y-2 px-1 py-1">

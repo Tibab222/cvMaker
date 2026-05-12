@@ -7,6 +7,8 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group"
 import { LucideSmile, PersonStanding } from "lucide-react";
 import { useProfileStore } from "@/store/profile";
 import { Tabs, useUiStore } from "@/store/ui";
+import { Language } from "@shared/profile.interface";
+import { ButtonGroup } from "../ui/button-group";
 
 export default function Home() {
     const [newProfileMode, setNewProfileMode] = useState(false);
@@ -19,7 +21,7 @@ export default function Home() {
 }
 
 const ExistingProfilesCard = ({setNewProfileMode}: {setNewProfileMode: (mode: boolean) => void}) => {
-    const [profiles, setProfiles] = useState<{id: string, firstName: string; lastName: string}[]>([]);
+    const [profiles, setProfiles] = useState<{id: string, firstName: string; lastName: string; language: Language}[]>([]);
     const { loadProfile } = useProfileStore();
     const { setSelectedTab, setAiAvailable } = useUiStore();
 
@@ -28,8 +30,8 @@ const ExistingProfilesCard = ({setNewProfileMode}: {setNewProfileMode: (mode: bo
             const profilesList = await api.getProfilesList();
             if(profilesList && Array.isArray(profilesList)) {
                 const profilesData = profilesList.map((profileName: string) => {
-                    const [firstName, lastName] = profileName.split('_');
-                    return { id: profileName, firstName, lastName };
+                    const [firstName, lastName, language] = profileName.split('_');
+                    return { id: profileName, firstName, lastName, language: language as Language };
                 });
                 setProfiles(profilesData);
             }
@@ -64,7 +66,7 @@ const ExistingProfilesCard = ({setNewProfileMode}: {setNewProfileMode: (mode: bo
                     <ul className="list-disc list-inside">
                         {profiles.map((profile) => (
                             <li key={profile.id} className="hover:underline cursor-pointer" onClick={() => handleProfileSelect(profile.id)}>
-                                {profile.firstName} {profile.lastName}
+                                {profile.firstName} {profile.lastName} {profile.language && `(${profile.language})`}
                             </li>
                         ))}
                     </ul>
@@ -82,6 +84,7 @@ const ExistingProfilesCard = ({setNewProfileMode}: {setNewProfileMode: (mode: bo
 const NewProfileForm = ({ setNewProfileMode }: { setNewProfileMode: (mode: boolean) => void }) => {
     const [firstname, setFirstname] = useState('');
     const [lastname, setLastname] = useState('');
+    const [language, setLanguage] = useState(Language.FRENCH);
     const [error, setError] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -90,7 +93,7 @@ const NewProfileForm = ({ setNewProfileMode }: { setNewProfileMode: (mode: boole
             setError('Please fill in both fields');
             return;
         }
-        const result = await api.addProfile(firstname, lastname);
+        const result = await api.addProfile(firstname, lastname, language);
         if (result.success) {
             setNewProfileMode(false);
         } else {
@@ -117,6 +120,14 @@ const NewProfileForm = ({ setNewProfileMode }: { setNewProfileMode: (mode: boole
                         <LucideSmile className="text-muted-foreground" />
                     </InputGroupAddon>
                 </InputGroup>
+                <ButtonGroup>
+                    <Button variant={language === Language.FRENCH ? 'default' : 'outline'} onClick={() => setLanguage(Language.FRENCH)} disabled={language === Language.FRENCH}>
+                        French
+                    </Button>
+                    <Button variant={language === Language.ENGLISH ? 'default' : 'outline'} onClick={() => setLanguage(Language.ENGLISH)} disabled={language === Language.ENGLISH}>
+                        English
+                    </Button>
+                </ButtonGroup>
                 <Button className="cursor-pointer" onClick={handleSubmit}>Create Profile</Button>
                 {error && <p className="text-red-500">{error}</p>}
             </CardContent>

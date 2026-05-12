@@ -12,7 +12,9 @@ import { Experience } from '../shared/Experience.interface';
 import { Project } from '../shared/projects.interface';
 import { MistralService } from './services/MistralService';
 import { FRENCH_PROMPTS } from './prompts/fr';
+import { ENGLISH_PROMPTS } from './prompts/en';
 import { AIAnalysisStatus } from '../shared/AIAnalysisStatus';
+import { Language } from '../shared/profile.interface';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
@@ -52,7 +54,7 @@ export function registerIpcHandlers() {
         return profiles;
     });
 
-    ipcMain.handle('addProfile', async (event, firstname: string, lastname: string) => createProfile(firstname, lastname));
+    ipcMain.handle('addProfile', async (event, firstname: string, lastname: string, language: Language) => createProfile(firstname, lastname, language));
 
     ipcMain.handle('loadProfile', async (event, profileId: string) => {
         const profilePath = path.join(profilesDir, profileId);
@@ -104,7 +106,7 @@ export function registerIpcHandlers() {
         }
     });
 
-    ipcMain.handle('analyseMandate', async (event, rawMandate: string) => {
+    ipcMain.handle('analyseMandate', async (event, rawMandate: string, language: Language) => {
         const mistral = MistralService.getInstance();
         const isAvailable = await mistral.checkAvailability();
         if (!isAvailable) {
@@ -113,7 +115,7 @@ export function registerIpcHandlers() {
 
         try {
             event.sender.send('analysis-status', { status: AIAnalysisStatus.Analyzing, message: 'Analysing the mandate...' });
-            const prompt = FRENCH_PROMPTS.ANALYZING(rawMandate);
+            const prompt = language === Language.FRENCH ? FRENCH_PROMPTS.ANALYZING(rawMandate) : ENGLISH_PROMPTS.ANALYZING(rawMandate);
             const analysisResult = (await mistral.analyze(prompt)) as { job_title: string; skills: string[]; key_focus: string };
             event.sender.send('analysis-status', { status: AIAnalysisStatus.Analyze_Result, data: analysisResult });
             event.sender.send('analysis-status', { status: AIAnalysisStatus.Matching, message: 'Matching experiences and projects...' });

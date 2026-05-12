@@ -1,8 +1,10 @@
 import type { Education } from "@shared/Education.interface";
 import { useCVSelection } from "../../provider/hook";
+import { i18n } from "../i18n";
 
-export default function CVEducation({ educations }: { educations: Education[] }) {
+export default function CVEducation({ educations, lang = 'en' }: { educations: Education[]; lang?: string }) {
   const { selection } = useCVSelection();
+  const t = i18n[lang as keyof typeof i18n];
 
   const sortedEducation = [...educations]
     .filter(edu => selection.selectedEducationIds.includes(edu.id))
@@ -17,7 +19,7 @@ export default function CVEducation({ educations }: { educations: Education[] })
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 border-b-2 border-slate-900 pb-1">
-        Éducation
+        {t.educationTitle || "Éducation"}
       </h2>
 
       <div className="flex flex-col gap-4">

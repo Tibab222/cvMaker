@@ -16,6 +16,7 @@ type ProfileState = {
   skills: Skills[]
   loadProfile: (id: string) => Promise<boolean>
   updateSection: (section: keyof ProfilesData, newData: Education[] | Experience[] | Project[] | Skills[] | Profile) => Promise<void>
+  logout: () => void
 }
 
 export const useProfileStore = create<ProfileState>((set, get) => ({
@@ -54,5 +55,15 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       console.error((e as Error).message)
       throw e;
     }
+  },
+  logout: () => {
+    set({
+      id: '',
+      education: [],
+      experience: [],
+      profile: null,
+      projects: [],
+      skills: []
+    });
   }
 }))

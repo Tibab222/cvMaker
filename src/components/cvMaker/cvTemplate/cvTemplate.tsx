@@ -6,12 +6,18 @@ import CVProject from "./parts/CVProject";
 import CVSkills from "./parts/CVSkills";
 import { CopyrightIcon } from "lucide-react";
 import CVEducation from "./parts/CVEducation";
+import { i18n } from "./i18n";
 
 export default function CVTemplate() {
   const { profile, experience, projects, skills, education } = useProfileStore();
   const { selection } = useCVSelection();
 
-  const selectedExps = experience.filter(exp => selection.selectedExpIds.includes(exp.id));
+  // keep the order of selected experiences
+  const selectedExps = experience.filter(exp => selection.selectedExpIds.includes(exp.id)).sort((a, b) => {
+    return selection.selectedExpIds.indexOf(a.id) - selection.selectedExpIds.indexOf(b.id);
+  });
+  const lang = profile?.language || 'en';
+  const t = i18n[lang as keyof typeof i18n];
 
   if (!profile) return <div>No profile data available</div>;
 
@@ -22,17 +28,17 @@ export default function CVTemplate() {
       style={{ boxSizing: 'border-box' }}
     >
       <CVHeader profile={profile} />
-      <CVEducation educations={education} />
-      {selectedExps.length > 0 && <CVExperience experiences={selectedExps} />}
-      <CVProject projects={projects} />
-      <CVSkills skills={skills} />
+      <CVEducation educations={education} lang={lang} />
+      {selectedExps.length > 0 && <CVExperience experiences={selectedExps} lang={lang} />}
+      <CVProject projects={projects} lang={lang} />
+      <CVSkills skills={skills} lang={lang} />
 
       <div className="mt-auto flex justify-end items-center pt-2 opacity-70 hover:opacity-100 transition-opacity">
         <a 
-          href="https://thibautdlh.me"
+          href="https://thibautdlh.me/#/project/7"
           className="text-[8px] font-mono tracking-tighter text-slate-400 hover:text-primary flex items-center gap-1"
         >
-          <span>CV généré par mon propre moteur de matching vectoriel (Mistral & SQLite)</span>
+          <span>{t.copyrightNotice || "CV généré par mon propre moteur de matching vectoriel (Mistral & SQLite)"}</span>
           <span className="h-2 w-2"><CopyrightIcon size={10} /></span>
         </a>
       </div>

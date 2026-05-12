@@ -1,6 +1,8 @@
 import type { Experience } from "@shared/Experience.interface";
+import { i18n } from "../i18n";
 
-export default function CVExperience({ experiences }: { experiences: Experience[] }) {
+export default function CVExperience({ experiences, lang = 'en' }: { experiences: Experience[]; lang?: string }) {
+  const t = i18n[lang as keyof typeof i18n];
 
   const formatDate = (date: Date | string | undefined) => {
     if (!date) return "";
@@ -17,7 +19,7 @@ export default function CVExperience({ experiences }: { experiences: Experience[
   return (
     <section className="flex flex-col gap-4">
       <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 border-b-2 border-slate-900 pb-1">
-        Expériences Professionnelles
+        {t.experienceTitle || "Expériences Professionnelles"}
       </h2>
 
       <div className="flex flex-col gap-6">
