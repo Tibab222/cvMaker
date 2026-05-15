@@ -5,10 +5,12 @@ import path from "path";
 export const generatePdf = async (htmlContent: string, fileName: string) => {
   const printWindow = new BrowserWindow({
     show: false,
-    webPreferences: { offscreen: true }
+    webPreferences: { offscreen: true, nodeIntegration: false }
   });
 
   await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+  await new Promise(resolve => setTimeout(resolve, 500)); // Wait for content to render
 
   const { filePath } = await dialog.showSaveDialog({
     defaultPath: path.join(app.getPath('downloads'), fileName),
