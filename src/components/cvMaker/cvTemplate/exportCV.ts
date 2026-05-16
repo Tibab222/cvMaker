@@ -32,6 +32,7 @@ export const exportToPdf = async () => {
           ${styleContent}
           body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
           #cv-content { box-shadow: none !important; border: none !important; }
+          .hidden-print { display: none !important; }
         </style>
       </head>
       <body>

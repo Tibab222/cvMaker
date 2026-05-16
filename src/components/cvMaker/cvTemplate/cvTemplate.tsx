@@ -4,9 +4,7 @@ import CVHeader from "./parts/CVHeader";
 import CVExperience from "./parts/CVExperience";
 import CVProject from "./parts/CVProject";
 import CVSkills from "./parts/CVSkills";
-import { CopyrightIcon } from "lucide-react";
 import CVEducation from "./parts/CVEducation";
-import { i18n } from "./i18n";
 
 export default function CVTemplate() {
   const { profile, experience, projects, skills, education } = useProfileStore();
@@ -17,14 +15,14 @@ export default function CVTemplate() {
     return selection.selectedExpIds.indexOf(a.id) - selection.selectedExpIds.indexOf(b.id);
   });
   const lang = profile?.language || 'en';
-  const t = i18n[lang as keyof typeof i18n];
+  // const t = i18n[lang as keyof typeof i18n];
 
   if (!profile) return <div>No profile data available</div>;
 
   return (
     <div 
       id="cv-content" 
-      className="w-[210mm] min-h-[297mm] bg-white p-[15mm] text-slate-900 shadow-sm flex flex-col gap-3 font-sans antialiased"
+      className="w-[210mm] min-h-[297mm] bg-white p-[15mm] relative text-slate-900 shadow-sm flex flex-col gap-3 font-sans antialiased"
       style={{ boxSizing: 'border-box' }}
     >
       <CVHeader profile={profile} />
@@ -33,7 +31,7 @@ export default function CVTemplate() {
       <CVProject projects={projects} lang={lang} />
       <CVSkills skills={skills} lang={lang} />
 
-      <div className="mt-auto flex justify-end items-center pt-2 opacity-70 hover:opacity-100 transition-opacity">
+      {/* <div className="mt-auto flex justify-end items-center pt-2 opacity-70 hover:opacity-100 transition-opacity">
         <a 
           href="https://thibautdlh.me/#/project/7"
           className="text-[8px] font-mono tracking-tighter text-slate-400 hover:text-primary flex items-center gap-1"
@@ -41,6 +39,10 @@ export default function CVTemplate() {
           <span>{t.copyrightNotice || "CV généré par mon propre moteur de matching vectoriel (Mistral & SQLite)"}</span>
           <span className="h-2 w-2"><CopyrightIcon size={10} /></span>
         </a>
+      </div> */}
+      <div className="absolute top-[297mm] left-0 w-full hidden-print border-t border-red-600">
+        {/* ligne de fin de page si il y en a besoin */}
+        <span className="italic text-[8px] text-shadow-xs text-red-600/50 text-left">End of page</span>
       </div>
     </div>
   );

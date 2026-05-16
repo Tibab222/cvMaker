@@ -124,7 +124,6 @@ export function registerIpcHandlers() {
             event.sender.send('analysis-status', {status: AIAnalysisStatus.MatchesExperiences, data: matchesExp});
             
             const matchesProj = await vectorService.rankProjectsByBullets(queryText);
-            console.log("Matches projects:", matchesProj);
             event.sender.send('analysis-status', {status: AIAnalysisStatus.MatchesProjects, data: matchesProj});
             event.sender.send('analysis-status', { status: AIAnalysisStatus.Success, message: 'Analysis completed' });
             return { success: true };
