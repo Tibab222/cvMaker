@@ -8,11 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function Analyse() {
-    const { AIanalysis, runFullAnalysis } = useCVSelection();
+    const { AIanalysis, runFullAIAnalysis, runLocalAnalysis } = useCVSelection();
     const [rawMandate, setRawMandate] = useState('');
 
     const handleStartAnalysis = () => {
-        runFullAnalysis(rawMandate);
+        runFullAIAnalysis(rawMandate);
+    }
+
+    const handleStartLocalAnalysis = () => {
+        runLocalAnalysis(rawMandate);
     }
 
     return (
@@ -48,6 +52,9 @@ export default function Analyse() {
             <Textarea className="bg-white" value={rawMandate} onChange={(e) => setRawMandate(e.target.value)}></Textarea>
             <Button className={"mt-2 cursor-pointer"} onClick={handleStartAnalysis} disabled={AIanalysis.isCurrentJob}>
                 Analyse {AIanalysis.isCurrentJob ? <Spinner /> : <Sparkles />}
+            </Button>
+            <Button className={"mt-2 cursor-pointer"} onClick={handleStartLocalAnalysis} disabled={AIanalysis.isCurrentJob}>
+                Fast Analyse {AIanalysis.isCurrentJob ? <Spinner /> : <Sparkles />}
             </Button>
         </motion.div>
     )
