@@ -5,7 +5,7 @@ import { AIAnalysisStatus } from "../../shared/AIAnalysisStatus";
 import { FRENCH_PROMPTS } from "../prompts/fr";
 import { ENGLISH_PROMPTS } from "../prompts/en";
 import { vectorService } from "../ipcHandlers";
-import { LocalkeywordsExtractor } from "../services/localKeywordsExtract";
+import { LocalkeywordsExtractor } from "../services/KeywordsExtractor/localKeywordsExtract";
 
 export interface AnalyseMandateProps {
     event: IpcMainInvokeEvent;
