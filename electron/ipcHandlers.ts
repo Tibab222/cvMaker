@@ -5,7 +5,7 @@ import { createProfile } from './functions/createProfile';
 import { ProfilesData } from '../shared/profilesData.interface';
 import { updateSection } from './functions/updateSection';
 import { generatePdf } from './functions/generatePdf';
-import { VectorDatabase } from './services/database';
+import { VectorDatabase } from './services/vectorDatabase';
 import { VectorService } from './services/VectorService';
 import path from 'path';
 import { Experience } from '../shared/Experience.interface';

@@ -1,6 +1,7 @@
 import nlp from 'compromise';
 import { Language } from '../../../shared/profile.interface';
 import { EN_STOP_WORDS, FR_STOP_WORDS } from './stopWords.const';
+import { KeywordsAffinityDatabase } from './KeywordsAffinityDatabase';
 
 export class LocalkeywordsExtractor {
     private static STOP_WORDS = new Set();
@@ -29,6 +30,7 @@ export class LocalkeywordsExtractor {
     public static extractKeywords(text: string, language: Language = Language.ENGLISH): string[] {
         if (!text || text.trim().length === 0) return [];
         if (language) this.setStopWords(language);
+        const dbAffinity = KeywordsAffinityDatabase.getInstance();
         const normalizedText = this.normalizeText(text);
         console.log('Normalized Text:', normalizedText);
 
@@ -47,11 +49,16 @@ export class LocalkeywordsExtractor {
         for(const rawCandidate of allCandidates) {
             const candidate = rawCandidate.trim();
             const cleaned = candidate.toLowerCase();
+            const candidateWords = cleaned.split(' ').filter(w => w.length > 0);
+            const isPureStopWords = candidateWords.every(word => this.STOP_WORDS.has(word));
+            const globalCount = dbAffinity.getKeywordGlobalCount(cleaned);
+            const affinityMultiplier = 1 + Math.log(globalCount + 1);
 
             if (
                 cleaned.length <= 2 || 
                 cleaned.length > 30 ||
                 this.STOP_WORDS.has(cleaned) || 
+                isPureStopWords ||
                 /^\d+$/.test(cleaned) || 
                 candidateScores.has(cleaned)
             ) {
@@ -65,11 +72,12 @@ export class LocalkeywordsExtractor {
                 if (count === 0) {
                     count = (normalizedText.match(new RegExp(escaped, 'gi')) || []).length;
                 }
+                const finalScore = count * affinityMultiplier;
                 if (count > 0) {
                     candidateScores.set(cleaned, {
                         original: candidate,
                         clean: cleaned,
-                        count: count
+                        count: finalScore
                     });
                 }
             } catch (error) {
@@ -92,6 +100,9 @@ export class LocalkeywordsExtractor {
             .map(item => item.original)
             .slice(0, 20);
         console.log('Final Extracted Keywords:', result);
+
+        dbAffinity.incrementKeywords(result);
+        dbAffinity.runEvictionPolicy();
         return result;
     }
 
@@ -174,12 +185,22 @@ export class LocalkeywordsExtractor {
         };
         let normalized = text;
         normalized = normalized.replace(/^[•\s]+/gm, '')
-            .replace(/lÔÇÖ|dÔÇÖ|jÔÇÖ|nÔÇÖ|cÔÇÖ/gi, " ")
-            .replace(/ÔÇÖ/g, " ")
-            .replace(/['’'`]/g, " ")
+            .replace(/lÔÇÖ/gi, "l'")
+            .replace(/dÔÇÖ/gi, "d'")
+            .replace(/jÔÇÖ/gi, "j'")
+            .replace(/nÔÇÖ/gi, "n'")
+            .replace(/cÔÇÖ/gi, "c'")
+            .replace(/ÔÇÖ/g, "'")
+            .replace(/[’'`]/g, "'");
+        if (this.language === Language.FRENCH) {
+            normalized = normalized.replace(/\b[ldcjnmtst]\b'/gi, ' ');
+        } else if (this.language === Language.ENGLISH) {
+            normalized = normalized.replace(/'[st]\b/gi, ' ');
+        }
         for (const [accent, replacement] of Object.entries(accentsMap)) {
             normalized = normalized.replace(new RegExp(this.escapeRegExp(accent), 'g'), replacement);
         }
+        normalized = normalized.replace(/'/g, ' ');
         return normalized;
     }
 }
