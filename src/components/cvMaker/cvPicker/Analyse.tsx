@@ -1,18 +1,24 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
-import { Sparkles } from 'lucide-react';
+import { ScanSearch, Sparkles } from 'lucide-react';
 import { useCVSelection } from "../provider/hook";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { useUiStore } from "@/store/ui";
 
 export default function Analyse() {
-    const { AIanalysis, runFullAnalysis } = useCVSelection();
+    const { AIanalysis, runFullAIAnalysis, runLocalAnalysis, removeKeyword } = useCVSelection();
     const [rawMandate, setRawMandate] = useState('');
+    const { aiAvailable } = useUiStore();
 
     const handleStartAnalysis = () => {
-        runFullAnalysis(rawMandate);
+        runFullAIAnalysis(rawMandate);
+    }
+
+    const handleStartLocalAnalysis = () => {
+        runLocalAnalysis(rawMandate);
     }
 
     return (
@@ -35,7 +41,10 @@ export default function Analyse() {
                                     <strong>Extracted Skills:</strong>
                                     <ul className="list-disc list-inside">
                                         {AIanalysis.keywords.map((skill, index) => (
-                                            <li key={index}>{skill}</li>
+                                            <li key={index}>
+                                                <Button variant="destructive" size="xs" onClick={() => removeKeyword(skill)}>-</Button>
+                                                {skill}
+                                            </li>
                                         ))}
                                     </ul>
                                 </div>
@@ -46,9 +55,16 @@ export default function Analyse() {
             }
             <p className="italic text-black/50">Paste a mandate here to analyse it, or write a custom description of the role you're applying for.</p>
             <Textarea className="bg-white" value={rawMandate} onChange={(e) => setRawMandate(e.target.value)}></Textarea>
-            <Button className={"mt-2 cursor-pointer"} onClick={handleStartAnalysis} disabled={AIanalysis.isCurrentJob}>
-                Analyse {AIanalysis.isCurrentJob ? <Spinner /> : <Sparkles />}
-            </Button>
+            <div className="w-full flex justify-around">
+                {aiAvailable && (
+                    <Button className={"mt-2 cursor-pointer"} onClick={handleStartAnalysis} disabled={AIanalysis.isCurrentJob}>
+                        Analyse {AIanalysis.isCurrentJob ? <Spinner /> : <Sparkles />}
+                    </Button>
+                )}
+                <Button className={"mt-2 cursor-pointer"} onClick={handleStartLocalAnalysis} disabled={AIanalysis.isCurrentJob}>
+                    Fast Analyse {AIanalysis.isCurrentJob ? <Spinner /> : <ScanSearch />}
+                </Button>
+            </div>
         </motion.div>
     )
 }

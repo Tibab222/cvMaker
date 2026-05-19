@@ -337,6 +337,14 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+.titlebar {
+  -webkit-app-region: drag;
+}
+
+.button {
+  -webkit-app-region: no-drag;
+}
+
 @media print {
   body * {
     visibility: hidden;

@@ -1,5 +1,5 @@
 import { pipeline, FeatureExtractionPipeline, env } from '@xenova/transformers';
-import { VectorDatabase } from './database';
+import { VectorDatabase } from './vectorDatabase';
 import { cosineSimilarity, bufferToFloat32Array } from '../utils/math';
 import { Experience } from '../../shared/Experience.interface';
 import { Project } from '../../shared/projects.interface';
@@ -122,6 +122,6 @@ export class VectorService {
       }
     }
 
-    console.log("Indexation terminée avec succès !");
+    console.log("Indexation done !");
   }
 }

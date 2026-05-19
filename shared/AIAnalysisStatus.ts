@@ -7,5 +7,6 @@ export enum AIAnalysisStatus {
     Loading = "Loading",
     Analyze_Result = "Analyze Result",
     MatchesExperiences = "Matches Experiences",
-    MatchesProjects = "MatchesProjects"
+    MatchesProjects = "MatchesProjects",
+    Local_Analyze_Result = "Local_Analyze_Result"
 }

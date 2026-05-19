@@ -47,9 +47,7 @@ export default function SideBar({ ...props }: React.ComponentProps<typeof Sideba
 
     const handleSync = () => {
         if (!id) return;
-        console.log('Syncing database for profile:', id);
         api.syncDb(id, experience, projects).then(() => {
-            console.log('Database synced successfully');
             toast.success('Database synced successfully!');
         })
     }

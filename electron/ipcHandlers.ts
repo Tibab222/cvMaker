@@ -5,20 +5,20 @@ import { createProfile } from './functions/createProfile';
 import { ProfilesData } from '../shared/profilesData.interface';
 import { updateSection } from './functions/updateSection';
 import { generatePdf } from './functions/generatePdf';
-import { VectorDatabase } from './services/database';
+import { VectorDatabase } from './services/vectorDatabase';
 import { VectorService } from './services/VectorService';
 import path from 'path';
 import { Experience } from '../shared/Experience.interface';
 import { Project } from '../shared/projects.interface';
 import { MistralService } from './services/MistralService';
-import { FRENCH_PROMPTS } from './prompts/fr';
-import { ENGLISH_PROMPTS } from './prompts/en';
-import { AIAnalysisStatus } from '../shared/AIAnalysisStatus';
 import { Language } from '../shared/profile.interface';
+import { analyzeMandate } from './functions/mandateAnalysis';
+import { KeywordsAffinityDatabase } from './services/KeywordsExtractor/KeywordsAffinityDatabase';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
 export const mistralService = MistralService.getInstance();
+export const keywordsAffinityDb = KeywordsAffinityDatabase.getInstance();
 
 export function registerIpcHandlers() {
     ipcMain.on('minimize', (event) => {
@@ -60,6 +60,7 @@ export function registerIpcHandlers() {
         const profilePath = path.join(profilesDir, profileId);
 
         vectorDb.connect(profilePath);
+        keywordsAffinityDb.connect(profilePath);
 
         const profileData = await fs.promises.readFile(`${profilePath}/infos.json`, 'utf-8');
         const educationData = await fs.promises.readFile(`${profilePath}/edu.json`, 'utf-8');
@@ -95,7 +96,6 @@ export function registerIpcHandlers() {
         try {
             const profilePath = path.join(profilesDir, profileId);
             vectorDb.connect(profilePath);
-            console.log('Starting sync for:', profileId);
 
             await vectorService.rebuildVectorIndex(profilePath, experiences, projects);
 
@@ -106,32 +106,14 @@ export function registerIpcHandlers() {
         }
     });
 
-    ipcMain.handle('analyseMandate', async (event, rawMandate: string, language: Language) => {
-        const mistral = MistralService.getInstance();
-        const isAvailable = await mistral.checkAvailability();
-        if (!isAvailable) {
-            return { error: "Mistral is not available" };
-        }
-
+    ipcMain.handle('analyseMandate', (event, options) => analyzeMandate({ event, options }));
+    ipcMain.handle('reduceKeywordCount', (event, keyword: string, amount: number = 1) => {
         try {
-            event.sender.send('analysis-status', { status: AIAnalysisStatus.Analyzing, message: 'Analysing the mandate...' });
-            const prompt = language === Language.FRENCH ? FRENCH_PROMPTS.ANALYZING(rawMandate) : ENGLISH_PROMPTS.ANALYZING(rawMandate);
-            const analysisResult = (await mistral.analyze(prompt)) as { job_title: string; skills: string[]; key_focus: string };
-            event.sender.send('analysis-status', { status: AIAnalysisStatus.Analyze_Result, data: analysisResult });
-            event.sender.send('analysis-status', { status: AIAnalysisStatus.Matching, message: 'Matching experiences and projects...' });
-            const queryText = `${analysisResult.job_title} ${analysisResult.skills.join(' ')} ${analysisResult.key_focus}`;
-            const matchesExp = await vectorService.rankExperiences(queryText);
-            event.sender.send('analysis-status', {status: AIAnalysisStatus.MatchesExperiences, data: matchesExp});
-            
-            const matchesProj = await vectorService.rankProjectsByBullets(queryText);
-            event.sender.send('analysis-status', {status: AIAnalysisStatus.MatchesProjects, data: matchesProj});
-            event.sender.send('analysis-status', { status: AIAnalysisStatus.Success, message: 'Analysis completed' });
-            return { success: true };
-        } catch (error) {
-            console.error('Analysis failed:', error);
-            event.sender.send('analysis-status', { status: 'error', message: 'Analysis failed' });
-            return { error: 'Analysis failed' };
+            KeywordsAffinityDatabase.reduceCountForKeyword(keyword, amount);
+        }
+        catch (error) {
+            console.error('Error reducing keyword count:', error);
+            throw error;
         }
     });
-
 }

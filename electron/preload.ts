@@ -17,10 +17,11 @@ contextBridge.exposeInMainWorld('api', {
   updateSection: (id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => ipcRenderer.invoke('updateSection', id, section, newData),
   generatePDF: (html: string, fileName: string) => ipcRenderer.invoke('generatePdf', html, fileName),
   syncDb: (profileId: string, experiences: Experience[], projects: Project[]) => ipcRenderer.invoke('syncDb', profileId, experiences, projects),
-  analyseMandate: (rawMandate: string, language: Language) => ipcRenderer.invoke('analyseMandate', rawMandate, language),
+  analyseMandate: (rawMandate: string, language: Language, useAi: boolean) => ipcRenderer.invoke('analyseMandate', { rawMandate, language, useAi }),
   onAnalysisStatus: (callback: (status: unknown) => void) => {
     const listener = (_event: unknown, value: unknown) => callback(value);
     ipcRenderer.on('analysis-status', listener);
     return () => ipcRenderer.removeListener('analysis-status', listener);
   },
+  reduceKeywordCount: (keyword: string, amount?: number) => ipcRenderer.send('reduceKeywordCount', keyword, amount)
 });

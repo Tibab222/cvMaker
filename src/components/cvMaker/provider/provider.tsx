@@ -16,7 +16,9 @@ export interface CVSelectionContextType {
   isBulletSelected: (parentId: string, bulletId: string) => boolean;
   toggleSkill: (id: string) => void;
   toggleEducation: (id: string) => void;
-  runFullAnalysis: (rawMandate: string) => Promise<void>;
+  runFullAIAnalysis: (rawMandate: string) => Promise<void>;
+  runLocalAnalysis: (rawMandate: string) => Promise<void>;
+  removeKeyword: (keyword: string) => void;
 }
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
@@ -37,10 +39,15 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     isCurrentJob: false
   });
 
-  const runFullAnalysis = useCallback(async (rawMandate: string) => {
+  const runFullAIAnalysis = useCallback(async (rawMandate: string) => {
     setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Loading, rawMandate, isCurrentJob: true }));
-    await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH);
-  }, []);
+    await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, true);
+  }, [profile?.language]);
+
+  const runLocalAnalysis = useCallback(async (rawMandate: string) => {
+    setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Loading, rawMandate, isCurrentJob: false }));
+    await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, false);
+  }, [profile?.language]);
 
   useEffect(() => {
     const removeStatus = api.onAnalysisStatus((data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => {
@@ -75,13 +82,17 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
           }));
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.MatchesProjects }));
           break;}
-        case AIAnalysisStatus.Success:
+        case AIAnalysisStatus.Success:{
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Success, isCurrentJob: false }));
           setSelection(prev => ({
             ...prev,
             selectedEducationIds: education.map(e => e.id)
           }));
-          break;
+          break;}
+        case AIAnalysisStatus.Local_Analyze_Result:{
+          const localAnalysisData = data.data as { keywords: string[] };
+          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Local_Analyze_Result, keywords: localAnalysisData.keywords }));
+          break;}
         default:
           console.warn("Received unknown analysis status:", data);
           break;
@@ -91,6 +102,14 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     return () => {
       removeStatus();
     };
+  }, [profile?.language, education]);
+
+  const removeKeyword = useCallback((keyword: string) => {
+    setAIAnalysis(prev => ({
+      ...prev,
+      keywords: prev.keywords.filter(k => k !== keyword)
+    }));
+    api.reduceKeywordCount(keyword, 1);
   }, []);
 
   const toggleExperience = useCallback((id: string) => {
@@ -167,7 +186,9 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       toggleSkill,
       toggleEducation,
       isBulletSelected,
-      runFullAnalysis
+      runFullAIAnalysis,
+      runLocalAnalysis,
+      removeKeyword
     }}>
       {children}
     </CVSelectionContext.Provider>
