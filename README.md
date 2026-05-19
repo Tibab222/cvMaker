@@ -111,6 +111,8 @@ We want this application to become the ultimate power-tool for job seekers. We h
 - Multi-LLM Integration: Adding cloud provider API keys (OpenAI, Anthropic) alongside Ollama.
 - AI-Powered Block Rewriting: Optional local LLM prompts to refine bullet points for specific roles.
 - Custom Template Engine: A system allowing users to import or visually design their own CSS/Tailwind CV templates.
+- Smart PDF Onboarding (Resume Importer): Drop your existing PDF resume during profile creation to automatically populate your master JSON database using local text-extraction and NLP parsing.
+
 
 > **Want to build this with us?** We believe open-source can turn this project into something huge. Check out our CONTRIBUTING.md to join the ride, look at the Issues tab to claim a task, or open a new issue to submit your own crazy ideas!
 
