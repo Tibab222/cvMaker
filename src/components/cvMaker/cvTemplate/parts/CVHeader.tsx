@@ -10,9 +10,6 @@ export default function CVHeader({ profile }: { profile: Profile }) {
         <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">
           {profile.firstName} <span className="text-slate-500">{profile.lastName}</span>
         </h1>
-        {/* <p className="text-sm font-bold text-slate-600 uppercase tracking-widest mt-1">
-          Étudiant en Génie Informatique
-        </p> */}
       </div>
 
       {/* Contact & Liens - Grid compacte */}

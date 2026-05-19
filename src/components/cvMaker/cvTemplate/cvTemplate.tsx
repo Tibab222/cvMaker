@@ -30,16 +30,6 @@ export default function CVTemplate() {
       {selectedExps.length > 0 && <CVExperience experiences={selectedExps} lang={lang} />}
       <CVProject projects={projects} lang={lang} />
       <CVSkills skills={skills} lang={lang} />
-
-      {/* <div className="mt-auto flex justify-end items-center pt-2 opacity-70 hover:opacity-100 transition-opacity">
-        <a 
-          href="https://thibautdlh.me/#/project/7"
-          className="text-[8px] font-mono tracking-tighter text-slate-400 hover:text-primary flex items-center gap-1"
-        >
-          <span>{t.copyrightNotice || "CV généré par mon propre moteur de matching vectoriel (Mistral & SQLite)"}</span>
-          <span className="h-2 w-2"><CopyrightIcon size={10} /></span>
-        </a>
-      </div> */}
       <div className="absolute top-[297mm] left-0 w-full hidden-print border-t border-red-600">
         {/* ligne de fin de page si il y en a besoin */}
         <span className="italic text-[8px] text-shadow-xs text-red-600/50 text-left">End of page</span>

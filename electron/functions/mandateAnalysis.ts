@@ -48,7 +48,6 @@ export async function analyzeMandate({ event, options }: AnalyseMandateProps): P
     } else {
         keywords = LocalkeywordsExtractor.extractKeywords(rawMandate, language, );
         event.sender.send('analysis-status', { status: AIAnalysisStatus.Local_Analyze_Result, data: { keywords } });
-        return { success: true };
     }
 
     const queryText = `${keywords.join(' ')}`;
