@@ -1,20 +1,36 @@
-# CV Vector Engine
+# CV Maker Engine
 
-**A Smart, Dynamic Resume Generator** designed to automate semantic matching between an engineering profile and complex job descriptions. This software utilizes a **Local RAG (Retrieval-Augmented Generation)** approach to ensure data privacy and maximum relevance.
+> **"Fight the ATS, empower the job seeker, 100% locally."**
 
+Let's face it: modern recruitment is broken. Companies use **ATS (Applicant Tracking Systems)** to automatically filter out resumes before a human even looks at them. To stand a chance, you now need to create *10 times more resumes*, manually tailoring every single bullet point to match complex job descriptions. 
+
+To make matters worse, online "resume builders" charge monthly subscriptions. **Charging people who don't have a job (and therefore, no money) is fundamentally broken.** **CV Maker Engine** is a geeky, local-first open-source alternative. It's a powerful desktop CV Hub designed to help you organize your experiences and dynamically adapt your resume to any job mandate in seconds—using everything from simple 1-click layout toggles to local semantic AI matching. 
+
+No cloud dependencies, no privacy leaks, zero subscription fees. It's time to build a shield against the corporate bots.
+
+---
+
+## ✨ Key Features
+
+* 🌍 **Multi-language Support:** Ready for global tracking with native French and English resume management.
+* 🎛️ **1-Click Modular Interface:** Dynamically show/hide entire sections (experiences, projects, education) or sub-blocks to adapt your resume layout in seconds.
+* 🧠 **Hybrid Matching Engine:** * **Lightweight Local NLP:** Instant keyword matching and techno-extraction against local whitelists.
+    * **Vector & RAG Search:** Local vectorization (`transformers.js` + SQLite) to calculate semantic similarity scores between your profile and a job mandate.
+    * **Optional LLM Power:** Deep mandate analysis using Mistral (via Ollama).
+* 📄 **Visual Preview & Export:** Real-time rendering and clean PDF export.
 ---
 
 ## Technical Stack
 
-The project is built on a modern "Local-First" stack:
-
-* **Frontend:** React, TypeScript, Tailwind CSS, shadcn/ui.
-* **Runtime:** Electron (Secure IPC communication via `contextBridge`).
-* **Database:** SQLite (`better-sqlite3`) for persistence and vector storage.
-* **AI & NLP:**
-    * **LLM:** Mistral (via Ollama) for semantic analysis of mandates.
-    * **Embeddings:** `transformers.js` (Model: `Xenova/all-MiniLM-L6-v2`) for local vectorization.
-* **Backend Logic:** NestJS-inspired services for database management, vectorization, and AI orchestration.
+The project is built on a modern "Local-First" desktop stack:
+* Frontend: React, TypeScript, Tailwind CSS, shadcn/ui.
+* State Management: Zustand (Global store).
+* Runtime: Electron (Secure IPC communication via contextBridge).
+* Database: SQLite (better-sqlite3) for metadata persistence and local vector storage.
+* AI & NLP:
+    - Embeddings: transformers.js (Model: Xenova/all-MiniLM-L6-v2) for local vectorization.
+    - LLM (Optional): Mistral (via Ollama) for advanced semantic analysis of job mandates.
+    - Fallback: Local NLP extraction rule-set for lightweight, zero-dependency processing.
 
 ---
 
@@ -27,56 +43,85 @@ The application processes structured JSON data for each experience and project. 
 > **Performance Note:** The "total reconstruction" sync system is optimized for personal use, providing instantaneous responsiveness for individual profiles.
 
 ### 2. Mandate Analysis (Input)
-When a job description (JD) is submitted:
-1.  **Mistral** analyzes the text to extract a target profile: `{ "job_title", "skills", "key_focus" }`.
-2.  The engine generates a global vector for the mandate text.
+When a job description (JD) is submitted, the engine can analyze it in two ways, depending on the user's choice:
+- **Hybrid/Local:** Fast keyword and techno extraction based on local whitelists.
+- **AI-Powered:** Mistral analyzes the context to extract a structured target profile: { "job_title", "skills", "key_focus" }.
 
 ### 3. Scoring & Assembly (Output)
-The software calculates the **Cosine Similarity** between the mandate vector and those in the personal database.
-* **Suggest:** The AI automatically selects blocks with the highest relevance scores.
-* **Generate:** Export of a custom PDF resume, including a digital signature proving the origin of the generation.
+The software calculates the Cosine Similarity between the target mandate vectors and your personal experience database.
+- **Suggest**: The engine automatically flags and selects the text blocks with the highest matching scores.
+- **Generate**: Instantly exports a tailored, clean PDF resume.
 
 ---
 
-## Development Roadmap
+## Architecture
+The codebase enforces strict boundaries between the desktop environment and the client interface:
 
-### Phase 1: Infrastructure & Communication
-* Setup of the Electron Main Process and secure file system management (`userData`).
-* API exposure via Preload scripts.
+```text
+📂 Project architecture
+├── 📂 electron/          # Desktop & Backend
+│   ├── 📂 services/      # Le cœur du moteur (KeywordsExtractor, Mistral, VectorDB)
+│   └── 📂 functions/     # Fonctions appelées par l'interface via IPC
+├── 📂 src/               # UI (React + shadcn/ui)
+│   ├── 📂 components/    # Graphical components (Éditeur, panneaux, badges)
+│   └── 📂 store/         # Global states (Zustand)
+└── 📂 shared/            # Shared interfaces between React and Backend (electron)
+```
 
-### Phase 2: Profile Management
-* Initialization of data schemas (`experiences.json`, `projects.json`, etc.).
-* Multi-profile management system.
+---
 
-### Phase 3: Data Editor
-* Dynamic forms with sub-block management and tagging systems.
+## Quick Start
+Get your local development environment up and running in less than two minutes:
 
-### Phase 4: Intelligence & Vectorization
-* Integration of the local embedding engine.
-* Development of the `VectorService` for Database/Similarity orchestration.
+```bash
+# 1. Clone the repository
+git clone https://github.com/Tibab222/cvMaker.git
+cd cvMaker
 
-### Phase 5: CV Builder
-* Interactive selection interface with real-time preview.
-* Automatic matching based on AI relevance scores.
+# 2. Install dependencies
+npm install
+
+# 3. (Optional) Start Ollama if you want to use the Mistral pipeline
+# Ensure Mistral is pulled: 'ollama pull mistral'
+ollama serve
+
+# 4. Run the app in development mode (Electron + React Hot Reload)
+npm run dev
+```
+
+### 📝 Note on LLM Configuration (Ollama)
+The advanced AI analysis pipeline is optimized for **Mistral 7B (Q4_K_M quantization)**. To ensure optimal parsing and avoid context truncation with long job descriptions, make sure you have it pulled locally:
+
+```bash
+ollama pull mistral
+```
+
+***Specs tested:***
+- Architecture: Llama
+- Parameters: 7.2B
+- Context Length: 32,768 tokens (Crucial for handling large job descriptions + resume data)
+- Quantization: Q4_K_M (Perfect balance between speed and accuracy on local machines)
+
+---
+
+## Future Ideas & Contributions (We are hiring ideas!)
+
+We want this application to become the ultimate power-tool for job seekers. We have a massive backlog of features we want to explore, including:
+- Advanced Matching Dashboard: Visual charts showing missing vs. present keywords.
+- Multi-LLM Integration: Adding cloud provider API keys (OpenAI, Anthropic) alongside Ollama.
+- AI-Powered Block Rewriting: Optional local LLM prompts to refine bullet points for specific roles.
+- Custom Template Engine: A system allowing users to import or visually design their own CSS/Tailwind CV templates.
+- Smart PDF Onboarding (Resume Importer): Drop your existing PDF resume during profile creation to automatically populate your master JSON database using local text-extraction and NLP parsing.
+
+
+> **Want to build this with us?** We believe open-source can turn this project into something huge. Check out our CONTRIBUTING.md to join the ride, look at the Issues tab to claim a task, or open a new issue to submit your own crazy ideas!
 
 ---
 
 ### About the Developer
-[cite_start]Developed by **Thibaut Delahaie**, a Computer Engineering student at **Polytechnique Montréal**[cite: 4, 9]. [cite_start]This project demonstrates how personal tools can outperform traditional recruitment methods by leveraging the latest advances in Generative AI and local vector search[cite: 14, 15, 24].
+[cite_start]Developed by Thibaut Delahaie, a Computer Engineering student at Polytechnique Montréal. This project was born out of a personal need to bypass inefficient traditional recruitment systems and demonstrate the power of local-first Generative AI applications.
 
 ---
-
-### Quick Start
-```bash
-# Install dependencies
-npm install
-
-# Start Ollama (Ensure Mistral is installed: 'ollama run mistral')
-ollama serve
-
-# Run the app in development mode
-npm run dev
-```
 
 ## ⚖️ License
 
