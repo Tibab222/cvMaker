@@ -17,6 +17,7 @@ declare global {
       syncDb: (profileId: string, experiences: Experience[], projects: Project[]) => Promise<boolean>;
       analyseMandate: (rawMandate: string, language: Language, useAi: boolean) => Promise<{ success: boolean; error?: string }>;
       onAnalysisStatus: (callback: (data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => void) => () => void;
+      reduceKeywordCount: (keyword: string, amount?: number) => void;
     };
   }
 }

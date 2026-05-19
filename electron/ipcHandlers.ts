@@ -13,10 +13,12 @@ import { Project } from '../shared/projects.interface';
 import { MistralService } from './services/MistralService';
 import { Language } from '../shared/profile.interface';
 import { analyzeMandate } from './functions/mandateAnalysis';
+import { KeywordsAffinityDatabase } from './services/KeywordsExtractor/KeywordsAffinityDatabase';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
 export const mistralService = MistralService.getInstance();
+export const keywordsAffinityDb = KeywordsAffinityDatabase.getInstance();
 
 export function registerIpcHandlers() {
     ipcMain.on('minimize', (event) => {
@@ -58,6 +60,7 @@ export function registerIpcHandlers() {
         const profilePath = path.join(profilesDir, profileId);
 
         vectorDb.connect(profilePath);
+        keywordsAffinityDb.connect(profilePath);
 
         const profileData = await fs.promises.readFile(`${profilePath}/infos.json`, 'utf-8');
         const educationData = await fs.promises.readFile(`${profilePath}/edu.json`, 'utf-8');
@@ -105,5 +108,13 @@ export function registerIpcHandlers() {
     });
 
     ipcMain.handle('analyseMandate', (event, options) => analyzeMandate({ event, options }));
-
+    ipcMain.handle('reduceKeywordCount', (event, keyword: string, amount: number = 1) => {
+        try {
+            KeywordsAffinityDatabase.reduceCountForKeyword(keyword, amount);
+        }
+        catch (error) {
+            console.error('Error reducing keyword count:', error);
+            throw error;
+        }
+    });
 }

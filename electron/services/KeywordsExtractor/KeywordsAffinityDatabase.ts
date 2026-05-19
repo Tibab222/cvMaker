@@ -5,10 +5,9 @@ import fs from 'node:fs';
 export class KeywordsAffinityDatabase {
   private static instance: KeywordsAffinityDatabase | null = null;
   private db: Database.Database | null = null;
+  private dbPath: string | null = null;
 
-  private constructor() {
-    this.initDatabase();
-  }
+  private constructor() {}
 
   public static getInstance(): KeywordsAffinityDatabase {
     if (!KeywordsAffinityDatabase.instance) {
@@ -17,20 +16,32 @@ export class KeywordsAffinityDatabase {
     return KeywordsAffinityDatabase.instance;
   }
 
+  public static reduceCountForKeyword(keyword: string, amount: number = 1): void {
+    const instance = this.getInstance();
+    if (!instance.db) throw new Error("Affinity Database not connected");
+    const stmt = instance.db.prepare(`
+      UPDATE local_skills_affinity SET global_count = global_count - ? WHERE keyword = ?
+    `);
+    stmt.run(amount, keyword.toLowerCase().trim());
+  }
+
+  public connect(profilePath: string): void {
+    this.initDatabase(profilePath);
+  }
+
   /**
    * Init the SQLite database in a global app data folder, ensuring persistence across sessions and security (no user access to raw files).
    */
-  private initDatabase(): void {
-    const appDataPath = process.env.APPDATA || 
-                        (process.platform === 'darwin' ? path.join(process.env.HOME || '', 'Library/Application Support') : path.join(process.env.HOME || '', '.config'));
-    
-    const globalAppFolder = path.join(appDataPath, 'cv-maker'); 
-    
-    if (!fs.existsSync(globalAppFolder)) {
-      fs.mkdirSync(globalAppFolder, { recursive: true });
+  private initDatabase(profilePath: string): void {
+    if (!fs.existsSync(profilePath)) {
+      fs.mkdirSync(profilePath, { recursive: true });
     }
 
-    const dbPath = path.join(globalAppFolder, 'keywords_affinity.db');
+    const dbPath = path.join(profilePath, 'keywords_affinity.db');
+    if (this.dbPath === dbPath && this.db) {
+      return;
+    }
+    this.dbPath = dbPath;
     this.db = new Database(dbPath);
 
     this.initSchema();
@@ -99,7 +110,7 @@ export class KeywordsAffinityDatabase {
     `);
     const { noise_total } = noiseStmt.get() as { noise_total: number };
 
-    if (noise_total > 1000) {
+    if (noise_total > 2000) {
         console.log(`[AffinityDB] Cleaning up ${noise_total} noisy keywords from database...`);
         
         this.db.exec(`

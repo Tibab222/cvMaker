@@ -16,5 +16,6 @@ export const api = {
     generatePDF: async (html: string, fileName: string) => await window.api.generatePDF(html, fileName),
     syncDb: async (profileId: string, experiences: Experience[], projects: Project[]) => await window.api.syncDb(profileId, experiences, projects),
     analyseMandate: async (rawMandate: string, language: Language, useAi: boolean) => await window.api.analyseMandate(rawMandate, language, useAi),
-    onAnalysisStatus: (callback: (data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => void) => window.api.onAnalysisStatus(callback)
+    onAnalysisStatus: (callback: (data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => void) => window.api.onAnalysisStatus(callback),
+    reduceKeywordCount: (keyword: string, amount?: number) => window.api.reduceKeywordCount(keyword, amount)
 }

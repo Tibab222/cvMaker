@@ -1,6 +1,6 @@
 import nlp from 'compromise';
 import { Language } from '../../../shared/profile.interface';
-import { EN_STOP_WORDS, FR_STOP_WORDS } from './stopWords.const';
+import { EN_STOP_WORDS, FR_STOP_WORDS, TECH_WHITELIST } from './stopWords.const';
 import { KeywordsAffinityDatabase } from './KeywordsAffinityDatabase';
 
 export class LocalkeywordsExtractor {
@@ -15,7 +15,7 @@ export class LocalkeywordsExtractor {
                 ...FR_STOP_WORDS.jobContext,
                 ...FR_STOP_WORDS.structural,
                 ...FR_STOP_WORDS.verbs
-            ]);
+            ].map(word => word.trim().toLowerCase()));
         }
         else if (language === Language.ENGLISH) {
             this.STOP_WORDS = new Set([
@@ -23,7 +23,7 @@ export class LocalkeywordsExtractor {
                 ...EN_STOP_WORDS.jobContext,
                 ...EN_STOP_WORDS.structural,
                 ...EN_STOP_WORDS.verbs
-            ]);
+            ].map(word => word.trim().toLowerCase()));
         }
     }
 
@@ -50,12 +50,12 @@ export class LocalkeywordsExtractor {
             const candidate = rawCandidate.trim();
             const cleaned = candidate.toLowerCase();
             const candidateWords = cleaned.split(' ').filter(w => w.length > 0);
-            const isPureStopWords = candidateWords.every(word => this.STOP_WORDS.has(word));
+            const isPureStopWords = candidateWords.every(word => this.STOP_WORDS.has(word.trim().toLowerCase()));
             const globalCount = dbAffinity.getKeywordGlobalCount(cleaned);
             const affinityMultiplier = 1 + Math.log(globalCount + 1);
 
             if (
-                cleaned.length <= 2 || 
+                (!TECH_WHITELIST.has(cleaned) && cleaned.length <= 2) || 
                 cleaned.length > 30 ||
                 this.STOP_WORDS.has(cleaned) || 
                 isPureStopWords ||
@@ -63,6 +63,23 @@ export class LocalkeywordsExtractor {
                 candidateScores.has(cleaned)
             ) {
                 continue;
+            }
+
+            const words = cleaned.split(' ').filter(w => w.length > 0);
+
+            if (words.length > 0) {
+                const firstWord = words[0];
+                const lastWord = words[words.length - 1];
+
+                if (
+                    this.STOP_WORDS.has(firstWord) || 
+                    this.STOP_WORDS.has(lastWord) ||
+                    /^\d+$/.test(firstWord) ||
+                    /^\d+$/.test(lastWord) ||
+                    words.some(w => /^\d+$/.test(w))
+                ) {
+                    continue;
+                }
             }
 
             try {
@@ -89,8 +106,8 @@ export class LocalkeywordsExtractor {
         const filteredCandidates = finalCandidates.filter((itemA) => {
             const isSubset = finalCandidates.some(itemB => 
                 itemB.clean !== itemA.clean && 
-                itemB.clean.includes(itemA.clean) && 
-                itemB.count >= itemA.count
+                itemB.clean.includes(itemA.clean)
+                // itemB.count >= itemA.count
             );
             return !isSubset; 
         });
@@ -98,7 +115,7 @@ export class LocalkeywordsExtractor {
         const result = filteredCandidates
             .sort((a, b) => b.count - a.count)
             .map(item => item.original)
-            .slice(0, 20);
+            .slice(0, 25);
         console.log('Final Extracted Keywords:', result);
 
         dbAffinity.incrementKeywords(result);
@@ -107,9 +124,12 @@ export class LocalkeywordsExtractor {
     }
 
     private static extractRakeChunks(text: string): string[] {
-        const regexStopWords = new RegExp(`\\b(${Array.from(this.STOP_WORDS).join('|')})\\b`, 'gi');
+        const sortedStopWords = Array.from(this.STOP_WORDS)
+            .sort((a, b) => (b as string).length - (a as string).length);
+        const regexStopWords = new RegExp(`\\b(${sortedStopWords.join('|')})\\b`, 'gi');
+        const cleanText = text.replace(/\s+/g, ' ');
 
-        const chunks = text
+        const chunks = cleanText
             .replace(regexStopWords, '.')
             .split(/[.,;:!?\n()[\]{}]/)
             .map(chunk => chunk.trim())
@@ -180,8 +200,11 @@ export class LocalkeywordsExtractor {
             'í': 'i', 'ì': 'i', 'ï': 'i', 'î': 'i',
             'ó': 'o', 'ò': 'o', 'ö': 'o', 'ô': 'o',
             'ú': 'u', 'ù': 'u', 'ü': 'u', 'û': 'u',
-            'ç': 'c', 'Ç': 'C',
-            'ñ': 'n', 'Ñ': 'N',
+            'ç': 'c', 'Ç': 'C', 'À': 'A', 'Á': 'A', 'Ä': 'A', 'Â': 'A',
+            'ñ': 'n', 'Ñ': 'N', 'É': 'E', 'È': 'E', 'Ë': 'E', 'Ê': 'E',
+            'Í': 'I', 'Ì': 'I', 'Ï': 'I', 'Î': 'I',
+            'Ó': 'O', 'Ò': 'O', 'Ö': 'O', 'Ô': 'O',
+            'Ú': 'U', 'Ù': 'U', 'Ü': 'U', 'Û': 'U'
         };
         let normalized = text;
         normalized = normalized.replace(/^[•\s]+/gm, '')
@@ -190,8 +213,13 @@ export class LocalkeywordsExtractor {
             .replace(/jÔÇÖ/gi, "j'")
             .replace(/nÔÇÖ/gi, "n'")
             .replace(/cÔÇÖ/gi, "c'")
+            .replace(/sÔÇÖ/gi, "s'")
+            .replace(/├Ç/gi, 'A')
             .replace(/ÔÇÖ/g, "'")
-            .replace(/[’'`]/g, "'");
+            .replace(/[’'`]/g, "'")
+            .replace(/┬½/g, ' ')
+            .replace(/┬╗/g, ' ')
+            .replace(/[«»“”·–]/g, ' ');
         if (this.language === Language.FRENCH) {
             normalized = normalized.replace(/\b[ldcjnmtst]\b'/gi, ' ');
         } else if (this.language === Language.ENGLISH) {
@@ -201,6 +229,7 @@ export class LocalkeywordsExtractor {
             normalized = normalized.replace(new RegExp(this.escapeRegExp(accent), 'g'), replacement);
         }
         normalized = normalized.replace(/'/g, ' ');
+        normalized = normalized.replace(/\s+/g, ' ');
         return normalized;
     }
 }

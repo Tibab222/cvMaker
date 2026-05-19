@@ -23,4 +23,5 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('analysis-status', listener);
     return () => ipcRenderer.removeListener('analysis-status', listener);
   },
+  reduceKeywordCount: (keyword: string, amount?: number) => ipcRenderer.send('reduceKeywordCount', keyword, amount)
 });

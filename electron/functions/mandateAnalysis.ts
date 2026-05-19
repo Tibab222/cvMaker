@@ -33,7 +33,7 @@ export async function analyzeMandate({ event, options }: AnalyseMandateProps): P
             const analysisResult = (await mistral.analyze(prompt)) as { job_title: string; skills: string[]; key_focus: string };
             // update affinity database with new keywords
             const dbAffinity = KeywordsAffinityDatabase.getInstance();
-            dbAffinity.incrementKeywords(analysisResult.skills);
+            dbAffinity.incrementKeywords(analysisResult.skills.map((skill) => skill.toLowerCase()));
             dbAffinity.runEvictionPolicy();
             event.sender.send('analysis-status', { status: AIAnalysisStatus.Analyze_Result, data: analysisResult });
             event.sender.send('analysis-status', { status: AIAnalysisStatus.Matching, message: 'Matching experiences and projects...' });
@@ -51,7 +51,7 @@ export async function analyzeMandate({ event, options }: AnalyseMandateProps): P
             return { error: 'Analysis failed' };
         }
     } else {
-        const keywords = LocalkeywordsExtractor.extractKeywords(rawMandate);
+        const keywords = LocalkeywordsExtractor.extractKeywords(rawMandate, language, );
         event.sender.send('analysis-status', { status: AIAnalysisStatus.Local_Analyze_Result, data: { keywords } });
         return { success: true };
     }

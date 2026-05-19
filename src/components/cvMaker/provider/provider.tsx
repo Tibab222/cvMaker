@@ -18,6 +18,7 @@ export interface CVSelectionContextType {
   toggleEducation: (id: string) => void;
   runFullAIAnalysis: (rawMandate: string) => Promise<void>;
   runLocalAnalysis: (rawMandate: string) => Promise<void>;
+  removeKeyword: (keyword: string) => void;
 }
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
@@ -103,6 +104,14 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     };
   }, [profile?.language, education]);
 
+  const removeKeyword = useCallback((keyword: string) => {
+    setAIAnalysis(prev => ({
+      ...prev,
+      keywords: prev.keywords.filter(k => k !== keyword)
+    }));
+    api.reduceKeywordCount(keyword, 1);
+  }, []);
+
   const toggleExperience = useCallback((id: string) => {
     setSelection(prev => ({
       ...prev,
@@ -178,7 +187,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       toggleEducation,
       isBulletSelected,
       runFullAIAnalysis,
-      runLocalAnalysis
+      runLocalAnalysis,
+      removeKeyword
     }}>
       {children}
     </CVSelectionContext.Provider>
