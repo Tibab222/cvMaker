@@ -24,7 +24,7 @@ export class VectorDatabase {
 
     if (this.db) {
       this.db.close();
-      console.log('Old database connection closed');
+      console.log('[VectorDatabase] Old database connection closed');
     }
 
     const dbPath = path.join(profilePath, 'vector_index.db');
@@ -33,7 +33,7 @@ export class VectorDatabase {
 
     this.db.pragma('foreign_keys = ON');
     this.initSchema();
-    console.log(`Connected to vector database: ${dbPath}`);
+    console.log(`[VectorDatabase] Connected to vector database: ${dbPath}`);
   }
 
   public clearAll(): void {
@@ -44,7 +44,7 @@ export class VectorDatabase {
       DELETE FROM idx_experiences;
       VACUUM;
     `);
-    console.log('All vector data cleared from the database');
+    console.log('[VectorDatabase] All vector data cleared from the database');
   }
 
   private initSchema(): void {

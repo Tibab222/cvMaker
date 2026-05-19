@@ -18,7 +18,6 @@ export class MistralService {
       if (response.ok) {
         const data = await response.json();
         this.isAvailable = data.models.some((m: { name: string | string[] }) => m.name.includes('mistral'));
-        console.log(this.isAvailable ? "Mistral via Ollama est prêt." : "Ollama tourne mais 'mistral' n'est pas installé.");
       }
     } catch (e: Error | unknown) {
       this.isAvailable = false;

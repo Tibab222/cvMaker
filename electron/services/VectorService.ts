@@ -122,6 +122,6 @@ export class VectorService {
       }
     }
 
-    console.log("Indexation terminée avec succès !");
+    console.log("Indexation done !");
   }
 }

@@ -96,7 +96,6 @@ export function registerIpcHandlers() {
         try {
             const profilePath = path.join(profilesDir, profileId);
             vectorDb.connect(profilePath);
-            console.log('Starting sync for:', profileId);
 
             await vectorService.rebuildVectorIndex(profilePath, experiences, projects);
 
