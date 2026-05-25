@@ -17,7 +17,7 @@ export class VectorDatabase {
   }
 
   /**
-   * Initialise or change the database connection based on the profile
+   * Initialize or change the database connection based on the profile
    */
   public connect(profilePath: string): void {
     if (this.currentProfilePath === profilePath && this.db) return;
@@ -45,6 +45,25 @@ export class VectorDatabase {
       VACUUM;
     `);
     console.log('[VectorDatabase] All vector data cleared from the database');
+  }
+
+  public clearExperiences(): void {
+    if (!this.db) return;
+    this.db.exec(`
+      DELETE FROM idx_experiences;
+      VACUUM;
+    `);
+    console.log('[VectorDatabase] Experience vectors cleared from the database');
+  }
+
+  public clearProjectsAndBullets(): void {
+    if (!this.db) return;
+    this.db.exec(`
+      DELETE FROM idx_project_bullets;
+      DELETE FROM idx_projects;
+      VACUUM;
+    `);
+    console.log('[VectorDatabase] Project and bullet vectors cleared from the database');
   }
 
   private initSchema(): void {
@@ -123,7 +142,7 @@ export class VectorDatabase {
   }
 
   /**
-   * Upsert d'une expérience (bloc unique)
+   * Upsert an experience vector using local_id to detect conflicts
    */
   public upsertExperience(localId: string, vector: Buffer): void {
     if (!this.db) throw new Error("Database not connected");
@@ -140,7 +159,7 @@ export class VectorDatabase {
   }
 
   /**
-   * Récupère tous les vecteurs d'expériences pour le matching
+   * Retrieve all experience vectors for matching
    */
   public getAllExperiences(): { local_id: string, vector: Buffer }[] {
     if (!this.db) return [];

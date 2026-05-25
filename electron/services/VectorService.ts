@@ -28,7 +28,7 @@ export class VectorService {
   }
 
   /**
-   * Initialise le modèle d'embedding (une seule fois)
+   * Initialize the embedding model
    */
   private async initModel() {
     if (!this.embedder) {
@@ -39,7 +39,7 @@ export class VectorService {
   }
 
   /**
-   * Transforme un texte en vecteur
+   * text to vector using the embedding model
    */
   public async generateEmbedding(text: string): Promise<Float32Array> {
     await this.initModel();
@@ -49,7 +49,7 @@ export class VectorService {
   }
 
   /**
-   * 1. Ranking des Expériences (Simple)
+   * Experiences ranking (Simple)
    */
   public async rankExperiences(jobDescription: string, topK: number = 3) {
     const queryVector = await this.generateEmbedding(jobDescription);
@@ -95,22 +95,28 @@ export class VectorService {
     };
   }
 
+  /**
+   * Clear and rebuild the entire vector index for a profile (used during sync)
+   * @param profilePath Path to the profile's data directory
+   * @param experiences to index
+   * @param projects to index
+   */
   async rebuildVectorIndex(profilePath: string, experiences: Experience[], projects: Project[]) {
     const db = VectorDatabase.getInstance();
 
     db.connect(profilePath);
     db.clearAll();
     
-    console.log("Starting sync...");
+    console.log("[VectorService] Starting sync...");
 
     for (const exp of experiences) {
-      const text = `${exp.jobTitle} chez ${exp.company}. ${exp.description || ''}`;
+      const text = `${exp.jobTitle}: ${exp.description || ''}`;
       const vector = await this.generateEmbedding(text);
       db.upsertExperience(exp.id, Buffer.from(vector.buffer));
     }
 
     for (const proj of projects) {
-      const projText = `${proj.title} ${proj.subtitle || ''}`;
+      const projText = `${proj.title} ${proj.subtitle ? '- '+proj.subtitle : ''}`;
       const projVector = await this.generateEmbedding(projText);
       
       const sqlProjId = db.upsertProject(proj.id, Buffer.from(projVector.buffer));
@@ -122,6 +128,53 @@ export class VectorService {
       }
     }
 
-    console.log("Indexation done !");
+    console.log("[VectorService] Indexation done !");
+  }
+
+  /**
+   * Sync experiences (used when modifying an experience)
+   * @param profilePath path to the profile's data directory
+   * @param experiences to index
+   */
+  async syncExperiences(profilePath: string, experiences: Experience[]) {
+    const db = VectorDatabase.getInstance();
+    db.connect(profilePath);
+    
+    db.clearExperiences();
+
+    console.log("[VectorService] Indexing experiences...");
+    for (const exp of experiences) {
+        const text = `${exp.jobTitle}: ${exp.description || ''}`;
+        const vector = await this.generateEmbedding(text);
+        db.upsertExperience(exp.id, Buffer.from(vector.buffer));
+    }
+    console.log("[VectorService] Experiences indexed successfully!");
+  }
+
+  /**
+   * Sync projects and bullets (used when modifying a project or a bullet)
+   * @param profilePath path to the profile's data directory
+   * @param projects to index
+   */
+  async syncProjects(profilePath: string, projects: Project[]) {
+    const db = VectorDatabase.getInstance();
+    db.connect(profilePath);
+    
+    db.clearProjectsAndBullets();
+
+    console.log("[VectorService] Indexing projects and bullets...");
+    for (const proj of projects) {
+        const projText = `${proj.title} ${proj.subtitle ? '- '+proj.subtitle : ''}`;
+        const projVector = await this.generateEmbedding(projText);
+        
+        const sqlProjId = db.upsertProject(proj.id, Buffer.from(projVector.buffer));
+
+        for (const bullet of proj.bullets) {
+            const bulletText = `${bullet.text} ${bullet.tags.join(' ')}`;
+            const bulletVector = await this.generateEmbedding(bulletText);
+            db.upsertProjectBullet(sqlProjId, bullet.id, Buffer.from(bulletVector.buffer));
+        }
+    }
+    console.log("[VectorService] Projects indexed successfully!");
   }
 }
