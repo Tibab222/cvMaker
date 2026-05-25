@@ -1,6 +1,24 @@
-# CV Maker Engine
+<h1 align="center">CV Maker Engine</h1>
 
-> **"Fight the ATS, empower the job seeker, 100% locally."**
+<p align="center">
+  <img src="https://img.shields.io/github/stars/tibab222/cvMaker?style=for-the-badge&color=yellow" alt="stars" />
+  <img src="https://img.shields.io/github/forks/tibab222/cvMaker?style=for-the-badge&color=blue" alt="forks" />
+  <img src="https://img.shields.io/github/issues/tibab222/cvMaker?style=for-the-badge&color=red" alt="issues" />
+  <img src="https://img.shields.io/github/license/tibab222/cvMaker?style=for-the-badge&color=green" alt="license" />
+</p>
+
+<h3 align="center">Built With</h3>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=electron&logoColor=white" alt="Electron" />
+</p>
+
+<p align="center">
+  <sub>Fight the ATS, empower the job seeker, 100% locally</sub>
+</p>
 
 Let's face it: modern recruitment is broken. Companies use **ATS (Applicant Tracking Systems)** to automatically filter out resumes before a human even looks at them. To stand a chance, you now need to create *10 times more resumes*, manually tailoring every single bullet point to match complex job descriptions. 
 
@@ -10,14 +28,14 @@ No cloud dependencies, no privacy leaks, zero subscription fees. It's time to bu
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-* 🌍 **Multi-language Support:** Ready for global tracking with native French and English resume management.
-* 🎛️ **1-Click Modular Interface:** Dynamically show/hide entire sections (experiences, projects, education) or sub-blocks to adapt your resume layout in seconds.
-* 🧠 **Hybrid Matching Engine:** * **Lightweight Local NLP:** Instant keyword matching and techno-extraction against local whitelists.
+* **Multi-language Support:** Ready for global tracking with native French and English resume management.
+* **1-Click Modular Interface:** Dynamically show/hide entire sections (experiences, projects, education) or sub-blocks to adapt your resume layout in seconds.
+* **Hybrid Matching Engine:** * **Lightweight Local NLP:** Instant keyword matching and techno-extraction against local whitelists.
     * **Vector & RAG Search:** Local vectorization (`transformers.js` + SQLite) to calculate semantic similarity scores between your profile and a job mandate.
     * **Optional LLM Power:** Deep mandate analysis using Mistral (via Ollama).
-* 📄 **Visual Preview & Export:** Real-time rendering and clean PDF export.
+* **Visual Preview & Export:** Real-time rendering and clean PDF export.
 ---
 
 ## Technical Stack
@@ -60,10 +78,10 @@ The codebase enforces strict boundaries between the desktop environment and the 
 ```text
 📂 Project architecture
 ├── 📂 electron/          # Desktop & Backend
-│   ├── 📂 services/      # Le cœur du moteur (KeywordsExtractor, Mistral, VectorDB)
-│   └── 📂 functions/     # Fonctions appelées par l'interface via IPC
-├── 📂 src/               # UI (React + shadcn/ui)
-│   ├── 📂 components/    # Graphical components (Éditeur, panneaux, badges)
+│   ├── 📂 services/      # Services used on backend
+│   └── 📂 functions/     # Functions called by IPC
+├── 📂 src/               # UI (React + tailwind + shadcn/ui)
+│   ├── 📂 components/    # Graphical components
 │   └── 📂 store/         # Global states (Zustand)
 └── 📂 shared/            # Shared interfaces between React and Backend (electron)
 ```
@@ -115,11 +133,6 @@ We want this application to become the ultimate power-tool for job seekers. We h
 
 
 > **Want to build this with us?** We believe open-source can turn this project into something huge. Check out our CONTRIBUTING.md to join the ride, look at the Issues tab to claim a task, or open a new issue to submit your own crazy ideas!
-
----
-
-### About the Developer
-[cite_start]Developed by Thibaut Delahaie, a Computer Engineering student at Polytechnique Montréal. This project was born out of a personal need to bypass inefficient traditional recruitment systems and demonstrate the power of local-first Generative AI applications.
 
 ---
 
