@@ -1,10 +1,19 @@
 # CV Maker Engine
 
-![GitHub Repo stars](https://img.shields.io/github/stars/tibab222/cvMaker?style=for-the-badge&color=yellow) ![GitHub forks](https://img.shields.io/github/forks/tibab222/cvMaker?style=for-the-badge&color=blue) ![GitHub issues](https://img.shields.io/github/issues/tibab222/cvMaker?style=for-the-badge&color=red) ![GitHub license](https://img.shields.io/github/license/tibab222/cvMaker?style=for-the-badge&color=green)
+<p align="center">
+  <img src="https://img.shields.io/github/stars/tibab222/cvMaker?style=for-the-badge&color=yellow" alt="stars" />
+  <img src="https://img.shields.io/github/forks/tibab222/cvMaker?style=for-the-badge&color=blue" alt="forks" />
+  <img src="https://img.shields.io/github/issues/tibab222/cvMaker?style=for-the-badge&color=red" alt="issues" />
+  <img src="https://img.shields.io/github/license/tibab222/cvMaker?style=for-the-badge&color=green" alt="license" />
+</p>
 
-### Built With
+<h3 align="center">Built With</h3>
 
-![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Electron](https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=electron&logoColor=white)
+<p align="center">
+  <img src="https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=electron&logoColor=white" alt="Electron" />
+</p>
 
 > **"Fight the ATS, empower the job seeker, 100% locally."**
 
