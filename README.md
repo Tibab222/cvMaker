@@ -15,7 +15,9 @@
   <img src="https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=electron&logoColor=white" alt="Electron" />
 </p>
 
-> **"Fight the ATS, empower the job seeker, 100% locally."**
+<p align="center">
+  <sub>"Fight the ATS, empower the job seeker, 100% locally."</sub>
+</p>
 
 Let's face it: modern recruitment is broken. Companies use **ATS (Applicant Tracking Systems)** to automatically filter out resumes before a human even looks at them. To stand a chance, you now need to create *10 times more resumes*, manually tailoring every single bullet point to match complex job descriptions. 
 
