@@ -1,4 +1,4 @@
-# CV Maker Engine
+<h1 align="center">CV Maker Engine</h1>
 
 <p align="center">
   <img src="https://img.shields.io/github/stars/tibab222/cvMaker?style=for-the-badge&color=yellow" alt="stars" />
