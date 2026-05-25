@@ -1,5 +1,11 @@
 # CV Maker Engine
 
+![GitHub Repo stars](https://img.shields.io/github/stars/tibab222/cvMaker?style=for-the-badge&color=yellow) ![GitHub forks](https://img.shields.io/github/forks/tibab222/cvMaker?style=for-the-badge&color=blue) ![GitHub issues](https://img.shields.io/github/issues/tibab222/cvMaker?style=for-the-badge&color=red) ![GitHub license](https://img.shields.io/github/license/tibab222/cvMaker?style=for-the-badge&color=green)
+
+### Built With
+
+![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Electron](https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=electron&logoColor=white)
+
 > **"Fight the ATS, empower the job seeker, 100% locally."**
 
 Let's face it: modern recruitment is broken. Companies use **ATS (Applicant Tracking Systems)** to automatically filter out resumes before a human even looks at them. To stand a chance, you now need to create *10 times more resumes*, manually tailoring every single bullet point to match complex job descriptions. 
