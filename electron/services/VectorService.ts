@@ -122,7 +122,7 @@ export class VectorService {
       const sqlProjId = db.upsertProject(proj.id, Buffer.from(projVector.buffer));
 
       for (const bullet of proj.bullets) {
-        const bulletText = `${bullet.text} ${bullet.tags.join(' ')}`;
+        const bulletText = `${bullet.text} (${bullet.tags.join(' ')})`;
         const bulletVector = await this.generateEmbedding(bulletText);
         db.upsertProjectBullet(sqlProjId, bullet.id, Buffer.from(bulletVector.buffer));
       }
@@ -170,7 +170,7 @@ export class VectorService {
         const sqlProjId = db.upsertProject(proj.id, Buffer.from(projVector.buffer));
 
         for (const bullet of proj.bullets) {
-            const bulletText = `${bullet.text} ${bullet.tags.join(' ')}`;
+            const bulletText = `${bullet.text} (${bullet.tags.join(' ')})`;
             const bulletVector = await this.generateEmbedding(bulletText);
             db.upsertProjectBullet(sqlProjId, bullet.id, Buffer.from(bulletVector.buffer));
         }
