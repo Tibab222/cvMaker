@@ -20,14 +20,19 @@ export default function Education() {
         setAddNew(false);
     }
 
+    const handleOnDelete = (id: string) => {
+        const filteredEducationList = education.filter((edu) => edu.id !== id);
+        updateSection("education", filteredEducationList);
+    }
+
     return (
-        <motion.div className="w-full h-full flex flex-col gap-4" initial={{ opacity: 0, x: -200 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div className="w-full h-full flex flex-col gap-4 px-4 pt-2 overflow-y-auto max-h-full:" initial={{ opacity: 0, x: -200 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
             { education.length === 0 && <h2 className="text-2xl font-bold">No education entries yet.</h2> }
             {education.map((edu) => (
-                <EducationCard key={edu.id} education={edu} onSave={handleOnSave} />
+                <EducationCard key={edu.id} education={edu} onSave={handleOnSave} onDelete={handleOnDelete} />
             ))}
             {addNew ? (
-                <EducationCard education={{ id: "", institution: "", degree: "", location: "", startDate: new Date() }} onSave={handleNewSave} />
+                <EducationCard education={{ id: "", institution: "", degree: "", location: "", startDate: new Date() }} onSave={handleNewSave} onCancel={() => setAddNew(false)} defaultEdit />
             ) : (
                 <button
                     onClick={() => setAddNew(true)}
