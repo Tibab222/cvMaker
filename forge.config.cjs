@@ -18,10 +18,12 @@ module.exports = {
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
+      platforms: ['win32'],
       config: {
         name: 'cvmaker',
-        authors: 'Thibaut Delahaie',
-        description: 'A helper to make your CV',
+        authors: 'Thibaut Delahaie and contributors',
+        description: 'A helper to make your CV, Fight the ATS, empower the job seeker, 100% locally, free and open source.',
+        // setupIcon: path.join(__dirname, 'assets', 'icon.ico'),
       },
     },
     {
@@ -30,10 +32,12 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-deb',
+      platforms: ['linux'],
       config: {},
     },
     {
       name: '@electron-forge/maker-rpm',
+      platforms: ['linux'],
       config: {},
     },
   ],
