@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupTextarea } from "@/components/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Experience } from "@shared/Experience.interface";
-import { Building, ChevronDown, MapPin, Calendar as LucideCalendar, Edit2, Trash2, X, Save, ArrowLeft } from "lucide-react";
+import { Building, ChevronDown, MapPin, Calendar as LucideCalendar, Edit2, Trash2, X, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 

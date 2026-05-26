@@ -8,6 +8,15 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist']),
   {
+    ignores: [
+      'dist', 
+      'dist-electron', 
+      'out', 
+      'src/components/ui/**/*',
+      'src/hooks/use-mobile.ts'
+    ],
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,
