@@ -18,10 +18,12 @@ module.exports = {
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
+      platforms: ['win32'],
       config: {
         name: 'cvmaker',
-        authors: 'Thibaut Delahaie',
-        description: 'A helper to make your CV',
+        authors: 'Thibaut Delahaie and contributors',
+        description: 'A helper to make your CV, Fight the ATS, empower the job seeker, 100% locally, free and open source.',
+        // setupIcon: path.join(__dirname, 'assets', 'icon.ico'),
       },
     },
     {
@@ -30,10 +32,12 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-deb',
+      platforms: ['linux'],
       config: {},
     },
     {
       name: '@electron-forge/maker-rpm',
+      platforms: ['linux'],
       config: {},
     },
   ],
@@ -42,29 +46,6 @@ module.exports = {
       name: '@electron-forge/plugin-auto-unpack-natives',
       config: {},
     },
-    // {
-    //   name: '@electron-forge/plugin-vite',
-    //   config: {
-    //     build: [
-    //       {
-    //         entry: 'electron/main.dev.ts', // point d'entrée Electron
-    //         config: 'vite.main.config.mjs',
-    //       },
-    //       {
-    //         entry: 'electron/preload.ts',
-    //         config: 'vite.preload.config.mjs',
-    //       },
-    //     ],
-    //     renderer: [
-    //       {
-    //         name: 'main_window',
-    //         config: 'vite.renderer.config.mjs',
-    //       },
-    //     ],
-    //   },
-    // },
-    // Fuses are used to enable/disable various Electron functionality
-    // at package time, before code signing the application
     new FusesPlugin({
       version: FuseVersion.V1,
       [FuseV1Options.RunAsNode]: false,
