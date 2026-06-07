@@ -20,7 +20,7 @@ export default function ProjectComponent() {
         setAddNew(false);
     }
     return (
-        <motion.div className="w-full h-full flex flex-col gap-4" initial={{ opacity: 0, x: -200 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div className="w-full h-auto flex flex-col gap-4" initial={{ opacity: 0, x: -200 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
             { projects.length === 0 && <h2 className="text-2xl font-bold">No project entries yet.</h2> }
             {projects.map((project) => (
                 <ProjectCard key={project.id} project={project} onSave={handleOnSave} />

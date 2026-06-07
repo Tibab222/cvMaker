@@ -14,7 +14,13 @@ export default function Home() {
     const [newProfileMode, setNewProfileMode] = useState(false);
 
     return (
-        <motion.div className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div 
+            className="w-full h-full flex items-center justify-center p-4" 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            transition={{ duration: 0.5 }}
+        >
             {!newProfileMode ? <ExistingProfilesCard setNewProfileMode={setNewProfileMode} /> : <NewProfileForm setNewProfileMode={setNewProfileMode} />}
         </motion.div>
     )
@@ -102,7 +108,7 @@ const NewProfileForm = ({ setNewProfileMode }: { setNewProfileMode: (mode: boole
     }
 
     return (
-        <Card>
+        <Card className="w-1/3 mx-auto">
             <CardHeader>
                 <CardTitle>Create a New Profile</CardTitle>
                 <CardDescription>Fill in the details to create a new profile.</CardDescription>

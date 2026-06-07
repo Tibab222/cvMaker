@@ -137,13 +137,13 @@
     --explorer-active-fg: 215 80% 72%;
     --explorer-indent: 220 14% 22%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
+    --sidebar-background: 215 13.8% 14.1%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 15% 25%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 215 15% 20%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     --tree-bg: 220 14% 96%;
@@ -182,13 +182,13 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 215 13.8% 14.1%; /* bg-gray-800 */
+    --sidebar-foreground: 210 20% 98%;     /* Texte blanc cassé */
+    --sidebar-primary: 217.2 91.2% 59.8%;  /* Un bleu d'accentuation propre */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-accent: 215 15% 25%;         /* Un gris un peu plus clair pour le survol/hover */
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 215 15% 20%;         /* Une bordure subtile pour fond sombre */
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     --tree-bg: 220 20% 10%;
@@ -254,13 +254,13 @@
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
   --radius: 0.625rem;
-  --sidebar: oklch(0.988 0.003 106.5);
-  --sidebar-foreground: oklch(0.153 0.006 107.1);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
+  --sidebar: oklch(27.8% 0.033 256.848);
+  --sidebar-foreground: oklch(0.988 0.003 106.5);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.966 0.005 106.5);
-  --sidebar-accent-foreground: oklch(0.228 0.013 107.4);
-  --sidebar-border: oklch(0.93 0.007 106.5);
+  --sidebar-accent: oklch(0.40 0.01 255);
+  --sidebar-accent-foreground: oklch(0.988 0.003 106.5);
+  --sidebar-border: oklch(86.686% 0.0001 271.152);
   --sidebar-ring: oklch(0.737 0.021 106.9);
 }
 
@@ -354,36 +354,36 @@
     visibility: hidden;
   }
 
+  body {
+    background: white;
+    height: auto !important; 
+  }
+
   #cv-content,
   #cv-content * {
     visibility: visible;
   }
 
-  /* #cv-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 210mm;
-    height: 297mm;
-    margin: 0 !important;
-    padding: 15mm;
+  #cv-content {
+    width: 100% !important;
+    min-height: 0 !important;
     box-shadow: none !important;
-    background: white !important;
-  } */
-
-  article, .avoid-break {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    padding: 0 !important;
+    background: transparent !important;
   }
 
-  /* Force un saut de page avant un élément si nécessaire */
+  article, .avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
   .force-page-break {
-    page-break-before: always;
-    break-before: page;
+    page-break-before: always !important;
+    break-before: page !important;
   }
 
   @page {
-    size: auto;
-    margin: 0mm;
+    size: A4;
+    margin: 15mm !important;
   }
 }

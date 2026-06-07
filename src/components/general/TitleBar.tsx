@@ -35,7 +35,7 @@ const TitleBar = () => {
 
     return (
         <>
-        <div className="w-full titlebar flex flex-row items-center justify-between p-1 bg-gray-800 text-white m-0">
+        <div className="w-full titlebar flex flex-row items-center justify-between p-1 bg-gray-800 text-white m-0 border-b-2 border-b-primary/20">
             <div className="w-full flex flex-row items-center">
                 {/* logo (later) */}
                 <span className="ml-2 text-lg font-bold">CvMaker</span>
