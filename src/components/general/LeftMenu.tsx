@@ -19,6 +19,7 @@ import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { api } from "@/api";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const FUNNY_QUOTES = [
     "The only way to do great work is to love what you do. - Steve Jobs",
@@ -33,7 +34,7 @@ const FUNNY_QUOTES = [
 
 export default function SideBar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const [quote, setQuote] = useState<string>("");
-    const { setSelectedTab } = useUiStore();
+    const { setSelectedTab, selectedTab } = useUiStore();
     const { profile, experience, projects, id, logout } = useProfileStore();
 
     useEffect(() => {
@@ -60,8 +61,7 @@ export default function SideBar({ ...props }: React.ComponentProps<typeof Sideba
     return (
         <Sidebar side="left" {...props}>
             <SidebarHeader>
-                <h1 className="text-2xl font-bold text-gray-700">CV Maker</h1>
-                <h3 className="text-center text-sm">{profile?.firstName || "tot"} {profile?.lastName}</h3>
+                <h3 className="text-center text-xl font-bold">{profile?.firstName || "tot"} {profile?.lastName}</h3>
                 <Button variant={"destructive"} onClick={handleLogout}>
                     <LogOut />
                 </Button>
@@ -70,26 +70,36 @@ export default function SideBar({ ...props }: React.ComponentProps<typeof Sideba
                 <SidebarGroup>
                     <SidebarGroupLabel>Edit your profile</SidebarGroupLabel>
                     <SidebarGroupContent>
-                        <SidebarMenu>
+                        <SidebarMenu className="gap-1">
                             <SidebarMenuItem onClick={() => setSelectedTab(Tabs.PERSONAL)}>
-                                <SidebarMenuButton>Personal Information</SidebarMenuButton>
-                                <SidebarMenuBadge><PersonStanding className="text-gray-500" /></SidebarMenuBadge>
+                                <SidebarMenuButton className={cn("text-white rounded-md transition-all", { "bg-primary/50": selectedTab === Tabs.PERSONAL }, { "bg-primary": selectedTab !== Tabs.PERSONAL })}>
+                                    Personal Information
+                                </SidebarMenuButton>
+                                <SidebarMenuBadge><PersonStanding className="text-white" /></SidebarMenuBadge>
                             </SidebarMenuItem>
                             <SidebarMenuItem onClick={() => setSelectedTab(Tabs.EDUCATION)}>
-                                <SidebarMenuButton>Education</SidebarMenuButton>
-                                <SidebarMenuBadge><BookCheck className="text-gray-500" /></SidebarMenuBadge>
+                                <SidebarMenuButton className={cn("text-white rounded-md transition-all", { "bg-primary/50": selectedTab === Tabs.EDUCATION }, { "bg-primary": selectedTab !== Tabs.EDUCATION })}>
+                                    Education
+                                </SidebarMenuButton>
+                                <SidebarMenuBadge><BookCheck className="text-white" /></SidebarMenuBadge>
                             </SidebarMenuItem>
                             <SidebarMenuItem onClick={() => setSelectedTab(Tabs.EXPERIENCE)}>
-                                <SidebarMenuButton>Experience</SidebarMenuButton>
-                                <SidebarMenuBadge><Landmark className="text-gray-500" /></SidebarMenuBadge>
+                                <SidebarMenuButton className={cn("text-white rounded-md transition-all", { "bg-primary/50": selectedTab === Tabs.EXPERIENCE }, { "bg-primary": selectedTab !== Tabs.EXPERIENCE })}>
+                                    Experience
+                                </SidebarMenuButton>
+                                <SidebarMenuBadge><Landmark className="text-white" /></SidebarMenuBadge>
                             </SidebarMenuItem>
                             <SidebarMenuItem onClick={() => setSelectedTab(Tabs.PROJECTS)}>
-                                <SidebarMenuButton>Projects</SidebarMenuButton>
-                                <SidebarMenuBadge><File className="text-gray-500" /></SidebarMenuBadge>
+                                <SidebarMenuButton className={cn("text-white rounded-md transition-all", { "bg-primary/50": selectedTab === Tabs.PROJECTS }, { "bg-primary": selectedTab !== Tabs.PROJECTS })}>
+                                    Projects
+                                </SidebarMenuButton>
+                                <SidebarMenuBadge><File className="text-white" /></SidebarMenuBadge>
                             </SidebarMenuItem>
                             <SidebarMenuItem onClick={() => setSelectedTab(Tabs.SKILLS)}>
-                                <SidebarMenuButton>Skills</SidebarMenuButton>
-                                <SidebarMenuBadge><BicepsFlexed className="text-gray-500" /></SidebarMenuBadge>
+                                <SidebarMenuButton className={cn("text-white rounded-md transition-all", { "bg-primary/50": selectedTab === Tabs.SKILLS }, { "bg-primary": selectedTab !== Tabs.SKILLS })}>
+                                    Skills
+                                </SidebarMenuButton>
+                                <SidebarMenuBadge><BicepsFlexed className="text-white" /></SidebarMenuBadge>
                             </SidebarMenuItem>
                         </SidebarMenu>
                     </SidebarGroupContent>
@@ -100,8 +110,8 @@ export default function SideBar({ ...props }: React.ComponentProps<typeof Sideba
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem onClick={() => setSelectedTab(Tabs.CVMAKER)}>
-                                <SidebarMenuButton >Create your CV</SidebarMenuButton>
-                                <SidebarMenuBadge><Plus className="text-gray-500" /></SidebarMenuBadge>
+                                <SidebarMenuButton className="bg-primary text-white rounded-md transition-all">Create your CV</SidebarMenuButton>
+                                <SidebarMenuBadge><Plus className="text-white" /></SidebarMenuBadge>
                             </SidebarMenuItem>
                         </SidebarMenu>
                     </SidebarGroupContent>

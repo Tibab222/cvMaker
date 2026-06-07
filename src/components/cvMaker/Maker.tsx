@@ -18,7 +18,7 @@ export default function Maker() {
     return (
         <CVSelectionProvider>
             <div className="w-full flex flex-row h-full relative">
-                <div className="flex-1 overflow-y-auto p-12 flex justify-center bg-zinc-200/50">
+                <div className="flex-1 overflow-y-auto p-12 flex justify-center">
                     {/* On can ajouter un wrapper de zoom ici plus tard */}
                     <div className="shadow-2xl">
                         <CVTemplate />

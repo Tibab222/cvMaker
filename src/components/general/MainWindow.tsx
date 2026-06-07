@@ -8,6 +8,7 @@ import Experience from "../mainPannels/experiences/Experience";
 import ProjectComponent from "../mainPannels/projects/Project";
 import Skills from "../mainPannels/skills/Skills";
 import Maker from "../cvMaker/Maker";
+import { ScrollArea } from "../ui/scroll-area";
 
 export default function MainWindow() {
     const { selectedTab } = useUiStore();
@@ -39,9 +40,11 @@ export default function MainWindow() {
         <motion.div className="relative w-full h-full min-h-0 flex" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
             <SidebarProvider>
                 <SideBar variant="sidebar" />
-                <div className="flex-1 min-h-0 overflow-auto p-0 m-0">
-                    {renderTab()}
-                </div>
+                <ScrollArea className="flex-1 h-full w-full bg-zinc-200/50">
+                    <div className="p-4">
+                        {renderTab()}
+                    </div>
+                </ScrollArea>
             </SidebarProvider>
         </motion.div>
     )
