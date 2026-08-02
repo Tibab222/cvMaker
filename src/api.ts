@@ -17,5 +17,9 @@ export const api = {
     syncDb: async (profileId: string, experiences: Experience[], projects: Project[]) => await window.api.syncDb(profileId, experiences, projects),
     analyseMandate: async (rawMandate: string, language: Language, useAi: boolean) => await window.api.analyseMandate(rawMandate, language, useAi),
     onAnalysisStatus: (callback: (data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => void) => window.api.onAnalysisStatus(callback),
-    reduceKeywordCount: (keyword: string, amount?: number) => window.api.reduceKeywordCount(keyword, amount)
+    reduceKeywordCount: (keyword: string, amount?: number) => window.api.reduceKeywordCount(keyword, amount),
+    getOllamaInfos: async () => await window.api.getOllamaInfos(),
+    detectOllama: async (uri: string) => await window.api.detectOllama(uri),
+    getAvailableOllamaModels: async () => await window.api.getAvailableOllamaModels(),
+    setPreferredOllamaModel: async (modelName: string) => await window.api.setPreferredOllamaModel(modelName),
 }

@@ -23,5 +23,9 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('analysis-status', listener);
     return () => ipcRenderer.removeListener('analysis-status', listener);
   },
-  reduceKeywordCount: (keyword: string, amount?: number) => ipcRenderer.send('reduceKeywordCount', keyword, amount)
+  reduceKeywordCount: (keyword: string, amount?: number) => ipcRenderer.send('reduceKeywordCount', keyword, amount),
+  getOllamaInfos: () => ipcRenderer.invoke('getOllamaInfos'),
+  detectOllama: (uri: string) => ipcRenderer.invoke('detectOllama', uri),
+  getAvailableOllamaModels: () => ipcRenderer.invoke('getAvailableOllamaModels'),
+  setPreferredOllamaModel: (modelName: string) => ipcRenderer.invoke('setPreferredOllamaModel', modelName),
 });

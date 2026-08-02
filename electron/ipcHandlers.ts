@@ -14,11 +14,14 @@ import { MistralService } from './services/MistralService';
 import { Language } from '../shared/profile.interface';
 import { analyzeMandate } from './functions/mandateAnalysis';
 import { KeywordsAffinityDatabase } from './services/KeywordsExtractor/KeywordsAffinityDatabase';
+import { AIService } from './services/AI/AIService';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
 export const mistralService = MistralService.getInstance();
 export const keywordsAffinityDb = KeywordsAffinityDatabase.getInstance();
+export const aiService = AIService.getInstance();
+aiService.start();
 
 export function registerIpcHandlers() {
     ipcMain.on('minimize', (event) => {
@@ -115,5 +118,17 @@ export function registerIpcHandlers() {
             console.error('Error reducing keyword count:', error);
             throw error;
         }
+    });
+    ipcMain.handle('getOllamaInfos', () => {
+        return aiService.getOllamaInfos();
+    });
+    ipcMain.handle('detectOllama', async (event, uri: string) => {
+        return await aiService.detectOllama(uri);
+    });
+    ipcMain.handle('getAvailableOllamaModels', async () => {
+        return await aiService.getAvailableOllamaModels();
+    });
+    ipcMain.handle('setPreferredOllamaModel', (event, modelName: string) => {
+        aiService.setPreferredOllamaModel(modelName);
     });
 }

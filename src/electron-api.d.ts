@@ -1,4 +1,5 @@
 import { ProfilesData } from '../shared/profilesData.interface';
+import { UserConfig } from '../electron/services/config/UserConfig.interface';
 
 export {};
 
@@ -18,6 +19,10 @@ declare global {
       analyseMandate: (rawMandate: string, language: Language, useAi: boolean) => Promise<{ success: boolean; error?: string }>;
       onAnalysisStatus: (callback: (data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => void) => () => void;
       reduceKeywordCount: (keyword: string, amount?: number) => void;
+      getOllamaInfos: () => Promise<NonNullable<UserConfig['ollama']> | null>;
+      detectOllama: (uri: string) => Promise<boolean>;
+      getAvailableOllamaModels: () => Promise<{modelName: string, preferred: boolean}[]>;
+      setPreferredOllamaModel: (modelName: string) => Promise<void>;
     };
   }
 }

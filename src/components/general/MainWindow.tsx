@@ -9,6 +9,7 @@ import ProjectComponent from "../mainPannels/projects/Project";
 import Skills from "../mainPannels/skills/Skills";
 import Maker from "../cvMaker/Maker";
 import { ScrollArea } from "../ui/scroll-area";
+import SettingsMain from "../settings/SettingsMain";
 
 export default function MainWindow() {
     const { selectedTab } = useUiStore();
@@ -27,11 +28,13 @@ export default function MainWindow() {
                 return <Skills />;
             case Tabs.CVMAKER:
                 return <Maker />;
+            case Tabs.SETTINGS:
+                return <SettingsMain />;
             default:
                 return (
                     <div className="w-full h-full flex flex-col items-center justify-center">
                         <h2 className="text-2xl font-bold mb-4">Welcome to CV Maker!</h2>
-                        <p className="text-gray-600">Select a profile from the left menu or create a new one to get started.</p>
+                        <p className="text-gray-600">Select a pannel from the left menu to get started.</p>
                     </div>
                 )
         }
