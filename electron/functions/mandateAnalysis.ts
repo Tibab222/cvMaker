@@ -1,10 +1,9 @@
 import { IpcMainInvokeEvent } from "electron";
-import { MistralService } from "../services/MistralService";
 import { Language } from "../../shared/profile.interface";
 import { AIAnalysisStatus } from "../../shared/AIAnalysisStatus";
 import { FRENCH_PROMPTS } from "../prompts/fr";
 import { ENGLISH_PROMPTS } from "../prompts/en";
-import { vectorService } from "../ipcHandlers";
+import { aiService, vectorService } from "../ipcHandlers";
 import { LocalkeywordsExtractor } from "../services/KeywordsExtractor/localKeywordsExtract";
 import { KeywordsAffinityDatabase } from "../services/KeywordsExtractor/KeywordsAffinityDatabase";
 
@@ -22,17 +21,16 @@ export async function analyzeMandate({ event, options }: AnalyseMandateProps): P
 
     let keywords: string[] = [];
     if (useAi) {
-        const mistral = MistralService.getInstance();
-        const isAvailable = await mistral.checkAvailability();
+        const isAvailable = aiService.getAvailability();
         if (!isAvailable) {
-            return { error: "Mistral is not available" };
+            return { error: "Not available! Please check your AI configuration." };
         }
 
     
         try {
             event.sender.send('analysis-status', { status: AIAnalysisStatus.Analyzing, message: 'Analysing the mandate...' });
             const prompt = language === Language.FRENCH ? FRENCH_PROMPTS.ANALYZING(rawMandate) : ENGLISH_PROMPTS.ANALYZING(rawMandate);
-            const analysisResult = (await mistral.analyze(prompt)) as { job_title: string; skills: string[]; key_focus: string };
+            const analysisResult = (await aiService.prompt(prompt)) as unknown as { job_title: string; skills: string[]; key_focus: string };
             // update affinity database with new keywords
             const dbAffinity = KeywordsAffinityDatabase.getInstance();
             dbAffinity.incrementKeywords(analysisResult.skills.map((skill) => skill.toLowerCase()));

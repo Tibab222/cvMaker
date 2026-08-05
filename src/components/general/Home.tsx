@@ -47,8 +47,8 @@ const ExistingProfilesCard = ({setNewProfileMode}: {setNewProfileMode: (mode: bo
 
     useEffect(() => {
         const checkAI = async () => {
-            const isMistralAvailable = await api.checkMistral();
-            setAiAvailable(isMistralAvailable);
+            const isAIAvailable = await api.checkAIAvailability();
+            setAiAvailable(isAIAvailable);
         }
         checkAI();
     }, [setAiAvailable]);

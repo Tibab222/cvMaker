@@ -10,7 +10,6 @@ import { VectorService } from './services/VectorService';
 import path from 'path';
 import { Experience } from '../shared/Experience.interface';
 import { Project } from '../shared/projects.interface';
-import { MistralService } from './services/MistralService';
 import { Language } from '../shared/profile.interface';
 import { analyzeMandate } from './functions/mandateAnalysis';
 import { KeywordsAffinityDatabase } from './services/KeywordsExtractor/KeywordsAffinityDatabase';
@@ -18,7 +17,6 @@ import { AIService } from './services/AI/AIService';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
-export const mistralService = MistralService.getInstance();
 export const keywordsAffinityDb = KeywordsAffinityDatabase.getInstance();
 export const aiService = AIService.getInstance();
 aiService.start();
@@ -83,8 +81,8 @@ export function registerIpcHandlers() {
         return profile;
     });
 
-    ipcMain.handle('checkMistral', async () => {
-        return await mistralService.checkAvailability();
+    ipcMain.handle('checkAIAvailability', async () => {
+        return await aiService.getAvailability();
     });
 
     ipcMain.handle('updateSection', async (event, id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => {

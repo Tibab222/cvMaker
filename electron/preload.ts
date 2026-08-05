@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   getProfilesList: () => ipcRenderer.invoke('getProfilesList'),
   addProfile: (firstname: string, lastname: string, language: Language) => ipcRenderer.invoke('addProfile', firstname, lastname, language),
   loadProfile: (profileId: string) => ipcRenderer.invoke('loadProfile', profileId),
-  checkMistral: () => ipcRenderer.invoke('checkMistral'),
+  checkAIAvailability: () => ipcRenderer.invoke('checkAIAvailability'),
   updateSection: (id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => ipcRenderer.invoke('updateSection', id, section, newData),
   generatePDF: (html: string, fileName: string) => ipcRenderer.invoke('generatePdf', html, fileName),
   syncDb: (profileId: string, experiences: Experience[], projects: Project[]) => ipcRenderer.invoke('syncDb', profileId, experiences, projects),

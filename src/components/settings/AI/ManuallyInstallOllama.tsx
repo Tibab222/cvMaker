@@ -62,7 +62,7 @@ export const ManuallyInstallOllama = ({ back }: { back: () => void }) => {
       const preferredModel = models.find((model) => model.preferred);
       if (preferredModel) setSelectedModel(preferredModel.modelName);
     })();
-  }, []);
+  }, [ollamaDetected]);
 
   const statusPill = () => {
     if (ollamaDetected === null)

@@ -32,17 +32,10 @@ export class LocalkeywordsExtractor {
         if (language) this.setStopWords(language);
         const dbAffinity = KeywordsAffinityDatabase.getInstance();
         const normalizedText = this.normalizeText(text);
-        console.log('Normalized Text:', normalizedText);
-
         const acronyms = this.extractAcronyms(normalizedText);
-        console.log('Extracted Acronyms:', acronyms);
-
         const nouns = this.extractNouns(normalizedText);
-        console.log('Extracted Nouns:', nouns);
 
         const rakeChunks = this.extractRakeChunks(normalizedText);
-        console.log('Extracted RAKE Chunks:', rakeChunks);
-
         const allCandidates = [...acronyms, ...nouns, ...rakeChunks];
         const candidateScores: Map<string, { original: string; clean: string; count: number }> = new Map();
 
@@ -116,7 +109,6 @@ export class LocalkeywordsExtractor {
             .sort((a, b) => b.count - a.count)
             .map(item => item.original)
             .slice(0, 25);
-        console.log('Final Extracted Keywords:', result);
 
         dbAffinity.incrementKeywords(result);
         dbAffinity.runEvictionPolicy();

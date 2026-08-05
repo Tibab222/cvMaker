@@ -12,7 +12,7 @@ declare global {
       getProfilesList: () => Promise<string[]>;
       addProfile: (firstname: string, lastname: string, language: Language) => Promise<{ success: boolean; error?: string }>;
       loadProfile: (profileId: string) => Promise<ProfilesData>;
-      checkMistral: () => Promise<boolean>;
+      checkAIAvailability: () => Promise<boolean>;
       updateSection: (id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => Promise<ProfilesData[keyof ProfilesData]>;
       generatePDF: (html: string, fileName: string) => Promise<boolean>;
       syncDb: (profileId: string, experiences: Experience[], projects: Project[]) => Promise<boolean>;

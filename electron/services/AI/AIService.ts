@@ -1,6 +1,7 @@
 import { ConfigurationManager } from "../config/ConfigurationManager";
 import { UserConfig } from "../config/UserConfig.interface";
-import { OllamaSetup } from "../ollama/setup";
+import { IAIManager } from "./contract-interfaces/IAIManager.contract";
+import { OllamaSetup } from "./ollama/setup";
 
 interface CloudProvider {
     provider: 'openai' | 'gemini' | 'claude';
@@ -16,6 +17,7 @@ export class AIService {
     private static instance: AIService | null = null;
     private AIProvider: CloudProvider | LocalProvider | null = null;
     private AIAvailable: boolean = false;
+    private AIManager: IAIManager | null = null; // This will hold the instance of the AI manager (e.g., OllamaManager)
 
     private constructor() {
         // Private constructor to prevent direct instantiation
@@ -28,10 +30,11 @@ export class AIService {
         return AIService.instance;
     }
 
-    public getAvalability(): boolean {
-        return this.AIAvailable;
+    public getAvailability(): boolean {
+        return this.AIAvailable && this.AIManager !== null;
     }
 
+    /********************************* Ollama (start) ******************************/
     public getOllamaInfos() {
         const configManager = ConfigurationManager.getInstance();
         const ollamaConfig = configManager.get('ollama');
@@ -41,7 +44,9 @@ export class AIService {
 
     public async detectOllama(uri: string): Promise<boolean> {
         const ollamaSetup = new OllamaSetup(ConfigurationManager.getInstance());
-        return ollamaSetup.detectOllama(uri);
+        const detected = await ollamaSetup.detect(uri);
+        if (detected) this.start(); // Start the AI service if Ollama is detected
+        return detected;
     }
 
     public async getAvailableOllamaModels(): Promise<{modelName: string, preferred: boolean}[]> {
@@ -52,17 +57,20 @@ export class AIService {
     public setPreferredOllamaModel(modelName: string): void {
         const ollamaSetup = new OllamaSetup(ConfigurationManager.getInstance());
         ollamaSetup.setPreferredModel(modelName);
+        this.start();
     }
+    /********************************* Ollama (end) ******************************/
 
     public start() {
         this.initializeProvider();
-        // if a provider exist, setup the provider, if not, we will wait for the user to select a provider in the settings and set AI not available
         if (this.AIProvider) {
             this.AIAvailable = true;
             switch (this.AIProvider.provider) {
-                case 'ollama':
-                    // Ollama is a local provider, setup with the OllamaSetup class, and keep the OllamaManager instance in the AIService class for future use
-                    break;
+                case 'ollama': { 
+                    const ollamaSetup = new OllamaSetup(ConfigurationManager.getInstance());
+                    this.AIManager = ollamaSetup.getManager();
+                    break; 
+                }
                 case 'openai':
                     // TODO
                     break;
@@ -74,6 +82,20 @@ export class AIService {
                     break;
             }
         }
+    }
+
+    public async prompt(promptText: string): Promise<string> {
+        if (!this.AIManager) {
+            throw new Error("AI Manager is not initialized.");
+        }
+        return await this.AIManager.prompt(promptText);
+    }
+
+    public async promptStream(promptText: string, onChunk: (chunk: string) => void): Promise<void> {
+        if (!this.AIManager) {
+            throw new Error("AI Manager is not initialized.");
+        }
+        return await this.AIManager.promptStream(promptText, onChunk);
     }
 
     private initializeProvider(): void {

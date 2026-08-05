@@ -11,8 +11,6 @@ export class ConfigurationManager {
                 preferredAiProvider: null,
             }
         });
-        
-        console.log(`Config file initialized at: ${this.store.path}`);
     }
 
     /**
@@ -47,7 +45,6 @@ export class ConfigurationManager {
             ...this.store.store,
             ...newPartialConfig,
         });
-        console.log("Global configuration updated via electron-store.");
     }
 
     /**

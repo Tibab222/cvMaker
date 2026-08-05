@@ -7,10 +7,12 @@ import { spawn } from 'child_process';
 
 import si from 'systeminformation';
 import { OLLAMA_LINUX_DL_URL, OLLAMA_MAC_DL_URL, OLLAMA_WINDOWS_DL_URL } from './constants';
-import { downloadFolder } from '../../main.dev';
+import { downloadFolder } from '../../../main.dev';
 import AdmZip from 'adm-zip';
-import { ConfigurationManager } from '../config/ConfigurationManager';
-import { OnProgressCallback } from '../../../shared/OllamaDownloadStatus';
+import { ConfigurationManager } from '../../config/ConfigurationManager';
+import { OnProgressCallback } from '../../../../shared/OllamaDownloadStatus';
+import { OllamaManager } from './OllamaManager';
+import { IAIProviderSetup } from '../contract-interfaces/IAIProviderSetup.contract';
 
 interface SystemHardwareConfig {
     os: string;
@@ -32,8 +34,13 @@ interface SystemRecommendations {
  * It provides methods to initialize and configure the service as needed.
  * It can also download and install ollama with a model
  */
-export class OllamaSetup {
+export class OllamaSetup implements IAIProviderSetup<OllamaManager> {
+    readonly providerName = 'ollama';
     constructor(private configManager: ConfigurationManager) {}
+
+    async detect(uri: string = 'http://localhost:11434'): Promise<boolean> {
+        return this.detectOllama(uri);
+    }
 
     async fullSetup(modelName: string, onProgress?: OnProgressCallback): Promise<void> {
         const ollamaBinaryPath = await this.installOllama(onProgress);
@@ -149,14 +156,14 @@ export class OllamaSetup {
                 ]
             }
         });
-
         console.log(`Model download status: ${response.status}`);
     }
 
     /**
      * Function made to detect if Ollama is installed on the system. It sends a request to the local Ollama server and checks if it responds correctly.
+     * update the configuration with the detected models and base URL if successful. Also set Ollama as the preferred AI provider in the configuration.
      */
-    async detectOllama(uri: string): Promise<boolean> {
+    private async detectOllama(uri: string): Promise<boolean> {
         try {
             const response = await fetch(uri+'/api/tags');
             if (response.ok) {
@@ -172,7 +179,8 @@ export class OllamaSetup {
                         })),
                         baseUrl: uri,
                         installedViaOfficialInstaller: true
-                    }
+                    },
+                    preferredAiProvider: 'ollama'
                 });
                 return true;
             }
@@ -204,6 +212,18 @@ export class OllamaSetup {
                 localModels: updatedModels
             }
         });
+    }
+
+    getManager(): OllamaManager {
+        const ollamaConfig = this.configManager.get('ollama');
+        if (!ollamaConfig) {
+            throw new Error("Ollama configuration is not set.");
+        }
+        const preferredModel = ollamaConfig.localModels.find(model => model.preferred);
+        if (!preferredModel) {
+            throw new Error("No preferred Ollama model is set.");
+        }
+        return new OllamaManager(preferredModel.modelName, ollamaConfig.baseUrl);
     }
 
     private async installOllama(onProgress?: OnProgressCallback): Promise<void | string> {

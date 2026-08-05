@@ -24,7 +24,6 @@ export class VectorDatabase {
 
     if (this.db) {
       this.db.close();
-      console.log('[VectorDatabase] Old database connection closed');
     }
 
     const dbPath = path.join(profilePath, 'vector_index.db');
@@ -33,7 +32,6 @@ export class VectorDatabase {
 
     this.db.pragma('foreign_keys = ON');
     this.initSchema();
-    console.log(`[VectorDatabase] Connected to vector database: ${dbPath}`);
   }
 
   public clearAll(): void {
@@ -44,7 +42,6 @@ export class VectorDatabase {
       DELETE FROM idx_experiences;
       VACUUM;
     `);
-    console.log('[VectorDatabase] All vector data cleared from the database');
   }
 
   public clearExperiences(): void {
@@ -53,7 +50,6 @@ export class VectorDatabase {
       DELETE FROM idx_experiences;
       VACUUM;
     `);
-    console.log('[VectorDatabase] Experience vectors cleared from the database');
   }
 
   public clearProjectsAndBullets(): void {
@@ -63,7 +59,6 @@ export class VectorDatabase {
       DELETE FROM idx_projects;
       VACUUM;
     `);
-    console.log('[VectorDatabase] Project and bullet vectors cleared from the database');
   }
 
   private initSchema(): void {
