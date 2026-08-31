@@ -14,11 +14,9 @@ import {
 import { useProfileStore } from "@/store/profile";
 import { Tabs, useUiStore } from "@/store/ui";
 import { motion } from "framer-motion";
-import { BicepsFlexed, BookCheck, File, Landmark, LogOut, PersonStanding, Plus } from "lucide-react";
+import { BicepsFlexed, BookCheck, File, Landmark, LogOut, PersonStanding, Plus, Settings } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
-import { api } from "@/api";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const FUNNY_QUOTES = [
@@ -35,7 +33,7 @@ const FUNNY_QUOTES = [
 export default function SideBar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const [quote, setQuote] = useState<string>("");
     const { setSelectedTab, selectedTab } = useUiStore();
-    const { profile, experience, projects, id, logout } = useProfileStore();
+    const { profile, logout } = useProfileStore();
 
     useEffect(() => {
         const setRandom = () => setQuote(FUNNY_QUOTES[Math.floor(Math.random() * FUNNY_QUOTES.length)]);
@@ -46,11 +44,8 @@ export default function SideBar({ ...props }: React.ComponentProps<typeof Sideba
         return () => clearInterval(id);
     }, []);
 
-    const handleSync = () => {
-        if (!id) return;
-        api.syncDb(id, experience, projects).then(() => {
-            toast.success('Database synced successfully!');
-        })
+    const handleSettings = () => {
+        setSelectedTab(Tabs.SETTINGS);
     }
 
     const handleLogout = () => {
@@ -126,8 +121,11 @@ export default function SideBar({ ...props }: React.ComponentProps<typeof Sideba
                 >
                     {quote}
                 </motion.p>
-                <Button variant={"ghost"} className="text-[10px] italic h-5 cursor-pointer text-gray-400" onClick={handleSync}>
+                {/* <Button variant={"ghost"} className="text-[10px] italic h-5 cursor-pointer text-gray-400" onClick={handleSync}>
                     Sync Database
+                </Button> */}
+                <Button variant={"ghost"} className={cn("text-[10px] italic h-5 cursor-pointer text-gray-400", { "bg-primary/50 border border-accent": selectedTab === Tabs.SETTINGS })} onClick={handleSettings}>
+                    Settings <Settings className="ml-1 w-3 h-3" />
                 </Button>
             </SidebarFooter>
         </Sidebar>

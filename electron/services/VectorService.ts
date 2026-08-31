@@ -107,8 +107,6 @@ export class VectorService {
     db.connect(profilePath);
     db.clearAll();
     
-    console.log("[VectorService] Starting sync...");
-
     for (const exp of experiences) {
       const text = `${exp.jobTitle}: ${exp.description || ''}`;
       const vector = await this.generateEmbedding(text);
@@ -127,8 +125,6 @@ export class VectorService {
         db.upsertProjectBullet(sqlProjId, bullet.id, Buffer.from(bulletVector.buffer));
       }
     }
-
-    console.log("[VectorService] Indexation done !");
   }
 
   /**
@@ -142,13 +138,11 @@ export class VectorService {
     
     db.clearExperiences();
 
-    console.log("[VectorService] Indexing experiences...");
     for (const exp of experiences) {
         const text = `${exp.jobTitle}: ${exp.description || ''}`;
         const vector = await this.generateEmbedding(text);
         db.upsertExperience(exp.id, Buffer.from(vector.buffer));
     }
-    console.log("[VectorService] Experiences indexed successfully!");
   }
 
   /**
@@ -162,7 +156,6 @@ export class VectorService {
     
     db.clearProjectsAndBullets();
 
-    console.log("[VectorService] Indexing projects and bullets...");
     for (const proj of projects) {
         const projText = `${proj.title} ${proj.subtitle ? '- '+proj.subtitle : ''}`;
         const projVector = await this.generateEmbedding(projText);
@@ -175,6 +168,5 @@ export class VectorService {
             db.upsertProjectBullet(sqlProjId, bullet.id, Buffer.from(bulletVector.buffer));
         }
     }
-    console.log("[VectorService] Projects indexed successfully!");
   }
 }

@@ -10,15 +10,16 @@ import { VectorService } from './services/VectorService';
 import path from 'path';
 import { Experience } from '../shared/Experience.interface';
 import { Project } from '../shared/projects.interface';
-import { MistralService } from './services/MistralService';
 import { Language } from '../shared/profile.interface';
 import { analyzeMandate } from './functions/mandateAnalysis';
 import { KeywordsAffinityDatabase } from './services/KeywordsExtractor/KeywordsAffinityDatabase';
+import { AIService } from './services/AI/AIService';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
-export const mistralService = MistralService.getInstance();
 export const keywordsAffinityDb = KeywordsAffinityDatabase.getInstance();
+export const aiService = AIService.getInstance();
+aiService.start();
 
 export function registerIpcHandlers() {
     ipcMain.on('minimize', (event) => {
@@ -80,8 +81,8 @@ export function registerIpcHandlers() {
         return profile;
     });
 
-    ipcMain.handle('checkMistral', async () => {
-        return await mistralService.checkAvailability();
+    ipcMain.handle('checkAIAvailability', async () => {
+        return await aiService.getAvailability();
     });
 
     ipcMain.handle('updateSection', async (event, id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => {
@@ -115,5 +116,32 @@ export function registerIpcHandlers() {
             console.error('Error reducing keyword count:', error);
             throw error;
         }
+    });
+    ipcMain.handle('getOllamaInfos', () => {
+        return aiService.getOllamaInfos();
+    });
+    ipcMain.handle('detectOllama', async (event, uri: string) => {
+        return await aiService.detectOllama(uri);
+    });
+    ipcMain.handle('getAvailableOllamaModels', async () => {
+        return await aiService.getAvailableOllamaModels();
+    });
+    ipcMain.handle('setPreferredOllamaModel', (event, modelName: string) => {
+        aiService.setPreferredOllamaModel(modelName);
+    });
+    ipcMain.handle('getOllamaSystemRecommendations', async () => {
+        return await aiService.getOllamaSystemRecommendations();
+    });
+    ipcMain.handle('ollama:install', async (event, modelName: string) => {
+        await aiService.installOllama(modelName, (status) => {
+            event.sender.send('ollama:progress', status);
+        });
+    });
+    ipcMain.handle('setupGemini', async (event, apiKey: string) => {
+        return await aiService.setupGemini(apiKey);
+    });
+    // getApiKey for all providers
+    ipcMain.handle('getApiKey', () => {
+        return aiService.getApiKey();
     });
 }

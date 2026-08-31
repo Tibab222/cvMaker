@@ -23,12 +23,12 @@ const TitleBar = () => {
     }
 
     const handleAICheck = async () => {
-        const isMistralAvailable = await api.checkMistral();
-        if (isMistralAvailable) {
-            toast.success("Mistral is available ! Activating AI features...");
+        const isAIAvailable = await api.checkAIAvailability();
+        if (isAIAvailable) {
+            toast.success("AI is available ! Activating AI features...");
             setAiAvailable(true);
         } else {
-            toast.error("Mistral is not available.", { description: "Make sure Ollama is installed and the Mistral model is downloaded." });
+            toast.error("AI is not available.", { description: "Make sure Ollama is installed and a model is downloaded." });
             setAiAvailable(false);
         }
     }

@@ -45,7 +45,6 @@ export class KeywordsAffinityDatabase {
     this.db = new Database(dbPath);
 
     this.initSchema();
-    console.log(`[AffinityDB] Connected to global database: ${dbPath}`);
   }
 
   private initSchema(): void {
@@ -111,7 +110,6 @@ export class KeywordsAffinityDatabase {
     const { noise_total } = noiseStmt.get() as { noise_total: number };
 
     if (noise_total > 2000) {
-        console.log(`[AffinityDB] Cleaning up ${noise_total} noisy keywords from database...`);
         
         this.db.exec(`
             DELETE FROM local_skills_affinity WHERE global_count <= 1;

@@ -7,9 +7,13 @@ import { existsSync, mkdirSync } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+export const downloadFolder = path.join(app.getPath('userData'), 'downloads');
 export const profilesDir = path.join(app.getPath("userData"), "profiles")
 if (!existsSync(profilesDir)) {
     mkdirSync(profilesDir, { recursive: true });
+}
+if (!existsSync(downloadFolder)) {
+    mkdirSync(downloadFolder, { recursive: true });
 }
 
 protocol.registerSchemesAsPrivileged([
