@@ -1,6 +1,8 @@
+import { OnProgressCallback } from "../../../shared/OllamaDownloadStatus";
 import { ConfigurationManager } from "../config/ConfigurationManager";
 import { UserConfig } from "../config/UserConfig.interface";
 import { IAIManager } from "./contract-interfaces/IAIManager.contract";
+import { GeminiSetup } from "./gemini/setup";
 import { OllamaSetup } from "./ollama/setup";
 
 interface CloudProvider {
@@ -59,6 +61,17 @@ export class AIService {
         ollamaSetup.setPreferredModel(modelName);
         this.start();
     }
+
+    public async getOllamaSystemRecommendations() {
+        const ollamaSetup = new OllamaSetup(ConfigurationManager.getInstance());
+        return await ollamaSetup.getSystemRecommendations();
+    }
+
+    public async installOllama(modelName: string, onProgress: OnProgressCallback): Promise<void> {
+        const ollamaSetup = new OllamaSetup(ConfigurationManager.getInstance());
+        await ollamaSetup.fullSetup(modelName, onProgress);
+        this.start(); // Start the AI service after installation
+    }
     /********************************* Ollama (end) ******************************/
 
     public start() {
@@ -74,9 +87,11 @@ export class AIService {
                 case 'openai':
                     // TODO
                     break;
-                case 'gemini':
-                    // TODO
+                case 'gemini': {
+                    const geminiSetup = new GeminiSetup(ConfigurationManager.getInstance());
+                    this.AIManager = geminiSetup.getManager();
                     break;
+                }
                 case 'claude':
                     // TODO
                     break;
@@ -84,11 +99,11 @@ export class AIService {
         }
     }
 
-    public async prompt(promptText: string): Promise<string> {
+    public async prompt(promptText: string, onError?: (error: Error) => void): Promise<string> {
         if (!this.AIManager) {
             throw new Error("AI Manager is not initialized.");
         }
-        return await this.AIManager.prompt(promptText);
+        return await this.AIManager.prompt(promptText, onError);
     }
 
     public async promptStream(promptText: string, onChunk: (chunk: string) => void): Promise<void> {
@@ -102,6 +117,7 @@ export class AIService {
         const configManager = ConfigurationManager.getInstance();
         const config = configManager.getConfig();
         const preferredProvider = config.preferredAiProvider;
+        console.log(`[AIService] Preferred AI Provider: ${preferredProvider}`);
         switch (preferredProvider) {
             case 'ollama': 
             { 
@@ -113,6 +129,7 @@ export class AIService {
                             provider: 'ollama',
                             modelName: preferredModel.modelName,
                         };
+                        console.log(`[AIService] Using Ollama with model: ${preferredModel.modelName}`);
                     }
                 }
                 break; 
@@ -120,9 +137,16 @@ export class AIService {
             case 'openai':
                 // TODO
                 break;
-            case 'gemini':
-                // TODO
-                break;
+            case 'gemini': {
+                const geminiConfig = config.gemini as UserConfig['gemini'];
+                if (geminiConfig && geminiConfig.apiKey) {
+                    this.AIProvider = {
+                        provider: 'gemini',
+                        apiKey: geminiConfig.apiKey,
+                    };
+                    console.log(`[AIService] Using Gemini with API Key: ${geminiConfig.apiKey}`);
+                }
+                break; }
             case 'claude':
                 // TODO
                 break;
@@ -130,5 +154,24 @@ export class AIService {
                 this.AIProvider = null;
                 break;
         }
+    }
+
+    getApiKey() {
+        if (!this.AIProvider) {
+            throw new Error("AI Provider is not initialized.");
+        }
+        if ('apiKey' in this.AIProvider) {
+            return this.AIProvider.apiKey;
+        } else {
+            return null; // Ollama does not use an API key
+        }
+    }
+
+    // setup Gemini API key
+    public async setupGemini(apiKey: string): Promise<boolean> {
+        const geminiSetup = new GeminiSetup(ConfigurationManager.getInstance());
+        const detected = await geminiSetup.detect(apiKey);
+        if (detected) this.start();
+        return detected;
     }
 }

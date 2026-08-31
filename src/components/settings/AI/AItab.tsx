@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { IconBrandGoogle, IconHorse } from "@tabler/icons-react";
 import { useState } from "react";
 import OllamaPannel from "./OllamaPannel";
+import SetupGemini from "./Gemini";
 
 export default function AITab() {
     const [selectedProvider, setSelectedProvider] = useState<'ollama' | 'gemini'>('ollama');
@@ -29,6 +30,7 @@ export default function AITab() {
             {/* main pannel for the provider setting */}
             <div className="w-4/5 p-4">
                 {selectedProvider === 'ollama' && <OllamaPannel />}
+                {selectedProvider === 'gemini' && <SetupGemini />}
             </div>
         </div>
     </>

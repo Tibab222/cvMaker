@@ -1,13 +1,22 @@
-import { Toaster } from 'sonner';
+import { toast, Toaster } from 'sonner';
 import './App.css'
 import Home from './components/general/Home'
 import MainWindow from './components/general/MainWindow';
 import TitleBar from './components/general/TitleBar'
 import { TooltipProvider } from './components/ui/tooltip';
 import { Tabs, useUiStore } from './store/ui';
+import { useEffect } from 'react';
+import { api } from './api';
 
 function App() {
   const { selectedTab } = useUiStore();
+
+  useEffect(() => {
+    const unsubscribe = api.onError((errorMessage) => {
+      toast.error(errorMessage);
+    });
+    return unsubscribe;
+  }, []);
 
   return (
     <TooltipProvider>

@@ -8,26 +8,14 @@ import { spawn } from 'child_process';
 import si from 'systeminformation';
 import { OLLAMA_LINUX_DL_URL, OLLAMA_MAC_DL_URL, OLLAMA_WINDOWS_DL_URL } from './constants';
 import { downloadFolder } from '../../../main.dev';
-import AdmZip from 'adm-zip';
 import { ConfigurationManager } from '../../config/ConfigurationManager';
 import { OnProgressCallback } from '../../../../shared/OllamaDownloadStatus';
 import { OllamaManager } from './OllamaManager';
 import { IAIProviderSetup } from '../contract-interfaces/IAIProviderSetup.contract';
-
-interface SystemHardwareConfig {
-    os: string;
-    arch: string;
-    cpuModel: string;
-    ramTotalGB: number;
-    hasDedicatedGPU: boolean; 
-    gpuModel: string;
-}
-
-interface SystemRecommendations {
-    ollamaFriendly: boolean;
-    recommendedModel: string;
-    systemHardware?: SystemHardwareConfig;
-}
+import { SystemHardwareConfig, SystemRecommendations } from '../../../../shared/SystemRecommendation';
+import { ChildProcess, execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import treeKill from 'tree-kill';
 
 /**
  * This class is responsible for setting up the Ollama service.
@@ -75,10 +63,25 @@ export class OllamaSetup implements IAIProviderSetup<OllamaManager> {
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        if (modelName) {
-            console.log(`Starting model download: ${modelName}...`);
-            await this.pullModel(modelName);
-            console.log(`The model ${modelName} is installed and ready!`);
+        try {
+            if (modelName) {
+                console.log(`Starting model download: ${modelName}...`);
+                await this.pullModel(modelName);
+                console.log(`The model ${modelName} is installed and ready!`);
+            }
+        } finally {
+            console.log("Stopping temporary Ollama setup instance...");
+            this.stopProcess(ollamaProcess);
+        }
+    }
+
+    private stopProcess(child: ChildProcess): void {
+        if (!child || child.killed) return;
+
+        if (child.pid && os.platform() === 'win32') {
+            treeKill(child.pid, 'SIGTERM');
+        } else {
+            child.kill('SIGTERM');
         }
     }
 
@@ -154,7 +157,8 @@ export class OllamaSetup implements IAIProviderSetup<OllamaManager> {
                         preferred: true
                     }
                 ]
-            }
+            },
+            preferredAiProvider: 'ollama'
         });
         console.log(`Model download status: ${response.status}`);
     }
@@ -210,7 +214,8 @@ export class OllamaSetup implements IAIProviderSetup<OllamaManager> {
             ollama: {
                 ...ollamaConfig,
                 localModels: updatedModels
-            }
+            },
+            preferredAiProvider: 'ollama'
         });
     }
 
@@ -227,38 +232,52 @@ export class OllamaSetup implements IAIProviderSetup<OllamaManager> {
     }
 
     private async installOllama(onProgress?: OnProgressCallback): Promise<void | string> {
-        return this.downloadOllama(onProgress).then((downloadedFilePath) => {
+        return this.downloadOllama(onProgress).then(async (downloadedFilePath) => {
             console.log(`Ollama downloaded to: ${downloadedFilePath}`);
             const ext = path.extname(downloadedFilePath).toLowerCase();
             if (ext === '.zip') {
+                const execFileAsync = promisify(execFile);
                 console.log(`Extracting ZIP archive : ${downloadedFilePath}...`);
-                const zip = new AdmZip(downloadedFilePath);
-                const zipEntries = zip.getEntries();
 
-                const targetEntry = zipEntries.find(entry => 
-                    entry.entryName.toLowerCase().endsWith('ollama.exe') || 
-                    entry.entryName.toLowerCase() === 'ollama'
-                );
+                onProgress?.({
+                    type: 'binary_download',
+                    percent: 100,
+                    completedBytes: 0,
+                    totalBytes: 0,
+                    statusText: 'Extracting ZIP archive...'
+                });
+                
+                const isWin = os.platform() === 'win32';
+                const engineFolder = path.join(downloadFolder, 'ollama-engine');
+                console.log(`Extracting to folder: ${engineFolder}`);
 
-                if (!targetEntry) {
-                    throw new Error("Error: impossible to find the Ollama binary in zip file");
+                if (!fs.existsSync(engineFolder)) {
+                    fs.mkdirSync(engineFolder, { recursive: true });
                 }
 
-                const isWin = os.platform() === 'win32';
-                const finalBinaryName = isWin ? 'ollama-local.exe' : 'ollama-local';
-                const finalBinaryPath = path.join(downloadFolder, finalBinaryName);
+                if (isWin) {
+                    console.log(`Using 'tar' command for extraction on Windows...`);
+                    await execFileAsync('tar', ['-xf', downloadedFilePath, '-C', engineFolder]);
+                } else {
+                    await execFileAsync('unzip', ['-o', downloadedFilePath, '-d', engineFolder]);
+                }
+                
+                console.log(`Extraction done in : ${engineFolder}`);
 
-                const fileBuffer = zip.readFile(targetEntry);
-                if (!fileBuffer) throw new Error("Erreur lors de la lecture du binaire dans le ZIP.");
+                const binaryName = isWin ? 'ollama.exe' : 'ollama';
+                const finalBinaryPath = path.join(engineFolder, binaryName);
 
-                fs.writeFileSync(finalBinaryPath, fileBuffer);
+                const fileBuffer = fs.existsSync(finalBinaryPath);
+                if (!fileBuffer) throw new Error("Error: impossible to find the Ollama binary after extraction.");
+
                 console.log(`Extraction done in : ${finalBinaryPath}`);
                 this.configManager.updateConfig({
                     ollama: {
                         localModels: [],
                         baseUrl: finalBinaryPath,
                         installedViaOfficialInstaller: false
-                    }
+                    },
+                    preferredAiProvider: 'ollama'
                 });
                 return finalBinaryPath;
             } else if (downloadedFilePath.endsWith('.tar.zst')) {
@@ -290,11 +309,11 @@ export class OllamaSetup implements IAIProviderSetup<OllamaManager> {
         }
 
         if (ramTotalGB >= 16 && (hasDedicatedGPU || isAppleSilicon)) {
-            recommendedModel = "llama3.1:8b";
+            recommendedModel = "llama3.1:8b"; // or mistral:7b-instruct
         } else if (ramTotalGB >= 8 && (hasDedicatedGPU || isAppleSilicon)) {
-            recommendedModel = "llama3.2:3b";
+            recommendedModel = "qwen2.5:3b";
         } else {
-            recommendedModel = "gemma2:2b"; // or "phi3:mini" / "llama3.2:1b"
+            recommendedModel = "qwen2.5:1.5b"; // or "phi3:mini" / "llama3.2:1b"
         }
 
         return {
@@ -333,7 +352,12 @@ export class OllamaSetup implements IAIProviderSetup<OllamaManager> {
 
         console.log(`Downloading Ollama from ${downloadUrl} to ${destinationPath}`);
 
-        const response = await fetch(downloadUrl);
+        const response = await fetch(downloadUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppInstaller/1.0',
+            },
+            redirect: 'follow'
+        });
         if(!response.ok) {
             throw new Error(`HTTP Error : ${response.status} ${response.statusText}`);
         }

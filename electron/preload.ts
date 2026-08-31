@@ -1,4 +1,5 @@
 import { Experience } from "../shared/Experience.interface";
+import { OnProgressCallback, SetupProgressStatus } from "../shared/OllamaDownloadStatus";
 import { Language } from "../shared/profile.interface";
 import { ProfilesData } from "../shared/profilesData.interface";
 import { Project } from "../shared/projects.interface";
@@ -28,4 +29,22 @@ contextBridge.exposeInMainWorld('api', {
   detectOllama: (uri: string) => ipcRenderer.invoke('detectOllama', uri),
   getAvailableOllamaModels: () => ipcRenderer.invoke('getAvailableOllamaModels'),
   setPreferredOllamaModel: (modelName: string) => ipcRenderer.invoke('setPreferredOllamaModel', modelName),
+  getOllamaSystemRecommendations: () => ipcRenderer.invoke('getOllamaSystemRecommendations'),
+  installOllama: (modelName: string) => ipcRenderer.invoke('ollama:install', modelName),
+  onOllamaProgress: (callback: (status: Parameters<OnProgressCallback>[0]) => void) => {
+    const subscription = (_event: unknown, data: SetupProgressStatus) => callback(data);
+    ipcRenderer.on('ollama:progress', subscription);
+    return () => {
+      ipcRenderer.removeListener('ollama:progress', subscription);
+    };
+  },
+  getApiKey: () => ipcRenderer.invoke('getApiKey'),
+  setupGemini: (apiKey: string) => ipcRenderer.invoke('setupGemini', apiKey),
+  onError: (callback: (error: string) => void) => {
+    const subscription = (_event: unknown, error: string) => callback(error);
+    ipcRenderer.on('error', subscription);
+    return () => {
+      ipcRenderer.removeListener('error', subscription);
+    };
+  }
 });

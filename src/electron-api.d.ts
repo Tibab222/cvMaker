@@ -1,5 +1,7 @@
 import { ProfilesData } from '../shared/profilesData.interface';
 import { UserConfig } from '../electron/services/config/UserConfig.interface';
+import { SystemRecommendations } from '../shared/SystemRecommendation';
+import { OnProgressCallback } from '../shared/OllamaDownloadStatus';
 
 export {};
 
@@ -23,6 +25,12 @@ declare global {
       detectOllama: (uri: string) => Promise<boolean>;
       getAvailableOllamaModels: () => Promise<{modelName: string, preferred: boolean}[]>;
       setPreferredOllamaModel: (modelName: string) => Promise<void>;
+      getOllamaSystemRecommendations: () => Promise<SystemRecommendations>;
+      installOllama: (modelName: string) => Promise<void>;
+      onOllamaProgress: (callback: (status: Parameters<OnProgressCallback>[0]) => void) => () => void;
+      getApiKey: () => Promise<string | null>;
+      setupGemini: (apiKey: string) => Promise<void>;
+      onError: (callback: (error: string) => void) => () => void;
     };
   }
 }

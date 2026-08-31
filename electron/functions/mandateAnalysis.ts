@@ -30,10 +30,15 @@ export async function analyzeMandate({ event, options }: AnalyseMandateProps): P
         try {
             event.sender.send('analysis-status', { status: AIAnalysisStatus.Analyzing, message: 'Analysing the mandate...' });
             const prompt = language === Language.FRENCH ? FRENCH_PROMPTS.ANALYZING(rawMandate) : ENGLISH_PROMPTS.ANALYZING(rawMandate);
-            const analysisResult = (await aiService.prompt(prompt)) as unknown as { job_title: string; skills: string[]; key_focus: string };
+            const analysisResult = (await aiService.prompt(prompt, (error) => {
+                event.sender.send('error', `AI Service Error: ${error.message}`);
+            })) as unknown as { job_title: string; skills: string[]; key_focus: string };
             // update affinity database with new keywords
             const dbAffinity = KeywordsAffinityDatabase.getInstance();
-            dbAffinity.incrementKeywords(analysisResult.skills.map((skill) => skill.toLowerCase()));
+            console.log('Analysis result:', analysisResult);
+            const skills = analysisResult.skills.map((skill) => skill.toLowerCase());
+            console.log('Incrementing keywords in affinity database:', skills);
+            dbAffinity.incrementKeywords(skills);
             keywords = analysisResult.skills;
             dbAffinity.runEvictionPolicy();
             event.sender.send('analysis-status', { status: AIAnalysisStatus.Analyze_Result, data: analysisResult });

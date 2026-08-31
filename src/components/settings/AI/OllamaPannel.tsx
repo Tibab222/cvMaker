@@ -3,10 +3,11 @@ import type { UserConfig } from "../../../../electron/services/config/UserConfig
 import { Button } from "../../ui/button";
 import { api } from "@/api";
 import ManuallyInstallOllama from "./ManuallyInstallOllama";
+import InstallOllama from "./InstallOllama";
 
 export default function OllamaPannel() {
     const [ollamaInfos, setOllamaInfos] = useState<NonNullable<UserConfig['ollama']> | null>(null);
-    const [step, setStep] = useState<'initial' | 'manualInstall'>('initial');
+    const [step, setStep] = useState<'initial' | 'manualInstall' | 'install'>('initial');
 
     useEffect(() => {
         const fetchOllamaInfos = async () => {
@@ -18,6 +19,8 @@ export default function OllamaPannel() {
 
     if (step === 'manualInstall') {
         return <ManuallyInstallOllama back={() => setStep('initial')} />;
+    } else if (step === 'install') {
+        return <InstallOllama back={() => setStep('initial')} />;
     }
 
     return <>
@@ -33,7 +36,7 @@ export default function OllamaPannel() {
                 ) : null
             }
             <div className="flex flex-col gap-2">
-                <Button>Install Ollama</Button>
+                <Button onClick={() => setStep('install')}>Install Ollama</Button>
                 <Button onClick={() => setStep('manualInstall')}>I prefer to install it manually</Button>
             </div>
         </div>

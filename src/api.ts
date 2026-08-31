@@ -1,5 +1,6 @@
 import type { AIAnalysisStatus } from "@shared/AIAnalysisStatus";
 import type { Experience } from "@shared/Experience.interface";
+import type { OnProgressCallback } from "@shared/OllamaDownloadStatus";
 import type { Language } from "@shared/profile.interface";
 import type { ProfilesData } from "@shared/profilesData.interface";
 import type { Project } from "@shared/projects.interface";
@@ -22,4 +23,10 @@ export const api = {
     detectOllama: async (uri: string) => await window.api.detectOllama(uri),
     getAvailableOllamaModels: async () => await window.api.getAvailableOllamaModels(),
     setPreferredOllamaModel: async (modelName: string) => await window.api.setPreferredOllamaModel(modelName),
+    getOllamaSystemRecommendations: async () => await window.api.getOllamaSystemRecommendations(),
+    installOllama: async (modelName: string) => await window.api.installOllama(modelName),
+    onOllamaProgress: (callback: (status: Parameters<OnProgressCallback>[0]) => void) => window.api.onOllamaProgress(callback),
+    getApiKey: async () => await window.api.getApiKey(),
+    setupGemini: async (apiKey: string) => await window.api.setupGemini(apiKey),
+    onError: (callback: (error: string) => void) => window.api.onError(callback),
 }

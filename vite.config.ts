@@ -16,7 +16,7 @@ export default defineConfig({
           build: {
             outDir: 'dist-electron',
             rollupOptions: {
-              external: ['better-sqlite3', '@xenova/transformers', 'sharp', 'systeminformation', 'adm-zip', 'electron'],
+              external: ['better-sqlite3', '@xenova/transformers', 'sharp', 'systeminformation', 'adm-zip', 'electron', 'tree-kill', '@google/genai'],
               output: {
                 entryFileNames: '[name].mjs',
                 format: 'esm',

@@ -129,4 +129,19 @@ export function registerIpcHandlers() {
     ipcMain.handle('setPreferredOllamaModel', (event, modelName: string) => {
         aiService.setPreferredOllamaModel(modelName);
     });
+    ipcMain.handle('getOllamaSystemRecommendations', async () => {
+        return await aiService.getOllamaSystemRecommendations();
+    });
+    ipcMain.handle('ollama:install', async (event, modelName: string) => {
+        await aiService.installOllama(modelName, (status) => {
+            event.sender.send('ollama:progress', status);
+        });
+    });
+    ipcMain.handle('setupGemini', async (event, apiKey: string) => {
+        return await aiService.setupGemini(apiKey);
+    });
+    // getApiKey for all providers
+    ipcMain.handle('getApiKey', () => {
+        return aiService.getApiKey();
+    });
 }

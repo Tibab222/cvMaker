@@ -10,11 +10,14 @@ export interface UserConfig {
     },
     openai?: {
         apiKey: string;
+        preferredModel: string;
     },
     gemini?: {
         apiKey: string;
+        preferredModel: string;
     },
     claude?: {
         apiKey: string;
+        preferredModel: string;
     },
 }
