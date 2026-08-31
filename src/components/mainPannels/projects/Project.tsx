@@ -1,8 +1,10 @@
 import { useProfileStore } from "@/store/profile";
 import type { Project } from "@shared/projects.interface";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import ProjectCard from "./ProjectCard";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export default function ProjectComponent() {
     const { projects, updateSection } = useProfileStore();
@@ -19,22 +21,69 @@ export default function ProjectComponent() {
         updateSection("projects", newData);
         setAddNew(false);
     }
+
+    const handleDelete = (id: string) => {
+        const newData = projects.filter((project) => project.id !== id);
+        updateSection("projects", newData);
+    }
+
     return (
-        <motion.div className="w-full h-auto flex flex-col gap-4" initial={{ opacity: 0, x: -200 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
-            { projects.length === 0 && <h2 className="text-2xl font-bold">No project entries yet.</h2> }
-            {projects.map((project) => (
-                <ProjectCard key={project.id} project={project} onSave={handleOnSave} />
-            ))}
-            {addNew ? (
-                <ProjectCard project={{ id: "", title: "", bullets: [] }} onSave={handleNewSave} />
-            ) : (
-                <button
-                    onClick={() => setAddNew(true)}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                >
-                    Add Project
-                </button>
+        <motion.div
+            className="flex h-auto w-full flex-col gap-4"
+            initial={{ opacity: 0, x: -60 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        >
+            {projects.length === 0 && !addNew && (
+                <div className="rounded-2xl border border-dashed p-10 text-center">
+                <h2 className="text-lg font-semibold">No project entries yet.</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Add your first project to get started.</p>
+                </div>
             )}
+
+            <AnimatePresence initial={false}>
+                {projects.map((project) => (
+                <motion.div
+                    key={project.id}
+                    layout
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.97 }}
+                    transition={{ type: "spring", stiffness: 320, damping: 34 }}
+                >
+                    <ProjectCard project={project} onSave={handleOnSave} onDelete={handleDelete} />
+                </motion.div>
+                ))}
+            </AnimatePresence>
+
+            <AnimatePresence mode="wait" initial={false}>
+                {addNew ? (
+                <motion.div
+                    key="new"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                >
+                    <ProjectCard
+                    project={{ id: "", title: "", bullets: [] }}
+                    defaultEdit
+                    defaultExpanded
+                    onSave={handleNewSave}
+                    onCancelNew={() => setAddNew(false)}
+                    />
+                </motion.div>
+                ) : (
+                <motion.div key="add" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <Button
+                    variant="outline"
+                    onClick={() => setAddNew(true)}
+                    className="h-12 w-full rounded-xl border-dashed text-muted-foreground hover:text-foreground"
+                    >
+                    <Plus size={16} className="mr-2" /> Add Project
+                    </Button>
+                </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     )
 }
