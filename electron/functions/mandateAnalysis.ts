@@ -50,14 +50,15 @@ export async function analyzeMandate({ event, options }: AnalyseMandateProps): P
         }
     } else {
         keywords = LocalkeywordsExtractor.extractKeywords(rawMandate, language, );
+        const dbAffinity = KeywordsAffinityDatabase.getInstance();
+        dbAffinity.incrementKeywords(keywords.map((k) => k.toLowerCase()));
         event.sender.send('analysis-status', { status: AIAnalysisStatus.Local_Analyze_Result, data: { keywords } });
     }
 
-    const queryText = `${keywords.join(' ')}`;
-    const matchesExp = await vectorService.rankExperiences(queryText);
+    const matchesExp = await vectorService.rankExperiences(keywords, language);
     event.sender.send('analysis-status', {status: AIAnalysisStatus.MatchesExperiences, data: matchesExp});
     
-    const matchesProj = await vectorService.rankProjectsByBullets(queryText);
+    const matchesProj = await vectorService.rankProjectsByBullets(keywords, language);
     event.sender.send('analysis-status', {status: AIAnalysisStatus.MatchesProjects, data: matchesProj});
     event.sender.send('analysis-status', { status: AIAnalysisStatus.Success, message: 'Analysis completed' });
     return { success: true };

@@ -16,6 +16,7 @@ import { KeywordsAffinityDatabase } from './services/KeywordsExtractor/KeywordsA
 import { AIService } from './services/AI/AIService';
 import { ConfigurationManager } from './services/config/ConfigurationManager';
 import { selectExportFolder, setDefaultExportPath } from './functions/exportPathSetting';
+import { ProfileService } from './services/ProfileService';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
@@ -62,24 +63,11 @@ export function registerIpcHandlers() {
 
     ipcMain.handle('loadProfile', async (event, profileId: string) => {
         const profilePath = path.join(profilesDir, profileId);
+        const profileService = ProfileService.getInstance();
 
         vectorDb.connect(profilePath);
         keywordsAffinityDb.connect(profilePath);
-
-        const profileData = await fs.promises.readFile(`${profilePath}/infos.json`, 'utf-8');
-        const educationData = await fs.promises.readFile(`${profilePath}/edu.json`, 'utf-8');
-        const experienceData = await fs.promises.readFile(`${profilePath}/exp.json`, 'utf-8');
-        const resumeData = await fs.promises.readFile(`${profilePath}/header_resume.json`, 'utf-8');
-        const projectsData = await fs.promises.readFile(`${profilePath}/projects.json`, 'utf-8');
-        const skillsData = await fs.promises.readFile(`${profilePath}/skills.json`, 'utf-8');
-        const profile = {
-            profile: JSON.parse(profileData),
-            education: JSON.parse(educationData) || [],
-            experience: JSON.parse(experienceData) || [],
-            resume: JSON.parse(resumeData) || [],
-            projects: JSON.parse(projectsData) || [],
-            skills: JSON.parse(skillsData) || []
-        } as ProfilesData;
+        const profile = await profileService.loadProfile(profilePath);
 
         return profile;
     });

@@ -11,6 +11,8 @@ export interface CVSelectionContextType {
   title: string;
   selection: CVSelection;
   AIanalysis: AIAnalysis;
+  customTexts: CustomTextMap;
+  scores: ScoreMap;
   setTitle: (title: string) => void;
   toggleExperience: (id: string) => void;
   toggleProject: (id: string) => void;
@@ -21,7 +23,24 @@ export interface CVSelectionContextType {
   runFullAIAnalysis: (rawMandate: string) => Promise<void>;
   runLocalAnalysis: (rawMandate: string) => Promise<void>;
   removeKeyword: (keyword: string) => void;
+  getCustomField: (entityType: EntityType, id: string, field: string, defaultValue?: string) => string;
+  updateCustomField: (entityType: EntityType, id: string, field: string, value: string) => void;
+  resetCustomField: (entityType: EntityType, id: string, field: string) => void;
+  getScore: (entityType: EntityType, id: string) => number | undefined;
 }
+
+export type EntityType = 'experience' | 'project' | 'bullet' | 'education' | 'skill';
+
+export type CustomTextMap = Record<string, string>;
+export type ScoreMap = Record<string, number>;
+
+const buildCustomKey = (entityType: EntityType, id: string, field: string): string => {
+  return `${entityType}:${id}:${field}`;
+};
+
+const buildScoreKey = (entityType: EntityType, id: string): string => {
+  return `${entityType}:${id}`;
+};
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
   const { education, profile } = useProfileStore();
@@ -41,10 +60,16 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     focus: '',
     isCurrentJob: false
   });
+  const [customTexts, setCustomTexts] = useState<CustomTextMap>({});
+  const [scores, setScores] = useState<ScoreMap>({});
 
   const runFullAIAnalysis = useCallback(async (rawMandate: string) => {
     setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Loading, rawMandate, isCurrentJob: true }));
-    await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, true);
+    const analysisResult = await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, true);
+    if ('error' in analysisResult) {
+      console.error('AI Analysis Error:', analysisResult.error);
+      setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Error }));
+    }
   }, [profile?.language]);
 
   const runLocalAnalysis = useCallback(async (rawMandate: string) => {
@@ -58,15 +83,31 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
         case AIAnalysisStatus.Analyzing:
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Analyzing }));
           break;
+
         case AIAnalysisStatus.Analyze_Result:
-          { const analysisData = data.data as { job_title: string; skills: string[]; key_focus: string };
-          if (analysisData.job_title) {
-            setTitle(`CV - ${analysisData.job_title}`);
+          { 
+            const analysisData = data.data as { job_title: string; skills: string[]; key_focus: string };
+            if (analysisData.job_title) {
+              setTitle(`CV - ${analysisData.job_title}`);
+            }
+            setAIAnalysis(prev => (
+              { ...prev, 
+                status: AIAnalysisStatus.Analyze_Result, 
+                keywords: analysisData.skills, 
+                jobTitle: analysisData.job_title, 
+                focus: analysisData.key_focus 
+              }));
+            break; 
           }
-          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Analyze_Result, keywords: analysisData.skills, jobTitle: analysisData.job_title, focus: analysisData.key_focus }));
-          break; }
         case AIAnalysisStatus.MatchesExperiences:{
-          const matches = data.data as { local_id: string; score: number }[]; // localId corresponds to experiences id
+          const matches = data.data as { local_id: string; score: number; matchedKeywords: string[], missingKeywords: string[] }[]; // localId corresponds to experiences id
+
+          const expScores: ScoreMap = {};
+          matches.forEach(m => {
+            const key = buildScoreKey('experience', m.local_id);
+            expScores[key] = m.score;
+          });
+          setScores(prev => ({ ...prev, ...expScores }));
           setSelection(prev => ({
             ...prev,
             selectedExpIds: matches.map(m => m.local_id)
@@ -74,17 +115,45 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.MatchesExperiences }));
           break;}
         case AIAnalysisStatus.MatchesProjects:{
-          const matches = data.data as { bestBullets: { local_bullet_id: string; local_project_id: string; score: number }[] ; suggestedProjects: string[] ;};
+          const matches = data.data as { 
+            bestBullets: {
+              local_bullet_id: string;
+              local_project_id: string;
+              score: number;
+              matchedKeywords: string[];
+            }[];
+            suggestedProjects: {
+                id: string;
+                score: number;
+                matchedKeywords: string[];
+                missingKeywords: string[];
+            }[];
+          };
+          
+          const newBulletsMap: Record<string, string[]> = {};
+          const newScores: ScoreMap = {};
+
+          matches.bestBullets.forEach(bullet => {
+            if (!newBulletsMap[bullet.local_project_id]) {
+              newBulletsMap[bullet.local_project_id] = [];
+            }
+            newBulletsMap[bullet.local_project_id].push(bullet.local_bullet_id);
+            const bulletKey = buildScoreKey('bullet', bullet.local_bullet_id);
+            newScores[bulletKey] = bullet.score;
+          });
+
+          matches.suggestedProjects.forEach(proj => {
+            const projKey = buildScoreKey('project', proj.id);
+            newScores[projKey] = proj.score;
+          });
+
+          setScores(prev => ({ ...prev, ...newScores }));
+          const projectIds = matches.suggestedProjects.map(p => p.id);
+
           setSelection(prev => ({
             ...prev,
-            selectedProjectIds: matches.suggestedProjects,
-            selectedBullets: matches.bestBullets.reduce((acc, bullet) => {
-              if (!acc[bullet.local_project_id]) {
-                acc[bullet.local_project_id] = [];
-              }
-              acc[bullet.local_project_id].push(bullet.local_bullet_id);
-              return acc;
-            }, {} as Record<string, string[]>)
+            selectedProjectIds: projectIds,
+            selectedBullets: newBulletsMap
           }));
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.MatchesProjects }));
           break;}
@@ -110,6 +179,30 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     };
   }, [profile?.language, education]);
 
+  const getCustomField = useCallback((entityType: EntityType, id: string, field: string, defaultValue: string = '') => {
+    const key = buildCustomKey(entityType, id, field);
+    return customTexts[key] ?? defaultValue;
+  }, [customTexts]);
+
+  const updateCustomField = useCallback((entityType: EntityType, id: string, field: string, value: string) => {
+    const key = buildCustomKey(entityType, id, field);
+    setCustomTexts(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const resetCustomField = useCallback((entityType: EntityType, id: string, field: string) => {
+    const key = buildCustomKey(entityType, id, field);
+    setCustomTexts(prev => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
+
+  const getScore = useCallback((entityType: EntityType, id: string): number | undefined => {
+    const key = buildScoreKey(entityType, id);
+    return scores[key];
+  }, [scores]);
+
   const removeKeyword = useCallback((keyword: string) => {
     setAIAnalysis(prev => ({
       ...prev,
@@ -128,19 +221,18 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const toggleProject = useCallback((id: string) => {
-    setSelection(prev => ({
-      ...prev,
-      selectedProjectIds: prev.selectedProjectIds.includes(id)
-        ? prev.selectedProjectIds.filter(i => i !== id)
-        : [...prev.selectedProjectIds, id]
-    }));
-    // Reset bullets selection for this project when toggling off
-    setSelection(prev => ({
-      ...prev,
-      selectedBullets: prev.selectedProjectIds.includes(id)
-        ? { ...prev.selectedBullets, [id]: [] }
-        : prev.selectedBullets
-    }));
+    setSelection(prev => {
+      const isSelected = prev.selectedProjectIds.includes(id);
+      return {
+        ...prev,
+        selectedProjectIds: isSelected
+          ? prev.selectedProjectIds.filter(i => i !== id)
+          : [...prev.selectedProjectIds, id],
+        selectedBullets: isSelected
+          ? { ...prev.selectedBullets, [id]: [] }
+          : prev.selectedBullets
+      };
+    });
   }, []);
 
   const toggleBullet = useCallback((parentId: string, bulletId: string) => {
@@ -187,7 +279,10 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       title,
       setTitle,
       selection, 
+      getScore,
       AIanalysis,
+      customTexts,
+      scores,
       toggleExperience, 
       toggleProject, 
       toggleBullet,
@@ -196,7 +291,10 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       isBulletSelected,
       runFullAIAnalysis,
       runLocalAnalysis,
-      removeKeyword
+      removeKeyword,
+      getCustomField,
+      updateCustomField,
+      resetCustomField
     }}>
       {children}
     </CVSelectionContext.Provider>
