@@ -46,5 +46,8 @@ contextBridge.exposeInMainWorld('api', {
     return () => {
       ipcRenderer.removeListener('error', subscription);
     };
-  }
+  },
+  getDefaultExportPath: () => ipcRenderer.invoke('get-default-export-path'),
+  selectExportFolder: () => ipcRenderer.invoke('select-export-folder'),
+  setDefaultExportPath: (path: string) => ipcRenderer.invoke('set-default-export-path', path),
 });

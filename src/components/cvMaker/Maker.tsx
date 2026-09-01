@@ -1,20 +1,12 @@
 import { useState } from "react";
 import { CVSelectionProvider } from "./provider/provider";
 import CvPicker from "./cvPicker/CvPicker";
-import { Button } from "../ui/button";
-import { Download, SidebarClose } from "lucide-react";
 import CVTemplate from "./cvTemplate/cvTemplate";
-import { exportToPdf } from "./cvTemplate/exportCV";
 import ResumeTitle from "./ResumeTitle";
+import ToolsButtons from "./ToolsButtons";
 
 export default function Maker() {
     const [pickerOpen, setPickerOpen] = useState(false);
-    const [isExporting, setIsExporting] = useState(false);
-
-    const handleExport = async () => {
-        setIsExporting(true);
-        exportToPdf().finally(() => setIsExporting(false));
-    };
 
     return (
         <CVSelectionProvider>
@@ -28,20 +20,7 @@ export default function Maker() {
                         <CVTemplate />
                     </div>
                 </div>
-                <div className="absolute top-4 right-4 flex gap-2">
-                    <Button 
-                        variant="secondary" 
-                        onClick={handleExport}
-                        disabled={isExporting}
-                    >
-                        <Download className="mr-2 h-4 w-4" /> 
-                        {isExporting ? "Generating..." : "Export PDF"}
-                    </Button>
-                    
-                    <Button onClick={() => setPickerOpen(true)}>
-                        <SidebarClose />
-                    </Button>
-                </div>
+                <ToolsButtons openPicker={() => setPickerOpen(true)} />
                 {pickerOpen && <CvPicker onClose={() => setPickerOpen(false)} />}
             </div>
         </CVSelectionProvider>

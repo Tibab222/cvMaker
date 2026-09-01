@@ -31,6 +31,9 @@ declare global {
       getApiKey: () => Promise<string | null>;
       setupGemini: (apiKey: string) => Promise<void>;
       onError: (callback: (error: string) => void) => () => void;
+      getDefaultExportPath: () => Promise<string | null>;
+      selectExportFolder: () => Promise<string | null>;
+      setDefaultExportPath: (path: string) => Promise<void>;
     };
   }
 }

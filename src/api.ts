@@ -29,4 +29,7 @@ export const api = {
     getApiKey: async () => await window.api.getApiKey(),
     setupGemini: async (apiKey: string) => await window.api.setupGemini(apiKey),
     onError: (callback: (error: string) => void) => window.api.onError(callback),
+    getDefaultExportPath: async () => { return await window.api.getDefaultExportPath() },
+    selectExportFolder: async () => { return await window.api.selectExportFolder() },
+    setDefaultExportPath: async (path: string) => { return await window.api.setDefaultExportPath(path) },
 }

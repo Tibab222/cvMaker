@@ -14,11 +14,14 @@ import { Language } from '../shared/profile.interface';
 import { analyzeMandate } from './functions/mandateAnalysis';
 import { KeywordsAffinityDatabase } from './services/KeywordsExtractor/KeywordsAffinityDatabase';
 import { AIService } from './services/AI/AIService';
+import { ConfigurationManager } from './services/config/ConfigurationManager';
+import { selectExportFolder, setDefaultExportPath } from './functions/exportPathSetting';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
 export const keywordsAffinityDb = KeywordsAffinityDatabase.getInstance();
 export const aiService = AIService.getInstance();
+export const configManager = ConfigurationManager.getInstance();
 aiService.start();
 
 export function registerIpcHandlers() {
@@ -144,4 +147,9 @@ export function registerIpcHandlers() {
     ipcMain.handle('getApiKey', () => {
         return aiService.getApiKey();
     });
+    ipcMain.handle('get-default-export-path', async () => {
+      return configManager.getExportPath();
+    });
+    ipcMain.handle('select-export-folder', selectExportFolder);
+    ipcMain.handle('set-default-export-path', (_, path: string) => setDefaultExportPath(path));
 }
