@@ -1,3 +1,19 @@
+import { useEffect, useState, type ComponentType } from "react";
+import { motion } from "framer-motion";
+import {
+  BookOpenCheck,
+  BriefcaseBusiness,
+  FileText,
+  FolderKanban,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+  Sparkles,
+  UserRound,
+  WandSparkles,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -10,124 +26,256 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { useProfileStore } from "@/store/profile";
-import { Tabs, useUiStore } from "@/store/ui";
-import { motion } from "framer-motion";
-import { BicepsFlexed, BookCheck, File, Landmark, LogOut, PersonStanding, Plus, Settings } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Button } from "../ui/button";
-import { cn } from "@/lib/utils";
+  SidebarRail,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { Tabs } from "@/store/ui";
+import type { Profile } from "@shared/profile.interface";
 
-const FUNNY_QUOTES = [
-    "The only way to do great work is to love what you do. - Steve Jobs",
-    "Innovation distinguishes between a leader and a follower. - Steve Jobs",
-    "Stay hungry, stay foolish. - Steve Jobs",
-    "Wish you were hired! - CV Maker",
-    "I have not failed. I've just found 10,000 ways that won't work. - Thomas Edison",
-    "Success is not the key to happiness. Happiness is the key to success. If you love what you are doing, you will be successful. - Albert Schweitzer",
-    "The best way to predict the future is to invent it. - Alan Kay",
-    "Don't watch the clock; do what it does. Keep going. - Sam Levenson",
-]
+interface LeftMenuProps {
+  selectedTab: Tabs;
+  onSelectTab: (tab: Tabs) => void;
+  profile?: Profile;
+  onLogout?: () => void;
+}
 
-export default function SideBar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const [quote, setQuote] = useState<string>("");
-    const { setSelectedTab, selectedTab } = useUiStore();
-    const { profile, logout } = useProfileStore();
+interface MenuItem {
+  label: string;
+  value: Tabs;
+  icon: ComponentType<{ className?: string }>;
+  badge?: string;
+}
 
-    useEffect(() => {
-        const setRandom = () => setQuote(FUNNY_QUOTES[Math.floor(Math.random() * FUNNY_QUOTES.length)]);
-        setRandom();
-        const id = setInterval(() => {
-            setRandom();
-        }, 600000);
-        return () => clearInterval(id);
-    }, []);
+const PROFILE_ITEMS: MenuItem[] = [
+  { label: "Personal information", value: Tabs.PERSONAL, icon: UserRound },
+  { label: "Education", value: Tabs.EDUCATION, icon: BookOpenCheck },
+  { label: "Experience", value: Tabs.EXPERIENCE, icon: BriefcaseBusiness },
+  { label: "Projects", value: Tabs.PROJECTS, icon: FolderKanban },
+  { label: "Skills", value: Tabs.SKILLS, icon: Sparkles },
+];
 
-    const handleSettings = () => {
-        setSelectedTab(Tabs.SETTINGS);
-    }
+const QUOTES = [
+  {
+    quote: "Simplicity is the ultimate sophistication.",
+    writer: "Leonardo da Vinci",
+  },
+  {
+    quote: "Make it simple, but significant.",
+    writer: "Don Draper",
+  },
+  {
+    quote: "Quality is not an act, it is a habit.",
+    writer: "Aristotle",
+  },
+  {
+    quote: "Details make perfection, and perfection is not a detail.",
+    writer: "Leonardo da Vinci",
+  },
+  {
+    quote: "Opportunity does not knock, it presents itself when you beat down the door.",
+    writer: "Kyle Chandler",
+  },
+  {
+    quote: "It always seems impossible until it's done.",
+    writer: "Nelson Mandela",
+  },
+  {
+    quote: "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+    writer: "Winston Churchill",
+  },
+  {
+    quote: "I never dreamed about success. I worked for it.",
+    writer: "Estée Lauder",
+  },
+  {
+    quote: "The future depends on what you do today.",
+    writer: "Mahatma Gandhi",
+  },
+  {
+    quote: "Don't watch the clock; do what it does. Keep going.",
+    writer: "Sam Levenson",
+  },
+  {
+    quote: "Opportunities don't happen. You create them.",
+    writer: "Chris Grosser",
+  },
+  {
+    quote: "Hard work beats talent when talent doesn't work hard.",
+    writer: "Tim Notke",
+  },
+];
 
-    const handleLogout = () => {
-        logout();
-        setSelectedTab(Tabs.PROFILE_SELECTOR);
-    }
+function MenuEntry({ item, selectedTab, onSelectTab }: {
+  item: MenuItem;
+  selectedTab: Tabs;
+  onSelectTab: (tab: Tabs) => void;
+}) {
+  const Icon = item.icon;
+  const active = selectedTab === item.value;
 
-    return (
-        <Sidebar side="left" {...props}>
-            <SidebarHeader>
-                <h3 className="text-center text-xl font-bold">{profile?.firstName || "tot"} {profile?.lastName}</h3>
-                <Button variant={"destructive"} onClick={handleLogout}>
-                    <LogOut />
-                </Button>
-            </SidebarHeader>
-            <SidebarContent>
-                <SidebarGroup>
-                    <SidebarGroupLabel>Edit your profile</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu className="gap-1">
-                            <SidebarMenuItem onClick={() => setSelectedTab(Tabs.PERSONAL)}>
-                                <SidebarMenuButton className={cn("text-white rounded-md transition-all", { "bg-primary/50": selectedTab === Tabs.PERSONAL }, { "bg-primary": selectedTab !== Tabs.PERSONAL })}>
-                                    Personal Information
-                                </SidebarMenuButton>
-                                <SidebarMenuBadge><PersonStanding className="text-white" /></SidebarMenuBadge>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem onClick={() => setSelectedTab(Tabs.EDUCATION)}>
-                                <SidebarMenuButton className={cn("text-white rounded-md transition-all", { "bg-primary/50": selectedTab === Tabs.EDUCATION }, { "bg-primary": selectedTab !== Tabs.EDUCATION })}>
-                                    Education
-                                </SidebarMenuButton>
-                                <SidebarMenuBadge><BookCheck className="text-white" /></SidebarMenuBadge>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem onClick={() => setSelectedTab(Tabs.EXPERIENCE)}>
-                                <SidebarMenuButton className={cn("text-white rounded-md transition-all", { "bg-primary/50": selectedTab === Tabs.EXPERIENCE }, { "bg-primary": selectedTab !== Tabs.EXPERIENCE })}>
-                                    Experience
-                                </SidebarMenuButton>
-                                <SidebarMenuBadge><Landmark className="text-white" /></SidebarMenuBadge>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem onClick={() => setSelectedTab(Tabs.PROJECTS)}>
-                                <SidebarMenuButton className={cn("text-white rounded-md transition-all", { "bg-primary/50": selectedTab === Tabs.PROJECTS }, { "bg-primary": selectedTab !== Tabs.PROJECTS })}>
-                                    Projects
-                                </SidebarMenuButton>
-                                <SidebarMenuBadge><File className="text-white" /></SidebarMenuBadge>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem onClick={() => setSelectedTab(Tabs.SKILLS)}>
-                                <SidebarMenuButton className={cn("text-white rounded-md transition-all", { "bg-primary/50": selectedTab === Tabs.SKILLS }, { "bg-primary": selectedTab !== Tabs.SKILLS })}>
-                                    Skills
-                                </SidebarMenuButton>
-                                <SidebarMenuBadge><BicepsFlexed className="text-white" /></SidebarMenuBadge>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        size="lg"
+        isActive={active}
+        tooltip={item.label}
+        onClick={() => onSelectTab(item.value)}
+        className="relative h-11 rounded-md px-3 text-sidebar-foreground/70 transition-colors duration-200 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-2.5"
+      >
+        {active && (
+          <motion.span
+            layoutId="active-menu-item"
+            className="absolute inset-y-2 left-0 w-0.5 rounded-r-full bg-sidebar-primary-foreground group-data-[collapsible=icon]:hidden"
+            transition={{ type: "spring", stiffness: 420, damping: 34 }}
+          />
+        )}
+        <Icon className="size-4.5 group-data-[collapsible=icon]:mx-auto" />
+        <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+      </SidebarMenuButton>
+      {item.badge && (
+        <SidebarMenuBadge className="bg-sidebar-accent text-sidebar-accent-foreground group-data-[collapsible=icon]:hidden">
+          {item.badge}
+        </SidebarMenuBadge>
+      )}
+    </SidebarMenuItem>
+  );
+}
 
-                <SidebarGroup>
-                    <SidebarGroupLabel>Write your CV</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            <SidebarMenuItem onClick={() => setSelectedTab(Tabs.CVMAKER)}>
-                                <SidebarMenuButton className="bg-primary text-white rounded-md transition-all">Create your CV</SidebarMenuButton>
-                                <SidebarMenuBadge><Plus className="text-white" /></SidebarMenuBadge>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
-            </SidebarContent>
-            <SidebarFooter>
-                <motion.p 
-                    className="italic text-center text-sm"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
+export default function LeftMenu({ selectedTab, onSelectTab, profile, onLogout }: LeftMenuProps) {
+  const { state, toggleSidebar } = useSidebar();
+  const collapsed = state === "collapsed";
+  const [quote, setQuote] = useState(QUOTES[0]);
+
+  useEffect(() => {
+    const setRandomQuote = () => setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+    setRandomQuote();
+    const interval = window.setInterval(setRandomQuote, 600_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const firstName = profile?.firstName || "Alex";
+  const lastName = profile?.lastName || "Morgan";
+  const initials = `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase();
+
+  return (
+    <Sidebar collapsible="icon" variant="sidebar" className="border-r border-sidebar-border">
+      <SidebarHeader className="gap-3 border-b border-sidebar-border p-3">
+        <div className="flex h-11 items-center gap-3 overflow-hidden">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="flex size-9 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground"
+          >
+            {initials}
+          </motion.div>
+          <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+            <p className="truncate text-sm font-semibold text-sidebar-foreground">
+              {firstName} {lastName}
+            </p>
+            <p className="truncate text-xs text-sidebar-foreground/55">Curriculum workspace</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="size-8 shrink-0 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden"
+          >
+            <PanelLeftClose className="size-4" />
+          </Button>
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent className="px-1 py-3">
+        <SidebarGroup>
+          <SidebarGroupLabel className="px-3 text-[11px] font-semibold uppercase text-sidebar-foreground/45">
+            Build your profile
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-1">
+              {PROFILE_ITEMS.map((item, index) => (
+                <motion.div
+                  key={item.value}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.035, duration: 0.25 }}
                 >
-                    {quote}
-                </motion.p>
-                {/* <Button variant={"ghost"} className="text-[10px] italic h-5 cursor-pointer text-gray-400" onClick={handleSync}>
-                    Sync Database
-                </Button> */}
-                <Button variant={"ghost"} className={cn("text-[10px] italic h-5 cursor-pointer text-gray-400", { "bg-primary/50 border border-accent": selectedTab === Tabs.SETTINGS })} onClick={handleSettings}>
-                    Settings <Settings className="ml-1 w-3 h-3" />
-                </Button>
-            </SidebarFooter>
-        </Sidebar>
-    )
+                  <MenuEntry item={item} selectedTab={selectedTab} onSelectTab={onSelectTab} />
+                </motion.div>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup className="mt-2">
+          <SidebarGroupLabel className="px-3 text-[11px] font-semibold uppercase text-sidebar-foreground/45">
+            Your document
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  size="lg"
+                  isActive={selectedTab === Tabs.CVMAKER}
+                  tooltip="Create your CV"
+                  onClick={() => onSelectTab(Tabs.CVMAKER)}
+                  className="h-11 rounded-md px-3 text-sidebar-foreground/70 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-2.5"
+                >
+                  <FileText className="size-4.5 group-data-[collapsible=icon]:mx-auto" />
+                  <span className="group-data-[collapsible=icon]:hidden">Create your CV</span>
+                  <WandSparkles className="ml-auto size-3.5 opacity-60 group-data-[collapsible=icon]:hidden" />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border p-3">
+        <motion.blockquote
+          key={quote.quote}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-2 border-l-2 border-sidebar-primary/25 px-3 py-1 text-xs leading-relaxed text-sidebar-foreground/55 group-data-[collapsible=icon]:hidden"
+        >
+          “{quote.quote}” - <span className="font-semibold text-sidebar-foreground/75">{quote.writer}</span>
+        </motion.blockquote>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Settings"
+              isActive={selectedTab === Tabs.SETTINGS}
+              onClick={() => onSelectTab(Tabs.SETTINGS)}
+              className="h-9 text-sidebar-foreground/65 group-data-[collapsible=icon]:mx-auto"
+            >
+              <Settings />
+              <span className="group-data-[collapsible=icon]:hidden">Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Log out"
+              onClick={onLogout}
+              className="h-9 text-sidebar-foreground/65 hover:text-destructive group-data-[collapsible=icon]:mx-auto"
+            >
+              <LogOut />
+              <span className="group-data-[collapsible=icon]:hidden">Log out</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        {collapsed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            aria-label="Expand sidebar"
+            className="mx-auto mt-1 size-8 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <PanelLeftOpen className="size-4" />
+          </Button>
+        )}
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  );
 }
