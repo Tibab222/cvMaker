@@ -1,5 +1,6 @@
 export interface UserConfig {
     preferredAiProvider: 'ollama' | 'openai' | 'gemini' | 'claude' | null;
+    exportPath?: string;
     ollama?: {
         localModels: {
             modelName: string;

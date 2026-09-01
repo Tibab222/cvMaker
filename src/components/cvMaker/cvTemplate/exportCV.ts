@@ -1,7 +1,7 @@
 import { api } from "@/api";
 import { toast } from "sonner";
 
-export const exportToPdf = async () => {
+export const exportToPdf = async (title: string) => {
   const element = document.getElementById("cv-content");
   if (!element) return;
 
@@ -41,6 +41,6 @@ export const exportToPdf = async () => {
     </html>
   `;
 
-  const success = await api.generatePDF(fullHTML, "MonCV.pdf");
+  const success = await api.generatePDF(fullHTML, `Resume ${title}.pdf`);
   if (success) toast.success("CV exported successfully!");
 };

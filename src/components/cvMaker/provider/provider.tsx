@@ -8,8 +8,10 @@ import { useProfileStore } from '@/store/profile';
 import { Language } from '@shared/profile.interface';
 
 export interface CVSelectionContextType {
+  title: string;
   selection: CVSelection;
   AIanalysis: AIAnalysis;
+  setTitle: (title: string) => void;
   toggleExperience: (id: string) => void;
   toggleProject: (id: string) => void;
   toggleBullet: (parentId: string, bulletId: string) => void;
@@ -23,6 +25,7 @@ export interface CVSelectionContextType {
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
   const { education, profile } = useProfileStore();
+  const [title, setTitle] = useState<string>(() => "Resume - " + (profile?.firstName || "Draft") + " - " + Date.now());
   const [selection, setSelection] = useState<CVSelection>({
     selectedExpIds: [],
     selectedProjectIds: [],
@@ -57,6 +60,9 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
           break;
         case AIAnalysisStatus.Analyze_Result:
           { const analysisData = data.data as { job_title: string; skills: string[]; key_focus: string };
+          if (analysisData.job_title) {
+            setTitle(`CV - ${analysisData.job_title}`);
+          }
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Analyze_Result, keywords: analysisData.skills, jobTitle: analysisData.job_title, focus: analysisData.key_focus }));
           break; }
         case AIAnalysisStatus.MatchesExperiences:{
@@ -178,6 +184,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
 
   return (
     <CVSelectionContext.Provider value={{ 
+      title,
+      setTitle,
       selection, 
       AIanalysis,
       toggleExperience, 

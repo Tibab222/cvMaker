@@ -47,6 +47,14 @@ export class ConfigurationManager {
         });
     }
 
+    public getExportPath(): string {
+        return this.store.get('exportPath', '');
+    }
+
+    public setExportPath(path: string): void {
+        this.store.set('exportPath', path);
+    }
+
     /**
      * Reset the configuration to its default values
      */
