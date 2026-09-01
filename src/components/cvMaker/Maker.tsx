@@ -5,6 +5,7 @@ import { Button } from "../ui/button";
 import { Download, SidebarClose } from "lucide-react";
 import CVTemplate from "./cvTemplate/cvTemplate";
 import { exportToPdf } from "./cvTemplate/exportCV";
+import ResumeTitle from "./ResumeTitle";
 
 export default function Maker() {
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -17,9 +18,12 @@ export default function Maker() {
 
     return (
         <CVSelectionProvider>
-            <div className="w-full flex flex-row h-full relative">
+            <div className="w-full flex flex-col h-full relative">
+                <div className="m-auto w-full">
+                    <ResumeTitle />
+                </div>
                 <div className="flex-1 overflow-y-auto p-12 flex justify-center">
-                    {/* On can ajouter un wrapper de zoom ici plus tard */}
+                    {/* On peut ajouter un wrapper de zoom ici plus tard */}
                     <div className="shadow-2xl">
                         <CVTemplate />
                     </div>
