@@ -5,7 +5,7 @@ import { i18n } from "../i18n";
 import { TemplateInput } from "../templateFields/TemplateInput";
 
 export default function CVProject({ projects, lang = 'en' }: { projects: Project[]; lang?: string }) {
-  const { selection } = useCVSelection();
+  const { selection, isItemRewriting } = useCVSelection();
   const t = i18n[lang as keyof typeof i18n];
 
   const activeProjects = projects.filter(project => 
@@ -85,6 +85,7 @@ export default function CVProject({ projects, lang = 'en' }: { projects: Project
                         entityType="bullet"
                         id={bullet.id}
                         field="text"
+                        isLoading={isItemRewriting('bullet', bullet.id)}
                         defaultValue={bullet.text}
                       />
 

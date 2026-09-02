@@ -37,7 +37,7 @@ export async function rewriteResume({ event, options }: RewriteResumeProps): Pro
 
   try {
     event.sender.send('analysis-status', { 
-      status: AIAnalysisStatus.Analyzing, 
+      status: AIAnalysisStatus.Rewriting, 
       message: `Starting rewrite process (0/${totalItems})...` 
     });
 
@@ -54,7 +54,7 @@ export async function rewriteResume({ event, options }: RewriteResumeProps): Pro
         console.error(`[Rewrite] Error on experience ${exp.experience_id}:`, err);
       });
 
-      const parsed = parseAIJsonResponse<{ rewritten_description: string }>(rawResponse);
+      const parsed = parseAIJsonResponse<{ rewritten_bullets: string[] }>(rawResponse);
 
       completedItems++;
 
@@ -63,7 +63,7 @@ export async function rewriteResume({ event, options }: RewriteResumeProps): Pro
         progress: { completed: completedItems, total: totalItems },
         data: {
           experience_id: exp.experience_id,
-          rewritten_description: parsed.rewritten_description
+          rewritten_description: parsed.rewritten_bullets.map(b => `- ${b}`).join('\n'),
         }
       });
     }

@@ -2,9 +2,11 @@ import type { Experience } from "@shared/Experience.interface";
 import { i18n } from "../i18n";
 import { TemplateInput } from "../templateFields/TemplateInput";
 import { TemplateTextArea } from "../templateFields/TemplateTextArea";
+import { useCVSelection } from "../../provider/hook";
 
 export default function CVExperience({ experiences, lang = 'en' }: { experiences: Experience[]; lang?: string }) {
   const t = i18n[lang as keyof typeof i18n];
+  const { isItemRewriting } = useCVSelection();
 
   const formatDate = (date: Date | string | undefined) => {
     if (!date) return "";
@@ -64,6 +66,7 @@ export default function CVExperience({ experiences, lang = 'en' }: { experiences
                 id={exp.id}
                 field="description"
                 defaultValue={exp.description || ''}
+                isLoading={isItemRewriting('experience', exp.id)}
                 className="mt-2 text-[11px] text-slate-700 leading-relaxed"
               />
             )}

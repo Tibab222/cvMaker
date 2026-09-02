@@ -6,6 +6,7 @@ import { api } from '@/api';
 import { AIAnalysisStatus } from '@shared/AIAnalysisStatus';
 import { useProfileStore } from '@/store/profile';
 import { Language } from '@shared/profile.interface';
+import { toast } from 'sonner';
 
 export interface CVSelectionContextType {
   title: string;
@@ -13,6 +14,8 @@ export interface CVSelectionContextType {
   AIanalysis: AIAnalysis;
   customTexts: CustomTextMap;
   scores: ScoreMap;
+  rewritingKeys: string[];
+  isItemRewriting: (entityType: EntityType, id: string) => boolean;
   setTitle: (title: string) => void;
   toggleExperience: (id: string) => void;
   toggleProject: (id: string) => void;
@@ -63,6 +66,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   });
   const [customTexts, setCustomTexts] = useState<CustomTextMap>({});
   const [scores, setScores] = useState<ScoreMap>({});
+  const [rewritingKeys, setRewritingKeys] = useState<string[]>([]);
 
   const runFullAIAnalysis = useCallback(async (rawMandate: string) => {
     setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Loading, rawMandate, isCurrentJob: true }));
@@ -79,8 +83,22 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   }, [profile?.language]);
 
   const runAIRewrite = useCallback(async () => {
-    setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Analyzing }));
+    setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Rewriting }));
 
+    const expKeys = experience
+    .filter(e => selection.selectedExpIds.includes(e.id))
+    .map(e => `${'experience'}:${e.id}`);
+
+    const bulletKeys: string[] = [];
+    projects
+      .filter(p => selection.selectedProjectIds.includes(p.id))
+      .forEach(p => {
+        const selectedBulletIds = selection.selectedBullets[p.id] || [];
+        p.bullets
+          .filter(b => selectedBulletIds.includes(b.id))
+          .forEach(b => bulletKeys.push(`${'bullet'}:${b.id}`));
+      });
+    setRewritingKeys([...expKeys, ...bulletKeys]);
     const expsToRewrite = experience
       .filter(e => selection.selectedExpIds.includes(e.id))
       .map(e => ({
@@ -208,6 +226,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
             ...prev,
             selectedEducationIds: education.map(e => e.id)
           }));
+          setRewritingKeys([]);
+          toast.success("Task completed successfully!");
           break;
         }
 
@@ -217,9 +237,15 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
           break;
         }
 
+        case AIAnalysisStatus.Rewriting: {
+          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Rewriting }));
+          break;
+        }
+
         case AIAnalysisStatus.Rewrite_Experience_Item: {
           const item = data.data as { experience_id: string; rewritten_description: string };
           updateCustomField('experience', item.experience_id, 'description', item.rewritten_description);
+          setRewritingKeys(prev => prev.filter(k => k !== `experience:${item.experience_id}`));
           break;
         }
 
@@ -228,6 +254,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
           item.bullets.forEach(b => {
             updateCustomField('bullet', b.bullet_id, 'text', b.rewritten_text);
           });
+          const finishedBulletKeys = item.bullets.map(b => `bullet:${b.bullet_id}`);
+          setRewritingKeys(prev => prev.filter(k => !finishedBulletKeys.includes(k)));
           break;
         }
 
@@ -239,6 +267,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
 
     return () => {
       removeStatus();
+      setRewritingKeys([]);
     };
   }, [profile?.language, education, updateCustomField]);
 
@@ -332,6 +361,10 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     return selection.selectedBullets[parentId]?.includes(bulletId) || false;
   };
 
+  const isItemRewriting = useCallback((entityType: EntityType, id: string) => {
+    return rewritingKeys.includes(`${entityType}:${id}`);
+  }, [rewritingKeys]);
+
   return (
     <CVSelectionContext.Provider value={{ 
       title,
@@ -341,6 +374,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       AIanalysis,
       customTexts,
       scores,
+      rewritingKeys,
+      isItemRewriting,
       toggleExperience, 
       toggleProject, 
       toggleBullet,

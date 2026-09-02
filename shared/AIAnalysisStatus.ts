@@ -10,5 +10,6 @@ export enum AIAnalysisStatus {
     MatchesProjects = "MatchesProjects",
     Local_Analyze_Result = "Local_Analyze_Result",
     Rewrite_Experience_Item = "Rewrite_Experience_Item",
-    Rewrite_Project_Item = "Rewrite_Project_Item"
+    Rewrite_Project_Item = "Rewrite_Project_Item",
+    Rewriting = "Rewriting"
 }

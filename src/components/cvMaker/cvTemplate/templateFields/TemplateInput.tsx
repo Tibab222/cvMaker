@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useCVSelection } from "../../provider/hook";
 import type { EntityType } from '../../provider/provider';
+import { TemplateSkeleton } from './TemplateSkeleton';
 
 interface FieldProps {
   entityType: EntityType;
@@ -9,6 +10,7 @@ interface FieldProps {
   defaultValue: string;
   className?: string;
   placeholder?: string;
+  isLoading?: boolean;
 }
 
 export function TemplateInput({
@@ -17,7 +19,8 @@ export function TemplateInput({
   field,
   defaultValue,
   className = '',
-  placeholder = '...'
+  placeholder = '...',
+  isLoading = false
 }: FieldProps) {
   const { getCustomField, updateCustomField } = useCVSelection();
   const value = getCustomField(entityType, id, field, defaultValue);
@@ -49,6 +52,14 @@ export function TemplateInput({
       setIsEditing(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <span className={`bg-amber-50/80 w-full border-b border-amber-400 px-0.5 animate-in fade-in duration-100 print:hidden ${className}`}>
+        <TemplateSkeleton lines={1} className={className} />
+      </span>
+    );
+  }
 
   if (isEditing) {
     return (

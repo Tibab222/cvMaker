@@ -52,8 +52,9 @@ export class OllamaManager implements IAIManager {
       }
 
       const data = await response.json();
-      console.log(`[OllamaManager] Raw response: ${JSON.stringify(data)}`);
+      // console.log(`[OllamaManager] Raw response: ${JSON.stringify(data)}`);
       const cleanedText = this.cleanJsonResponse(data.response);
+      console.log(`[OllamaManager] Input: ${prompt}`);
       console.log(`[OllamaManager] Received response: ${cleanedText}`);
       return JSON.parse(cleanedText);
     } catch (error) {

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useCVSelection } from "../../provider/hook";
 import type { EntityType } from "../../provider/provider";
+import { Sparkles } from "lucide-react";
+import { TemplateSkeleton } from "./TemplateSkeleton";
 
 interface FieldProps {
   entityType: EntityType;
@@ -9,6 +11,7 @@ interface FieldProps {
   defaultValue: string;
   className?: string;
   placeholder?: string;
+  isLoading?: boolean;
 }
 
 export function TemplateTextArea({
@@ -17,7 +20,8 @@ export function TemplateTextArea({
   field,
   defaultValue,
   className = '',
-  placeholder = '...'
+  placeholder = '...',
+  isLoading = false
 }: FieldProps) {
   const { getCustomField, updateCustomField } = useCVSelection();
   const value = getCustomField(entityType, id, field, defaultValue);
@@ -40,6 +44,15 @@ export function TemplateTextArea({
     setIsEditing(false);
     updateCustomField(entityType, id, field, tempValue);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 py-0.5">
+        <Sparkles size={13} className="animate-spin text-amber-500 shrink-0" />
+        <TemplateSkeleton lines={2} className={className} />
+      </div>
+    );
+  }
 
   if (isEditing) {
     return (
