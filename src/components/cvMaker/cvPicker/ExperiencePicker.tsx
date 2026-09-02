@@ -2,18 +2,23 @@ import { useProfileStore } from "@/store/profile";
 import { useCVSelection } from "../provider/hook";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Check, Calendar, Building2 } from "lucide-react";
+import { Check, Calendar, Building2, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function ExperiencePicker() {
   const { experience } = useProfileStore();
-  const { toggleExperience, selection } = useCVSelection();
+  const { toggleExperience, selection, getScore, getCustomField } = useCVSelection();
 
   return (
     <div className="space-y-3 p-1">
       <AnimatePresence>
         {experience.map((exp, index) => {
           const isSelected = selection.selectedExpIds.includes(exp.id);
+
+          const score = getScore('experience', exp.id);
+          const formattedScore = score !== undefined ? Math.round(score * 100) : null;
+
+          const jobTitle = getCustomField('experience', exp.id, 'jobTitle', exp.jobTitle);
           
           return (
             <motion.div
@@ -33,10 +38,31 @@ export default function ExperiencePicker() {
             >
               {/* Indicateur de sélection visuel (Coche) */}
               <div className={cn(
-                "absolute top-3 right-3 h-5 w-5 rounded-full border flex items-center justify-center transition-colors",
+                "absolute top-3 right-3 rounded-full border flex items-center justify-center transition-colors",
                 isSelected ? "bg-primary border-primary" : "bg-background border-muted-foreground/30"
               )}>
-                {isSelected && <Check className="text-primary-foreground" size={12} strokeWidth={3} />}
+                {formattedScore !== null && (
+                  <Badge 
+                    variant="secondary" 
+                    className={cn(
+                      "text-[10px] h-5 px-1.5 font-semibold gap-1 transition-colors",
+                      formattedScore >= 80 
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" 
+                        : formattedScore >= 50 
+                        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" 
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    <Sparkles size={10} />
+                    {formattedScore}%
+                  </Badge>
+                )}
+                <div className={cn(
+                  "h-5 w-5 rounded-full border flex items-center justify-center transition-colors",
+                  isSelected ? "bg-primary border-primary" : "bg-background border-muted-foreground/30"
+                )}>
+                  {isSelected && <Check className="text-primary-foreground" size={12} strokeWidth={3} />}
+                </div>
               </div>
 
               {/* Contenu de l'expérience */}
@@ -45,7 +71,7 @@ export default function ExperiencePicker() {
                   "font-semibold leading-none tracking-tight transition-colors",
                   isSelected ? "text-primary" : "text-foreground"
                 )}>
-                  {exp.jobTitle}
+                  {jobTitle}
                 </h4>
                 
                 <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">

@@ -2,11 +2,12 @@ import { useProfileStore } from "@/store/profile";
 import { useCVSelection } from "../provider/hook";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Check, FolderKanban, Circle, CheckCircle2 } from "lucide-react";
+import { Check, FolderKanban, Circle, CheckCircle2, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function ProjectPicker() {
   const { projects } = useProfileStore();
-  const { toggleProject, selection, toggleBullet } = useCVSelection();
+  const { toggleProject, selection, toggleBullet, getScore, getCustomField } = useCVSelection();
 
   const selectBullet = (event: React.MouseEvent<HTMLDivElement>, projectId: string, bulletId: string) => {
     event.stopPropagation();
@@ -18,6 +19,12 @@ export default function ProjectPicker() {
       <AnimatePresence>
         {projects.map((project, index) => {
           const isSelected = selection.selectedProjectIds.includes(project.id);
+
+          const projectScore = getScore('project', project.id);
+          const formattedProjectScore = projectScore !== undefined ? Math.round(projectScore * 100) : null;
+
+          const projectTitle = getCustomField('project', project.id, 'title', project.title);
+          const projectSubtitle = getCustomField('project', project.id, 'subtitle', project.subtitle);
           
           return (
             <motion.div
@@ -51,19 +58,38 @@ export default function ProjectPicker() {
                     "font-bold leading-none tracking-tight mb-1",
                     isSelected ? "text-primary" : "text-foreground"
                   )}>
-                    {project.title}
+                    {projectTitle}
                   </h4>
                   <p className="text-xs text-muted-foreground line-clamp-1 italic">
-                    {project.subtitle}
+                    {projectSubtitle}
                   </p>
                 </div>
 
-                {/* Checkbox stylisée */}
-                <div className={cn(
-                  "absolute top-4 right-4 h-5 w-5 rounded-md border flex items-center justify-center transition-all",
-                  isSelected ? "bg-primary border-primary rotate-0" : "bg-background border-muted-foreground/30 rotate-90"
-                )}>
-                  {isSelected && <Check className="text-primary-foreground" size={12} strokeWidth={4} />}
+                <div className="absolute top-2 right-4 flex items-center gap-2">
+                  {formattedProjectScore !== null && (
+                    <Badge 
+                      variant="secondary" 
+                      className={cn(
+                        "text-[10px] h-5 px-1.5 font-semibold gap-1 transition-colors",
+                        formattedProjectScore >= 80 
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" 
+                          : formattedProjectScore >= 50 
+                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" 
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      <Sparkles size={10} />
+                      {formattedProjectScore}%
+                    </Badge>
+                  )}
+
+                  {/* Checkbox stylisée */}
+                  <div className={cn(
+                    "h-5 w-5 rounded-md border flex items-center justify-center transition-all",
+                    isSelected ? "bg-primary border-primary rotate-0" : "bg-background border-muted-foreground/30 rotate-90"
+                  )}>
+                    {isSelected && <Check className="text-primary-foreground" size={12} strokeWidth={4} />}
+                  </div>
                 </div>
               </motion.div>
 
@@ -78,30 +104,50 @@ export default function ProjectPicker() {
                   >
                     {project.bullets.map((bullet) => {
                       const isBulletSelected = selection.selectedBullets[project.id]?.includes(bullet.id) || false;
+                      const bulletScore = getScore('bullet', bullet.id);
+                      const formattedBulletScore = bulletScore !== undefined ? Math.round(bulletScore * 100) : null;
+
+                      const bulletText = getCustomField('bullet', bullet.id, 'text', bullet.text);
+
                       return (
                         <motion.div
                           key={bullet.id}
                           whileHover={{ x: 4 }}
                           onClick={(event) => selectBullet(event, project.id, bullet.id)}
                           className={cn(
-                            "flex items-start gap-3 p-2.5 rounded-lg transition-all cursor-pointer border border-transparent",
+                            "group/bullet flex items-center justify-between gap-3 p-2.5 rounded-lg transition-all cursor-pointer border border-transparent",
                             isBulletSelected 
-                              ? "bg-primary/10 border-primary/20 text-primary-foreground" 
-                              : "hover:bg-muted/50 text-muted-foreground"
+                              ? "bg-primary/10 border-primary/20" 
+                              : "hover:bg-muted/50"
                           )}
                         >
-                          <div className="mt-0.5">
-                            {isBulletSelected 
-                              ? <CheckCircle2 size={14} className="text-primary" /> 
-                              : <Circle size={14} className="text-muted-foreground/50" />
-                            }
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <div className="mt-0.5 shrink-0">
+                              {isBulletSelected 
+                                ? <CheckCircle2 size={14} className="text-primary" /> 
+                                : <Circle size={14} className="text-muted-foreground/50" />
+                              }
+                            </div>
+                            <span className={cn(
+                              "text-[13px] leading-snug",
+                              isBulletSelected ? "text-foreground font-medium" : "text-muted-foreground"
+                            )}>
+                              {bulletText}
+                            </span>
                           </div>
-                          <span className={cn(
-                            "text-[13px] leading-snug",
-                            isBulletSelected ? "text-foreground font-medium" : "text-muted-foreground"
-                          )}>
-                            {bullet.text}
-                          </span>
+
+                          {formattedBulletScore !== null && (
+                            <span className={cn(
+                              "text-[10px] font-mono px-1.5 py-0.5 rounded border shrink-0 transition-colors",
+                              formattedBulletScore >= 80 
+                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" 
+                                : formattedBulletScore >= 50 
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" 
+                                : "bg-muted text-muted-foreground border-transparent"
+                            )}>
+                              {formattedBulletScore}%
+                            </span>
+                          )}
                         </motion.div>
                       );
                     })}
