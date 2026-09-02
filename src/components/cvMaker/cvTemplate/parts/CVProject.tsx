@@ -2,6 +2,7 @@ import type { Project } from "@shared/projects.interface";
 import { useCVSelection } from "../../provider/hook";
 import { LinkIcon } from "lucide-react";
 import { i18n } from "../i18n";
+import { TemplateInput } from "../templateFields/TemplateInput";
 
 export default function CVProject({ projects, lang = 'en' }: { projects: Project[]; lang?: string }) {
   const { selection } = useCVSelection();
@@ -18,7 +19,12 @@ export default function CVProject({ projects, lang = 'en' }: { projects: Project
   return (
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 border-b-2 border-slate-900 pb-0">
-        {t.projectTitle || "Projets & Réalisations"}
+        <TemplateInput
+          entityType="project"
+          id="section"
+          field="title"
+          defaultValue={t.projectTitle || "Projets & Réalisations"}
+        />
       </h2>
 
       <div className="flex flex-col gap-3">
@@ -36,10 +42,21 @@ export default function CVProject({ projects, lang = 'en' }: { projects: Project
               {/* Header du Projet */}
               <div className="flex justify-between items-baseline leading-none">
                 <h3 className="text-[13px] font-bold text-slate-900 uppercase">
-                  {project.title}
+                  <TemplateInput
+                    entityType="project"
+                    id={project.id}
+                    field="title"
+                    defaultValue={project.title}
+                  />
                   {project.subtitle && (
                     <span className="text-slate-400 font-normal normal-case ml-2 italic">
-                      — {project.subtitle}
+                      —&nbsp;
+                      <TemplateInput
+                        entityType="project"
+                        id={project.id}
+                        field="subtitle"
+                        defaultValue={project.subtitle}
+                      />
                     </span>
                   )}
                 </h3>
@@ -64,7 +81,12 @@ export default function CVProject({ projects, lang = 'en' }: { projects: Project
                       {/* Puce custom */}
                       <span className="absolute left-0 top-1.5 h-1 w-1 bg-slate-400 rounded-full" />
                       
-                      {bullet.text}
+                      <TemplateInput
+                        entityType="bullet"
+                        id={bullet.id}
+                        field="text"
+                        defaultValue={bullet.text}
+                      />
 
                       {/* Affichage des tags (technos) en ligne, très discret */}
                       {bullet.tags && bullet.tags.length > 0 && (
