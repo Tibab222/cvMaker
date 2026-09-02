@@ -91,7 +91,6 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
         keywords: AIanalysis.keywords
       }));
 
-    // 2. Filtrer les projets et puces sélectionnés
     const projsToRewrite = projects
       .filter(p => selection.selectedProjectIds.includes(p.id))
       .map(p => {
@@ -105,7 +104,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
             .map(b => ({ bullet_id: b.id, text: b.text }))
         };
       })
-      .filter(p => p.bullets.length > 0); // Exclure si aucune puce sélectionnée
+      .filter(p => p.bullets.length > 0);
 
     await api.rewriteResume({
       language: profile?.language || Language.ENGLISH,
