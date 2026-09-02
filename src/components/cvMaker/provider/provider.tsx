@@ -27,6 +27,7 @@ export interface CVSelectionContextType {
   updateCustomField: (entityType: EntityType, id: string, field: string, value: string) => void;
   resetCustomField: (entityType: EntityType, id: string, field: string) => void;
   getScore: (entityType: EntityType, id: string) => number | undefined;
+  runAIRewrite: () => Promise<void>;
 }
 
 export type EntityType = 'experience' | 'project' | 'bullet' | 'education' | 'skill';
@@ -43,7 +44,7 @@ const buildScoreKey = (entityType: EntityType, id: string): string => {
 };
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
-  const { education, profile } = useProfileStore();
+  const { education, profile, experience, projects } = useProfileStore();
   const [title, setTitle] = useState<string>(() => "Resume - " + (profile?.firstName || "Draft") + " - " + Date.now());
   const [selection, setSelection] = useState<CVSelection>({
     selectedExpIds: [],
@@ -76,6 +77,47 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Loading, rawMandate, isCurrentJob: false }));
     await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, false);
   }, [profile?.language]);
+
+  const runAIRewrite = useCallback(async () => {
+    setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Analyzing }));
+
+    const expsToRewrite = experience
+      .filter(e => selection.selectedExpIds.includes(e.id))
+      .map(e => ({
+        experience_id: e.id,
+        role: e.jobTitle,
+        company: e.company,
+        description: e.description,
+        keywords: AIanalysis.keywords
+      }));
+
+    // 2. Filtrer les projets et puces sélectionnés
+    const projsToRewrite = projects
+      .filter(p => selection.selectedProjectIds.includes(p.id))
+      .map(p => {
+        const selectedBulletIds = selection.selectedBullets[p.id] || [];
+        return {
+          project_id: p.id,
+          title: p.title,
+          keywords: AIanalysis.keywords,
+          bullets: p.bullets
+            .filter(b => selectedBulletIds.includes(b.id))
+            .map(b => ({ bullet_id: b.id, text: b.text }))
+        };
+      })
+      .filter(p => p.bullets.length > 0); // Exclure si aucune puce sélectionnée
+
+    await api.rewriteResume({
+      language: profile?.language || Language.ENGLISH,
+      experiences: expsToRewrite,
+      projects: projsToRewrite
+    });
+  }, [experience, projects, profile?.language, selection.selectedExpIds, selection.selectedProjectIds, selection.selectedBullets, AIanalysis.keywords]);
+
+  const updateCustomField = useCallback((entityType: EntityType, id: string, field: string, value: string) => {
+    const key = buildCustomKey(entityType, id, field);
+    setCustomTexts(prev => ({ ...prev, [key]: value }));
+  }, []);
 
   useEffect(() => {
     const removeStatus = api.onAnalysisStatus((data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => {
@@ -113,7 +155,9 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
             selectedExpIds: matches.map(m => m.local_id)
           }));
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.MatchesExperiences }));
-          break;}
+          break;
+        }
+
         case AIAnalysisStatus.MatchesProjects:{
           const matches = data.data as { 
             bestBullets: {
@@ -156,18 +200,38 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
             selectedBullets: newBulletsMap
           }));
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.MatchesProjects }));
-          break;}
+          break;
+        }
+
         case AIAnalysisStatus.Success:{
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Success, isCurrentJob: false }));
           setSelection(prev => ({
             ...prev,
             selectedEducationIds: education.map(e => e.id)
           }));
-          break;}
+          break;
+        }
+
         case AIAnalysisStatus.Local_Analyze_Result:{
           const localAnalysisData = data.data as { keywords: string[] };
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Local_Analyze_Result, keywords: localAnalysisData.keywords }));
-          break;}
+          break;
+        }
+
+        case AIAnalysisStatus.Rewrite_Experience_Item: {
+          const item = data.data as { experience_id: string; rewritten_description: string };
+          updateCustomField('experience', item.experience_id, 'description', item.rewritten_description);
+          break;
+        }
+
+        case AIAnalysisStatus.Rewrite_Project_Item: {
+          const item = data.data as { project_id: string; bullets: { bullet_id: string; rewritten_text: string }[] };
+          item.bullets.forEach(b => {
+            updateCustomField('bullet', b.bullet_id, 'text', b.rewritten_text);
+          });
+          break;
+        }
+
         default:
           console.warn("Received unknown analysis status:", data);
           break;
@@ -177,17 +241,12 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     return () => {
       removeStatus();
     };
-  }, [profile?.language, education]);
+  }, [profile?.language, education, updateCustomField]);
 
   const getCustomField = useCallback((entityType: EntityType, id: string, field: string, defaultValue: string = '') => {
     const key = buildCustomKey(entityType, id, field);
     return customTexts[key] ?? defaultValue;
   }, [customTexts]);
-
-  const updateCustomField = useCallback((entityType: EntityType, id: string, field: string, value: string) => {
-    const key = buildCustomKey(entityType, id, field);
-    setCustomTexts(prev => ({ ...prev, [key]: value }));
-  }, []);
 
   const resetCustomField = useCallback((entityType: EntityType, id: string, field: string) => {
     const key = buildCustomKey(entityType, id, field);
@@ -294,7 +353,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       removeKeyword,
       getCustomField,
       updateCustomField,
-      resetCustomField
+      resetCustomField,
+      runAIRewrite
     }}>
       {children}
     </CVSelectionContext.Provider>

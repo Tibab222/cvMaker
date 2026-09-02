@@ -17,5 +17,58 @@ Format attendu :
 }
 
 Offre d'emploi :
-${rawMandate}`
+${rawMandate}`,
+
+  REWRITE_EXPERIENCE: (context: string, keywords: string[]) => `
+Tu es un expert en rédaction de CV professionnels et en optimisation ATS.
+Ta tâche est de réécrire la descriptions d'expérience l'aligner avec l'offre d'emploi.
+
+RÈGLES STRICTES :
+1. Conserve la vérité historique des faits (ne fais pas d'inventions absurde).
+2. Rends le texte percutant, professionnel et orienté résultats.
+3. Intègre naturellement les mots-clés cibles fournis si possible.
+4. Réponds EXCLUSIVEMENT sous la forme d'un objet JSON valide au format exact ci-dessous. Aucun texte avant ou après.
+5. Conserve la même langue que le texte d'origine.
+
+DONNÉES À RÉÉCRIRE :
+${context}
+
+MOTS-CLÉS CIBLES :
+${keywords.join(', ')}
+
+FORMAT JSON ATTENDU :
+{
+  "rewritten_description": "string"
+}`,
+
+  REWRITE_PROJECT_PROMPT: (context: string, keywords: string[]) => `
+Tu es un expert en rédaction de CV professionnels et en optimisation ATS.
+Ta tâche est de réécrire les puces (bullet points) d'un projet pour maximiser leur impact.
+
+RÈGLES DE RÉDACTION :
+1. Chaque puce réécrite DOIT commencer par un **verbe d'action fort** (ex: *Développé*, *Conçu*, *Optimisé*, *Architecturé*).
+2. Mets en avant l'impact technique, les technologies utilisées et l'objectif du projet.
+3. Intègre les mots-clés cibles de manière fluide.
+4. Ne réinvente pas le projet : conserve les faits réels fournis.
+5. Conserve la même langue que le texte d'origine.
+6. Préserve rigoureusement chaque "bullet_id" fourni en entrée.
+
+DONNÉES EN ENTRÉE :
+${context}
+
+MOTS-CLÉS CIBLES :
+${keywords.join(', ')}
+
+FORMAT DE RÉPONSE EXIGÉ :
+Tu dois répondre EXCLUSIVEMENT sous la forme d'un objet JSON valide. Pas de texte explicatif, pas de balises Markdown d'introduction.
+
+Exemple de structure attendue :
+{
+  "bullets": [
+    {
+      "bullet_id": "ID_BULLET_RECU",
+      "rewritten_text": "Verbe d'action + réalisation technique intégrant les mots-clés..."
+    }
+  ]
+}`
 }

@@ -9,7 +9,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useUiStore } from "@/store/ui";
 
 export default function Analyse() {
-    const { AIanalysis, runFullAIAnalysis, runLocalAnalysis, removeKeyword } = useCVSelection();
+    const { AIanalysis, runFullAIAnalysis, runLocalAnalysis, removeKeyword, runAIRewrite } = useCVSelection();
     const [rawMandate, setRawMandate] = useState('');
     const { aiAvailable } = useUiStore();
 
@@ -64,6 +64,12 @@ export default function Analyse() {
                 <Button className={"mt-2 cursor-pointer"} onClick={handleStartLocalAnalysis} disabled={AIanalysis.isCurrentJob}>
                     Fast Analyse {AIanalysis.isCurrentJob ? <Spinner /> : <ScanSearch />}
                 </Button>
+                {/* Add a button to rewrite the resume if there is a valid analysis result */}
+                {AIanalysis.keywords.length > 0 && (
+                    <Button className={"mt-2 cursor-pointer"} onClick={runAIRewrite} disabled={AIanalysis.isCurrentJob}>
+                        Rewrite Resume {AIanalysis.isCurrentJob ? <Spinner /> : <Sparkles />}
+                    </Button>
+                )}
             </div>
         </motion.div>
     )
