@@ -5,6 +5,8 @@ import { Experience } from '../../shared/Experience.interface';
 import { Project } from '../../shared/projects.interface';
 import path from 'path';
 import { app } from 'electron';
+import { ProfileService } from './ProfileService';
+import { Language } from '../../shared/profile.interface';
 
 env.localModelPath = ''; 
 env.allowRemoteModels = true;
@@ -51,14 +53,29 @@ export class VectorService {
   /**
    * Experiences ranking (Simple)
    */
-  public async rankExperiences(jobDescription: string, topK: number = 3) {
-    const queryVector = await this.generateEmbedding(jobDescription);
+  public async rankExperiences(keywords: string[], language: Language, topK: number = 3) {
+    const languageQuery = language === Language.FRENCH ? "Maîtrise de " : "Proficient in ";
+    const queryText = `${languageQuery}${keywords.join(', ')}`;
+    const queryVector = await this.generateEmbedding(queryText);
     const exps = this.db.getAllExperiences();
+    const rawExps = await ProfileService.getInstance().getExperiences();
 
-    const scored = exps.map(exp => ({
-      local_id: exp.local_id,
-      score: cosineSimilarity(queryVector, bufferToFloat32Array(exp.vector))
-    }));
+    const scored = exps.map(exp => {
+      const similarity = cosineSimilarity(queryVector, bufferToFloat32Array(exp.vector));
+    
+      const rawExp = rawExps.find(rawExp => rawExp.id === exp.local_id);
+      if (!rawExp) return { local_id: exp.local_id, score: 0, matchedKeywords: [], missingKeywords: [] };
+      const rawText = `${rawExp?.jobTitle+' - ' || ''} ${rawExp?.description || ''}`.toLowerCase();
+      const matchedKeywords = keywords.filter(kw => rawText.includes(kw.toLowerCase()));
+      const missingKeywords = keywords.filter(kw => !rawText.includes(kw.toLowerCase()));
+
+      return {
+        local_id: exp.local_id,
+        score: similarity,
+        matchedKeywords,
+        missingKeywords
+      };
+    });
 
     return scored
       .sort((a, b) => b.score - a.score)
@@ -68,30 +85,71 @@ export class VectorService {
   /**
    * Project ranking
    */
-  public async rankProjectsByBullets(jobDescription: string, topKBullets: number = 10) {
-    const queryVector = await this.generateEmbedding(jobDescription);
+  public async rankProjectsByBullets(keywords: string[], language: Language, topKBullets: number = 10) {
+    const languageQuery = language === Language.FRENCH ? "Maîtrise de " : "Proficient in ";
+    const queryText = `${languageQuery}${keywords.join(', ')}`;
+    const queryVector = await this.generateEmbedding(queryText);
     const bullets = this.db.getAllProjectBullets();
+    const rawProjects = await ProfileService.getInstance().getProjects();
 
-    const scoredBullets = bullets.map(b => ({
-      local_bullet_id: b.local_bullet_id,
-      local_project_id: b.local_project_id,
-      score: cosineSimilarity(queryVector, bufferToFloat32Array(b.vector))
-    }));
+    const projectMap = new Map(rawProjects.map(p => [p.id, p]));
+
+    const scoredBullets = bullets.map(b => {
+      const similarity = cosineSimilarity(queryVector, bufferToFloat32Array(b.vector));
+      
+      const project = projectMap.get(b.local_project_id);
+      const bulletObj = project?.bullets.find(bullet => bullet.id === b.local_bullet_id);
+      const bulletText = bulletObj ? `${bulletObj.text} ${(bulletObj.tags || []).join(' ')}`.toLowerCase() : '';
+
+      const matchedKeywords = keywords.filter(kw => bulletText.includes(kw.toLowerCase()));
+
+      return {
+        local_bullet_id: b.local_bullet_id,
+        local_project_id: b.local_project_id,
+        score: similarity,
+        matchedKeywords
+      };
+    });
 
     const topBullets = scoredBullets
       .sort((a, b) => b.score - a.score)
       .slice(0, topKBullets);
 
-    const projectRelevance: Record<string, number> = {};
+    const projectScores: Record<string, number> = {};
     topBullets.forEach(b => {
-      projectRelevance[b.local_project_id] = (projectRelevance[b.local_project_id] || 0) + b.score;
+      projectScores[b.local_project_id] = (projectScores[b.local_project_id] || 0) + b.score;
     });
+
+    const rankedProjects = Object.entries(projectScores)
+      .sort(([, a], [, b]) => b - a)
+      .map(([projectId, accumulatedScore]) => {
+        const proj = projectMap.get(projectId);
+        if (!proj) {
+          return {
+            id: projectId,
+            score: accumulatedScore,
+            matchedKeywords: [],
+            missingKeywords: keywords
+          };
+        }
+
+        const bulletsContent = proj.bullets.map(b => `${b.text} ${(b.tags || []).join(' ')}`).join(' ');
+        const fullProjText = `${proj.title} ${proj.subtitle || ''} ${bulletsContent}`.toLowerCase();
+
+        const matchedKeywords = keywords.filter(kw => fullProjText.includes(kw.toLowerCase()));
+        const missingKeywords = keywords.filter(kw => !fullProjText.includes(kw.toLowerCase()));
+
+        return {
+          id: projectId,
+          score: accumulatedScore,
+          matchedKeywords,
+          missingKeywords
+        };
+      });
 
     return {
       bestBullets: topBullets,
-      suggestedProjects: Object.entries(projectRelevance)
-        .sort(([, a], [, b]) => b - a)
-        .map(([id]) => id)
+      suggestedProjects: rankedProjects
     };
   }
 
