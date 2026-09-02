@@ -26,7 +26,7 @@ export default function Skills() {
     }
 
     return (
-        <div className="w-full h-full flex flex-col gap-4">
+        <div className="w-full h-full flex flex-col gap-4 p-4">
             { skills.length === 0 && <h2 className="text-2xl font-bold">No skill entries yet.</h2> }
             <div className="w-full grid grid-cols-3 gap-2">
             {

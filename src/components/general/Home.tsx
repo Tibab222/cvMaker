@@ -57,7 +57,7 @@ const ExistingProfilesCard = ({setNewProfileMode}: {setNewProfileMode: (mode: bo
         const selectedProfile = profiles.find(profile => profile.id === profileId);
         if (selectedProfile) {
             loadProfile(selectedProfile.id);
-            setSelectedTab(Tabs.WELCOME);
+            setSelectedTab(Tabs.DASHBOARD);
         }
     }
 

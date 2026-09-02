@@ -10,7 +10,7 @@ export default function Maker() {
 
     return (
         <CVSelectionProvider>
-            <div className="w-full flex flex-col h-full relative">
+            <div className="w-full flex flex-col h-full relative p-2">
                 <div className="m-auto w-full">
                     <ResumeTitle />
                 </div>
