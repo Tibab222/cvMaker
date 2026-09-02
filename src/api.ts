@@ -4,6 +4,7 @@ import type { OnProgressCallback } from "@shared/OllamaDownloadStatus";
 import type { Language } from "@shared/profile.interface";
 import type { ProfilesData } from "@shared/profilesData.interface";
 import type { Project } from "@shared/projects.interface";
+import type { RewriteResumeOptions } from "@shared/RewriteResume.type";
 
 export const api = {
     minimize: () => window.api.minimize(),
@@ -32,4 +33,5 @@ export const api = {
     getDefaultExportPath: async () => { return await window.api.getDefaultExportPath() },
     selectExportFolder: async () => { return await window.api.selectExportFolder() },
     setDefaultExportPath: async (path: string) => { return await window.api.setDefaultExportPath(path) },
+    rewriteResume: async (options: RewriteResumeOptions) => { return await window.api.rewriteResume(options) },
 }

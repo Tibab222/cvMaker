@@ -6,6 +6,7 @@ import { api } from '@/api';
 import { AIAnalysisStatus } from '@shared/AIAnalysisStatus';
 import { useProfileStore } from '@/store/profile';
 import { Language } from '@shared/profile.interface';
+import { toast } from 'sonner';
 
 export interface CVSelectionContextType {
   title: string;
@@ -13,6 +14,8 @@ export interface CVSelectionContextType {
   AIanalysis: AIAnalysis;
   customTexts: CustomTextMap;
   scores: ScoreMap;
+  rewritingKeys: string[];
+  isItemRewriting: (entityType: EntityType, id: string) => boolean;
   setTitle: (title: string) => void;
   toggleExperience: (id: string) => void;
   toggleProject: (id: string) => void;
@@ -27,6 +30,7 @@ export interface CVSelectionContextType {
   updateCustomField: (entityType: EntityType, id: string, field: string, value: string) => void;
   resetCustomField: (entityType: EntityType, id: string, field: string) => void;
   getScore: (entityType: EntityType, id: string) => number | undefined;
+  runAIRewrite: () => Promise<void>;
 }
 
 export type EntityType = 'experience' | 'project' | 'bullet' | 'education' | 'skill';
@@ -43,7 +47,7 @@ const buildScoreKey = (entityType: EntityType, id: string): string => {
 };
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
-  const { education, profile } = useProfileStore();
+  const { education, profile, experience, projects } = useProfileStore();
   const [title, setTitle] = useState<string>(() => "Resume - " + (profile?.firstName || "Draft") + " - " + Date.now());
   const [selection, setSelection] = useState<CVSelection>({
     selectedExpIds: [],
@@ -62,6 +66,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   });
   const [customTexts, setCustomTexts] = useState<CustomTextMap>({});
   const [scores, setScores] = useState<ScoreMap>({});
+  const [rewritingKeys, setRewritingKeys] = useState<string[]>([]);
 
   const runFullAIAnalysis = useCallback(async (rawMandate: string) => {
     setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Loading, rawMandate, isCurrentJob: true }));
@@ -76,6 +81,60 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Loading, rawMandate, isCurrentJob: false }));
     await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, false);
   }, [profile?.language]);
+
+  const runAIRewrite = useCallback(async () => {
+    setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Rewriting }));
+
+    const expKeys = experience
+    .filter(e => selection.selectedExpIds.includes(e.id))
+    .map(e => `${'experience'}:${e.id}`);
+
+    const bulletKeys: string[] = [];
+    projects
+      .filter(p => selection.selectedProjectIds.includes(p.id))
+      .forEach(p => {
+        const selectedBulletIds = selection.selectedBullets[p.id] || [];
+        p.bullets
+          .filter(b => selectedBulletIds.includes(b.id))
+          .forEach(b => bulletKeys.push(`${'bullet'}:${b.id}`));
+      });
+    setRewritingKeys([...expKeys, ...bulletKeys]);
+    const expsToRewrite = experience
+      .filter(e => selection.selectedExpIds.includes(e.id))
+      .map(e => ({
+        experience_id: e.id,
+        role: e.jobTitle,
+        company: e.company,
+        description: e.description,
+        keywords: AIanalysis.keywords
+      }));
+
+    const projsToRewrite = projects
+      .filter(p => selection.selectedProjectIds.includes(p.id))
+      .map(p => {
+        const selectedBulletIds = selection.selectedBullets[p.id] || [];
+        return {
+          project_id: p.id,
+          title: p.title,
+          keywords: AIanalysis.keywords,
+          bullets: p.bullets
+            .filter(b => selectedBulletIds.includes(b.id))
+            .map(b => ({ bullet_id: b.id, text: b.text }))
+        };
+      })
+      .filter(p => p.bullets.length > 0);
+
+    await api.rewriteResume({
+      language: profile?.language || Language.ENGLISH,
+      experiences: expsToRewrite,
+      projects: projsToRewrite
+    });
+  }, [experience, projects, profile?.language, selection.selectedExpIds, selection.selectedProjectIds, selection.selectedBullets, AIanalysis.keywords]);
+
+  const updateCustomField = useCallback((entityType: EntityType, id: string, field: string, value: string) => {
+    const key = buildCustomKey(entityType, id, field);
+    setCustomTexts(prev => ({ ...prev, [key]: value }));
+  }, []);
 
   useEffect(() => {
     const removeStatus = api.onAnalysisStatus((data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => {
@@ -113,7 +172,9 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
             selectedExpIds: matches.map(m => m.local_id)
           }));
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.MatchesExperiences }));
-          break;}
+          break;
+        }
+
         case AIAnalysisStatus.MatchesProjects:{
           const matches = data.data as { 
             bestBullets: {
@@ -156,18 +217,48 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
             selectedBullets: newBulletsMap
           }));
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.MatchesProjects }));
-          break;}
+          break;
+        }
+
         case AIAnalysisStatus.Success:{
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Success, isCurrentJob: false }));
           setSelection(prev => ({
             ...prev,
             selectedEducationIds: education.map(e => e.id)
           }));
-          break;}
+          setRewritingKeys([]);
+          toast.success("Task completed successfully!");
+          break;
+        }
+
         case AIAnalysisStatus.Local_Analyze_Result:{
           const localAnalysisData = data.data as { keywords: string[] };
           setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Local_Analyze_Result, keywords: localAnalysisData.keywords }));
-          break;}
+          break;
+        }
+
+        case AIAnalysisStatus.Rewriting: {
+          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Rewriting }));
+          break;
+        }
+
+        case AIAnalysisStatus.Rewrite_Experience_Item: {
+          const item = data.data as { experience_id: string; rewritten_description: string };
+          updateCustomField('experience', item.experience_id, 'description', item.rewritten_description);
+          setRewritingKeys(prev => prev.filter(k => k !== `experience:${item.experience_id}`));
+          break;
+        }
+
+        case AIAnalysisStatus.Rewrite_Project_Item: {
+          const item = data.data as { project_id: string; bullets: { bullet_id: string; rewritten_text: string }[] };
+          item.bullets.forEach(b => {
+            updateCustomField('bullet', b.bullet_id, 'text', b.rewritten_text);
+          });
+          const finishedBulletKeys = item.bullets.map(b => `bullet:${b.bullet_id}`);
+          setRewritingKeys(prev => prev.filter(k => !finishedBulletKeys.includes(k)));
+          break;
+        }
+
         default:
           console.warn("Received unknown analysis status:", data);
           break;
@@ -176,18 +267,14 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
 
     return () => {
       removeStatus();
+      setRewritingKeys([]);
     };
-  }, [profile?.language, education]);
+  }, [profile?.language, education, updateCustomField]);
 
   const getCustomField = useCallback((entityType: EntityType, id: string, field: string, defaultValue: string = '') => {
     const key = buildCustomKey(entityType, id, field);
     return customTexts[key] ?? defaultValue;
   }, [customTexts]);
-
-  const updateCustomField = useCallback((entityType: EntityType, id: string, field: string, value: string) => {
-    const key = buildCustomKey(entityType, id, field);
-    setCustomTexts(prev => ({ ...prev, [key]: value }));
-  }, []);
 
   const resetCustomField = useCallback((entityType: EntityType, id: string, field: string) => {
     const key = buildCustomKey(entityType, id, field);
@@ -274,6 +361,10 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     return selection.selectedBullets[parentId]?.includes(bulletId) || false;
   };
 
+  const isItemRewriting = useCallback((entityType: EntityType, id: string) => {
+    return rewritingKeys.includes(`${entityType}:${id}`);
+  }, [rewritingKeys]);
+
   return (
     <CVSelectionContext.Provider value={{ 
       title,
@@ -283,6 +374,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       AIanalysis,
       customTexts,
       scores,
+      rewritingKeys,
+      isItemRewriting,
       toggleExperience, 
       toggleProject, 
       toggleBullet,
@@ -294,7 +387,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       removeKeyword,
       getCustomField,
       updateCustomField,
-      resetCustomField
+      resetCustomField,
+      runAIRewrite
     }}>
       {children}
     </CVSelectionContext.Provider>

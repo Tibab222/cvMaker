@@ -17,6 +17,7 @@ import { AIService } from './services/AI/AIService';
 import { ConfigurationManager } from './services/config/ConfigurationManager';
 import { selectExportFolder, setDefaultExportPath } from './functions/exportPathSetting';
 import { ProfileService } from './services/ProfileService';
+import { rewriteResume } from './functions/rewriteResume';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
@@ -140,4 +141,5 @@ export function registerIpcHandlers() {
     });
     ipcMain.handle('select-export-folder', selectExportFolder);
     ipcMain.handle('set-default-export-path', (_, path: string) => setDefaultExportPath(path));
+    ipcMain.handle('rewrite-resume', (event, options) => rewriteResume({ event, options }));
 }

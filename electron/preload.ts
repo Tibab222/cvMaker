@@ -3,6 +3,7 @@ import { OnProgressCallback, SetupProgressStatus } from "../shared/OllamaDownloa
 import { Language } from "../shared/profile.interface";
 import { ProfilesData } from "../shared/profilesData.interface";
 import { Project } from "../shared/projects.interface";
+import { RewriteResumeOptions } from "../shared/RewriteResume.type";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { contextBridge, ipcRenderer } = require('electron');
@@ -50,4 +51,5 @@ contextBridge.exposeInMainWorld('api', {
   getDefaultExportPath: () => ipcRenderer.invoke('get-default-export-path'),
   selectExportFolder: () => ipcRenderer.invoke('select-export-folder'),
   setDefaultExportPath: (path: string) => ipcRenderer.invoke('set-default-export-path', path),
+  rewriteResume: (options: RewriteResumeOptions) => ipcRenderer.invoke('rewrite-resume', options),
 });

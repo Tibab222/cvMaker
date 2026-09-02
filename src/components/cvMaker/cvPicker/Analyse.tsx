@@ -9,7 +9,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useUiStore } from "@/store/ui";
 
 export default function Analyse() {
-    const { AIanalysis, runFullAIAnalysis, runLocalAnalysis, removeKeyword } = useCVSelection();
+    const { AIanalysis, rewritingKeys, runFullAIAnalysis, runLocalAnalysis, removeKeyword, runAIRewrite } = useCVSelection();
     const [rawMandate, setRawMandate] = useState('');
     const { aiAvailable } = useUiStore();
 
@@ -57,13 +57,19 @@ export default function Analyse() {
             <Textarea className="bg-white" value={rawMandate} onChange={(e) => setRawMandate(e.target.value)}></Textarea>
             <div className="w-full flex justify-around">
                 {aiAvailable && (
-                    <Button className={"mt-2 cursor-pointer"} onClick={handleStartAnalysis} disabled={AIanalysis.isCurrentJob}>
+                    <Button className={"mt-2 cursor-pointer"} onClick={handleStartAnalysis} disabled={AIanalysis.isCurrentJob || rewritingKeys.length > 0}>
                         Analyse {AIanalysis.isCurrentJob ? <Spinner /> : <Sparkles />}
                     </Button>
                 )}
-                <Button className={"mt-2 cursor-pointer"} onClick={handleStartLocalAnalysis} disabled={AIanalysis.isCurrentJob}>
+                <Button className={"mt-2 cursor-pointer"} onClick={handleStartLocalAnalysis} disabled={AIanalysis.isCurrentJob || rewritingKeys.length > 0}>
                     Fast Analyse {AIanalysis.isCurrentJob ? <Spinner /> : <ScanSearch />}
                 </Button>
+                {/* Add a button to rewrite the resume if there is a valid analysis result */}
+                {AIanalysis.keywords.length > 0 && (
+                    <Button className={"mt-2 cursor-pointer"} onClick={runAIRewrite} disabled={AIanalysis.isCurrentJob || rewritingKeys.length > 0}>
+                        Rewrite Resume {AIanalysis.isCurrentJob ? <Spinner /> : <Sparkles />}
+                    </Button>
+                )}
             </div>
         </motion.div>
     )

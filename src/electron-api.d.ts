@@ -2,6 +2,7 @@ import { ProfilesData } from '../shared/profilesData.interface';
 import { UserConfig } from '../electron/services/config/UserConfig.interface';
 import { SystemRecommendations } from '../shared/SystemRecommendation';
 import { OnProgressCallback } from '../shared/OllamaDownloadStatus';
+import { RewriteResumeOptions } from '../shared/RewriteResume.type';
 
 export {};
 
@@ -34,6 +35,7 @@ declare global {
       getDefaultExportPath: () => Promise<string | null>;
       selectExportFolder: () => Promise<string | null>;
       setDefaultExportPath: (path: string) => Promise<void>;
+      rewriteResume: (options: RewriteResumeOptions) => Promise<{ success?: boolean; error?: string }>;
     };
   }
 }
