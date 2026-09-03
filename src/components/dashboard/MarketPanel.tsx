@@ -3,63 +3,63 @@ import {
   AlertTriangle,
   BellRing,
   CalendarClock,
-  Check,
   FileText,
-  Plus,
-  X,
 } from "lucide-react";
-import { REMINDERS, SKILL_DEMAND, SKILL_GAPS } from "@/lib/dashboard-data";
-import { Badge } from "@/components/ui/badge";
+import { REMINDERS } from "@/lib/dashboard-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useDashboard } from "./provider/hook";
 
 export default function MarketPanel() {
+  const { keywords } = useDashboard();
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card className="border-border/70 bg-surface/70 backdrop-blur">
         <CardHeader>
-          <CardTitle className="text-base">Market Demand vs. My Skills</CardTitle>
+          <CardTitle className="text-base">Market Demand</CardTitle>
           <CardDescription>
-            Top technologies extracted from 24 imported job mandates
+            Top technologies or skills extracted from analyzed job mandates
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            {SKILL_DEMAND.map((skill, i) => (
-              <div key={skill.name}>
+            {keywords.map((skill, i) => (
+              <div key={i}>
                 <div className="mb-1 flex items-baseline justify-between gap-2">
                   <span className="flex items-center gap-1.5 text-sm text-foreground">
-                    {skill.name}
-                    {skill.inProfile ? (
+                    {skill.keyword}
+                    {/* {skill.inProfile ? (
                       <Check className="size-3.5 text-success" />
                     ) : (
                       <X className="size-3.5 text-warning" />
-                    )}
+                    )} */}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {skill.demand}% required across {skill.jobs} jobs
+                    {/* TODO: Replace N with the actual number of jobs */}
+                    {skill.global_count}% required across N jobs
                   </span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                   <motion.div
-                    className={`h-full rounded-full ${skill.inProfile ? "bg-brand" : "bg-warning"}`}
+                    className={`h-full rounded-full ${skill.global_count ? "bg-brand" : "bg-warning"}`}
                     initial={{ width: 0 }}
-                    whileInView={{ width: `${skill.demand}%` }}
+                    whileInView={{ width: `${skill.global_count}%` }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.7, delay: i * 0.04 }}
                   />
                 </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                {/* <p className="mt-1 text-[11px] text-muted-foreground">
                   {skill.inProfile ? "In your profile" : "Missing in CV"}
-                </p>
+                </p> */}
               </div>
             ))}
           </div>
 
           <Separator />
 
-          <div>
+{/* TODO: Add a section for skill gaps */}
+          {/* <div>
             <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
               <AlertTriangle className="size-4 text-warning" /> Skill gaps
             </p>
@@ -78,7 +78,7 @@ export default function MarketPanel() {
                 </Badge>
               ))}
             </div>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
 

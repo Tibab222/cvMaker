@@ -34,4 +34,5 @@ export const api = {
     selectExportFolder: async () => { return await window.api.selectExportFolder() },
     setDefaultExportPath: async (path: string) => { return await window.api.setDefaultExportPath(path) },
     rewriteResume: async (options: RewriteResumeOptions) => { return await window.api.rewriteResume(options) },
+    getTopKeywords: async (limit: number = 10) => { return await window.api.getTopKeywords(limit) },
 }

@@ -12,7 +12,7 @@ import SettingsMain from "../settings/SettingsMain";
 import LeftMenu from "./LeftMenu";
 import { Menu } from "lucide-react";
 import { useProfileStore } from "@/store/profile";
-import DashboardShell from "../dashboard/DashboardShell";
+import Dashboard from "../dashboard/Dashboard";
 
 export default function MainWindow() {
     const { selectedTab, setSelectedTab } = useUiStore();
@@ -40,7 +40,7 @@ export default function MainWindow() {
             case Tabs.SETTINGS:
                 return <SettingsMain />;
             case Tabs.DASHBOARD:
-                return <DashboardShell />;
+                return <Dashboard />;
             default:
                 return (
                     <div className="w-full h-full flex flex-col items-center justify-center">

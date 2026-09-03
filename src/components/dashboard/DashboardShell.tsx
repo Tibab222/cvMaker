@@ -1,18 +1,14 @@
 import {
   Bell,
-  Command,
-  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import StatsRow from "./StatsRow";
 import KanbanBoard from "./KanbanBoard";
 import MarketPanel from "./MarketPanel";
 
 export default function DashboardShell() {
   return (
-    <div className="flex h-full w-full min-w-0 flex-col bg-background text-foreground">
+    <>
         <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-border/70 bg-background/70 px-4 backdrop-blur-xl md:px-6">
             <div>
                 <h1 className="text-sm font-semibold">Career Analytics</h1>
@@ -21,22 +17,18 @@ export default function DashboardShell() {
                 </p>
             </div>
             <div className="relative ml-auto hidden w-72 lg:block">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                {/* <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                     placeholder="Search roles, companies…"
                     className="h-9 bg-surface/70 pl-9 pr-12"
                 />
                 <kbd className="pointer-events-none absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-0.5 rounded border border-border/70 px-1.5 py-0.5 text-[10px] text-muted-foreground">
                     <Command className="size-2.5" />K
-                </kbd>
+                </kbd> */}
             </div>
             <Button variant="ghost" size="icon" className="ml-auto lg:ml-0" aria-label="Notifications">
                 <Bell className="size-4" />
             </Button>
-            <Separator orientation="vertical" className="hidden h-6 sm:block" />
-            <div className="flex size-8 items-center justify-center rounded-full bg-brand-muted text-xs font-semibold text-brand">
-                AM
-            </div>
         </header>
 
         <main className="flex-1 space-y-6 p-4 md:p-6 min-w-0 overflow-y-auto">
@@ -59,6 +51,6 @@ export default function DashboardShell() {
             <MarketPanel />
             </section>
         </main>
-    </div>
+    </>
   );
 }

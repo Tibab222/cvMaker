@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
+import { KeywordStat } from '../../../shared/Keywords.types';
 
 export class KeywordsAffinityDatabase {
   private static instance: KeywordsAffinityDatabase | null = null;
@@ -116,6 +117,36 @@ export class KeywordsAffinityDatabase {
             VACUUM;
         `);
     }
+  }
+
+  /**
+   * Get the top N keywords by global count, useful for displaying trending skills or for analytics.
+   */
+  public getTopKeywords(limit: number = 10): KeywordStat[] {
+    if (!this.db) return [];
+
+    const stmt = this.db.prepare(`
+      SELECT keyword, global_count 
+      FROM local_skills_affinity 
+      ORDER BY global_count DESC 
+      LIMIT ?
+    `);
+
+    return stmt.all(limit) as KeywordStat[];
+  }
+
+  /**
+   * Get the maximum global count across all keywords, useful for normalizing scores or for analytics.
+   */
+  public getTotalAnalysesCount(): number {
+    if (!this.db) return 0;
+
+    const stmt = this.db.prepare(`
+      SELECT MAX(global_count) as max_count FROM local_skills_affinity
+    `);
+    
+    const res = stmt.get() as { max_count: number } | undefined;
+    return res && res.max_count ? res.max_count : 1;
   }
 
   public close(): void {

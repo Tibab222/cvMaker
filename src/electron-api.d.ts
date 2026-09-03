@@ -3,6 +3,7 @@ import { UserConfig } from '../electron/services/config/UserConfig.interface';
 import { SystemRecommendations } from '../shared/SystemRecommendation';
 import { OnProgressCallback } from '../shared/OllamaDownloadStatus';
 import { RewriteResumeOptions } from '../shared/RewriteResume.type';
+import { KeywordStat } from '../shared/Keywords.types';
 
 export {};
 
@@ -36,6 +37,7 @@ declare global {
       selectExportFolder: () => Promise<string | null>;
       setDefaultExportPath: (path: string) => Promise<void>;
       rewriteResume: (options: RewriteResumeOptions) => Promise<{ success?: boolean; error?: string }>;
+      getTopKeywords: (limit?: number) => Promise<KeywordStat[]>;
     };
   }
 }

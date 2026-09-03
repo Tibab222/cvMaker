@@ -52,4 +52,5 @@ contextBridge.exposeInMainWorld('api', {
   selectExportFolder: () => ipcRenderer.invoke('select-export-folder'),
   setDefaultExportPath: (path: string) => ipcRenderer.invoke('set-default-export-path', path),
   rewriteResume: (options: RewriteResumeOptions) => ipcRenderer.invoke('rewrite-resume', options),
+  getTopKeywords: (limit: number = 10) => ipcRenderer.invoke('get-top-keywords', limit),
 });

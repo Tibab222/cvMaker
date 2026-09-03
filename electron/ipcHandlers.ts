@@ -142,4 +142,5 @@ export function registerIpcHandlers() {
     ipcMain.handle('select-export-folder', selectExportFolder);
     ipcMain.handle('set-default-export-path', (_, path: string) => setDefaultExportPath(path));
     ipcMain.handle('rewrite-resume', (event, options) => rewriteResume({ event, options }));
+    ipcMain.handle('get-top-keywords', (event, limit: number = 10) => keywordsAffinityDb.getTopKeywords(limit));
 }
