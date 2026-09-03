@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import type { CVSelection } from './CVselection';
 import { CVSelectionContext } from './context';
-import { type AIAnalysis } from './AIAnalysis';
+import { type AIAnalysisState, type JobInfos } from './types';
 import { api } from '@/api';
 import { AIAnalysisStatus } from '@shared/AIAnalysisStatus';
 import { useProfileStore } from '@/store/profile';
@@ -11,7 +11,8 @@ import { toast } from 'sonner';
 export interface CVSelectionContextType {
   title: string;
   selection: CVSelection;
-  AIanalysis: AIAnalysis;
+  jobInfos: JobInfos | null;
+  aiState: AIAnalysisState;
   customTexts: CustomTextMap;
   scores: ScoreMap;
   rewritingKeys: string[];
@@ -31,6 +32,8 @@ export interface CVSelectionContextType {
   resetCustomField: (entityType: EntityType, id: string, field: string) => void;
   getScore: (entityType: EntityType, id: string) => number | undefined;
   runAIRewrite: () => Promise<void>;
+  initJobMandate: (infos: Partial<JobInfos>) => void;
+  updateJobInfos: (infos: Partial<JobInfos>) => void;
 }
 
 export type EntityType = 'experience' | 'project' | 'bullet' | 'education' | 'skill';
@@ -56,38 +59,62 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     selectedSkillsIds: [],
     selectedEducationIds: []
   });
-  const [AIanalysis, setAIAnalysis] = useState<AIAnalysis>({
-    rawMandate: '',
-    keywords: [],
+  const [aiState, setAiState] = useState<AIAnalysisState>({
     status: AIAnalysisStatus.Idle,
-    jobTitle: '',
-    focus: '',
     isCurrentJob: false
+  });
+  const [jobInfos, setJobInfos] = useState<JobInfos>({
+    title: "",
+    company: "",
+    url: "",
+    description: "",
+    focus: "",
+    keywords: [],
   });
   const [customTexts, setCustomTexts] = useState<CustomTextMap>({});
   const [scores, setScores] = useState<ScoreMap>({});
   const [rewritingKeys, setRewritingKeys] = useState<string[]>([]);
 
   const runFullAIAnalysis = useCallback(async (rawMandate: string) => {
-    setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Loading, rawMandate, isCurrentJob: true }));
+    setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Loading, isCurrentJob: true }));
+    setJobInfos(prev => ({ ...prev, description: rawMandate }));
+
     const analysisResult = await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, true);
     if ('error' in analysisResult) {
       console.error('AI Analysis Error:', analysisResult.error);
-      setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Error }));
+      setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Error }));
     }
   }, [profile?.language]);
 
+  const initJobMandate = useCallback((infos: Partial<JobInfos>) => {
+    setJobInfos(prev => ({
+      ...prev,
+      ...infos,
+    }));
+
+    if (infos.title && infos.company) {
+      setTitle(`CV - ${infos.title} (${infos.company})`);
+    } else if (infos.title) {
+      setTitle(`CV - ${infos.title}`);
+    }
+
+    if (infos.description?.trim()) {
+      runFullAIAnalysis(infos.description.trim());
+    }
+  }, [runFullAIAnalysis]);
+
   const runLocalAnalysis = useCallback(async (rawMandate: string) => {
-    setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Loading, rawMandate, isCurrentJob: false }));
+    setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Loading, isCurrentJob: false }));
+    setJobInfos(prev => ({ ...prev, description: rawMandate }));
     await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, false);
   }, [profile?.language]);
 
   const runAIRewrite = useCallback(async () => {
-    setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Rewriting }));
+    setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Rewriting }));
 
     const expKeys = experience
-    .filter(e => selection.selectedExpIds.includes(e.id))
-    .map(e => `${'experience'}:${e.id}`);
+      .filter(e => selection.selectedExpIds.includes(e.id))
+      .map(e => `${'experience'}:${e.id}`);
 
     const bulletKeys: string[] = [];
     projects
@@ -106,7 +133,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
         role: e.jobTitle,
         company: e.company,
         description: e.description,
-        keywords: AIanalysis.keywords
+        keywords: jobInfos.keywords || []
       }));
 
     const projsToRewrite = projects
@@ -116,7 +143,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
         return {
           project_id: p.id,
           title: p.title,
-          keywords: AIanalysis.keywords,
+          keywords: jobInfos.keywords || [],
           bullets: p.bullets
             .filter(b => selectedBulletIds.includes(b.id))
             .map(b => ({ bullet_id: b.id, text: b.text }))
@@ -127,9 +154,9 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     await api.rewriteResume({
       language: profile?.language || Language.ENGLISH,
       experiences: expsToRewrite,
-      projects: projsToRewrite
+      projects: projsToRewrite,
     });
-  }, [experience, projects, profile?.language, selection.selectedExpIds, selection.selectedProjectIds, selection.selectedBullets, AIanalysis.keywords]);
+  }, [experience, projects, profile?.language, selection.selectedExpIds, selection.selectedProjectIds, selection.selectedBullets, jobInfos.keywords]);
 
   const updateCustomField = useCallback((entityType: EntityType, id: string, field: string, value: string) => {
     const key = buildCustomKey(entityType, id, field);
@@ -140,24 +167,22 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     const removeStatus = api.onAnalysisStatus((data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => {
       switch (data.status) {
         case AIAnalysisStatus.Analyzing:
-          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Analyzing }));
+          setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Analyzing }));
           break;
 
         case AIAnalysisStatus.Analyze_Result:
           { 
             const analysisData = data.data as { job_title: string; skills: string[]; key_focus: string };
-            if (analysisData.job_title) {
-              setTitle(`CV - ${analysisData.job_title}`);
-            }
-            setAIAnalysis(prev => (
-              { ...prev, 
-                status: AIAnalysisStatus.Analyze_Result, 
-                keywords: analysisData.skills, 
-                jobTitle: analysisData.job_title, 
-                focus: analysisData.key_focus 
+            setJobInfos(prev => ({
+                ...prev,
+                focus: analysisData.key_focus || "",
+                keywords: analysisData.skills || []
               }));
+
+            setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Analyze_Result, }));
             break; 
           }
+
         case AIAnalysisStatus.MatchesExperiences:{
           const matches = data.data as { local_id: string; score: number; matchedKeywords: string[], missingKeywords: string[] }[]; // localId corresponds to experiences id
 
@@ -171,7 +196,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
             ...prev,
             selectedExpIds: matches.map(m => m.local_id)
           }));
-          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.MatchesExperiences }));
+          setAiState(prev => ({ ...prev, status: AIAnalysisStatus.MatchesExperiences }));
           break;
         }
 
@@ -216,12 +241,12 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
             selectedProjectIds: projectIds,
             selectedBullets: newBulletsMap
           }));
-          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.MatchesProjects }));
+          setAiState(prev => ({ ...prev, status: AIAnalysisStatus.MatchesProjects }));
           break;
         }
 
         case AIAnalysisStatus.Success:{
-          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Success, isCurrentJob: false }));
+          setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Success, isCurrentJob: false }));
           setSelection(prev => ({
             ...prev,
             selectedEducationIds: education.map(e => e.id)
@@ -233,12 +258,16 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
 
         case AIAnalysisStatus.Local_Analyze_Result:{
           const localAnalysisData = data.data as { keywords: string[] };
-          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Local_Analyze_Result, keywords: localAnalysisData.keywords }));
+          setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Local_Analyze_Result }));
+          setJobInfos(prev => ({
+            ...prev,
+            keywords: localAnalysisData.keywords || []
+          }));
           break;
         }
 
         case AIAnalysisStatus.Rewriting: {
-          setAIAnalysis(prev => ({ ...prev, status: AIAnalysisStatus.Rewriting }));
+          setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Rewriting }));
           break;
         }
 
@@ -291,9 +320,9 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   }, [scores]);
 
   const removeKeyword = useCallback((keyword: string) => {
-    setAIAnalysis(prev => ({
+    setJobInfos(prev => ({
       ...prev,
-      keywords: prev.keywords.filter(k => k !== keyword)
+      keywords: (prev.keywords || []).filter(k => k !== keyword)
     }));
     api.reduceKeywordCount(keyword, 1);
   }, []);
@@ -365,13 +394,21 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     return rewritingKeys.includes(`${entityType}:${id}`);
   }, [rewritingKeys]);
 
+  const updateJobInfos = useCallback((infos: Partial<JobInfos>) => {
+    setJobInfos(prev => ({
+      ...prev,
+      ...infos,
+    }));
+  }, []);
+
   return (
     <CVSelectionContext.Provider value={{ 
       title,
       setTitle,
       selection, 
       getScore,
-      AIanalysis,
+      jobInfos,
+      aiState,
       customTexts,
       scores,
       rewritingKeys,
@@ -388,7 +425,9 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       getCustomField,
       updateCustomField,
       resetCustomField,
-      runAIRewrite
+      runAIRewrite,
+      initJobMandate,
+      updateJobInfos
     }}>
       {children}
     </CVSelectionContext.Provider>
