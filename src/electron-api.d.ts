@@ -38,6 +38,7 @@ declare global {
       setDefaultExportPath: (path: string) => Promise<void>;
       rewriteResume: (options: RewriteResumeOptions) => Promise<{ success?: boolean; error?: string }>;
       getTopKeywords: (limit?: number) => Promise<KeywordStat[]>;
+      saveCVSession: (data: Partial<CVSessionDataDTO>) => Promise<{ success: boolean; id?: string; error?: string }>;
     };
   }
 }

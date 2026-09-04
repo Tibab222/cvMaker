@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import type { CVSelection } from './CVselection';
 import { CVSelectionContext } from './context';
-import { type AIAnalysisState, type JobInfos } from './types';
+import { type AIAnalysisState } from './types';
 import { api } from '@/api';
 import { AIAnalysisStatus } from '@shared/AIAnalysisStatus';
 import { useProfileStore } from '@/store/profile';
 import { Language } from '@shared/profile.interface';
+import { type CVSelection, type CVSessionDataDTO, type JobInfos } from '@shared/jobApplications.type';
 import { toast } from 'sonner';
 
 export interface CVSelectionContextType {
@@ -16,6 +16,8 @@ export interface CVSelectionContextType {
   customTexts: CustomTextMap;
   scores: ScoreMap;
   rewritingKeys: string[];
+  isSaving: boolean;
+  save: () => Promise<string | null>;
   isItemRewriting: (entityType: EntityType, id: string) => boolean;
   setTitle: (title: string) => void;
   toggleExperience: (id: string) => void;
@@ -74,6 +76,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   const [customTexts, setCustomTexts] = useState<CustomTextMap>({});
   const [scores, setScores] = useState<ScoreMap>({});
   const [rewritingKeys, setRewritingKeys] = useState<string[]>([]);
+  const [id, setId] = useState<string | null>(null); // can be null or undefined at the beginning!
+  const [isSaving, setIsSaving] = useState(false);
 
   const runFullAIAnalysis = useCallback(async (rawMandate: string) => {
     setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Loading, isCurrentJob: true }));
@@ -401,6 +405,33 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     }));
   }, []);
 
+  const save = useCallback(async (): Promise<string | null> => {
+    setIsSaving(true);
+    try {
+      const payload: Omit<CVSessionDataDTO, 'id'> & { id?: string } = {
+        id: id || undefined,
+        title,
+        selection,
+        jobInfos,
+        customTexts,
+        scores,
+      };
+
+      const result = await api.saveCVSession(payload);
+
+      if (!result.success || !result.id) {
+        toast.error(`Failed to save CV session: ${result.error}`);
+        return null;
+      }
+      
+      setId(result.id);
+      toast.success("Saved successfully!");
+      return result.id;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [id, title, selection, jobInfos, customTexts, scores]);
+
   return (
     <CVSelectionContext.Provider value={{ 
       title,
@@ -412,6 +443,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       customTexts,
       scores,
       rewritingKeys,
+      isSaving,
+      save,
       isItemRewriting,
       toggleExperience, 
       toggleProject, 

@@ -9,9 +9,30 @@ export enum JobApplicationStatus {
     WITHDRAWN = 'WITHDRAWN', // Offer declined by the user
 }
 
-export interface CreateApplicationDto {
-  jobTitle: string;
-  companyName: string;
-  jsonFilePath?: string;
-  pdfFilePath?: string;
+export type CreateApplicationDto = Omit<CVSessionDataDTO, "id">;
+
+export interface CVSelection {
+  selectedExpIds: string[];
+  selectedProjectIds: string[];
+  selectedBullets: Record<string, string[]>;
+  selectedSkillsIds: string[];
+  selectedEducationIds: string[];
+}
+
+export interface CVSessionDataDTO {
+  id: string;
+  title: string;
+  selection: CVSelection;
+  jobInfos: JobInfos | null;
+  customTexts?: Record<string, string>;
+  scores?: Record<string, number>;
+}
+
+export interface JobInfos {
+    title: string;
+    company: string;
+    url: string;
+    description: string;
+    focus?: string;
+    keywords?: string[];
 }

@@ -1,5 +1,6 @@
 import type { AIAnalysisStatus } from "@shared/AIAnalysisStatus";
 import type { Experience } from "@shared/Experience.interface";
+import type { CVSessionDataDTO } from "@shared/jobApplications.type";
 import type { OnProgressCallback } from "@shared/OllamaDownloadStatus";
 import type { Language } from "@shared/profile.interface";
 import type { ProfilesData } from "@shared/profilesData.interface";
@@ -35,4 +36,5 @@ export const api = {
     setDefaultExportPath: async (path: string) => { return await window.api.setDefaultExportPath(path) },
     rewriteResume: async (options: RewriteResumeOptions) => { return await window.api.rewriteResume(options) },
     getTopKeywords: async (limit: number = 10) => { return await window.api.getTopKeywords(limit) },
+    saveCVSession: async (data: Partial<CVSessionDataDTO>) => { return await window.api.saveCVSession(data) },
 }

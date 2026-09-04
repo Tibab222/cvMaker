@@ -18,6 +18,8 @@ import { ConfigurationManager } from './services/config/ConfigurationManager';
 import { selectExportFolder, setDefaultExportPath } from './functions/exportPathSetting';
 import { ProfileService } from './services/ProfileService';
 import { rewriteResume } from './functions/rewriteResume';
+import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
+import { CVSessionDataDTO } from '../shared/jobApplications.type';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
@@ -65,10 +67,12 @@ export function registerIpcHandlers() {
     ipcMain.handle('loadProfile', async (event, profileId: string) => {
         const profilePath = path.join(profilesDir, profileId);
         const profileService = ProfileService.getInstance();
+        const jobApplicationManager = JobApplicationManager.getInstance();
 
         vectorDb.connect(profilePath);
         keywordsAffinityDb.connect(profilePath);
         const profile = await profileService.loadProfile(profilePath);
+        jobApplicationManager.connect(profilePath);
 
         return profile;
     });
@@ -143,4 +147,8 @@ export function registerIpcHandlers() {
     ipcMain.handle('set-default-export-path', (_, path: string) => setDefaultExportPath(path));
     ipcMain.handle('rewrite-resume', (event, options) => rewriteResume({ event, options }));
     ipcMain.handle('get-top-keywords', (event, limit: number = 10) => keywordsAffinityDb.getTopKeywords(limit));
+    ipcMain.handle('save-CV-session', (event, data: Partial<CVSessionDataDTO>) => {
+        const jobApplicationManager = JobApplicationManager.getInstance();
+        return jobApplicationManager.saveOrUpdateApplication(data);
+    });
 }

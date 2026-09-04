@@ -52,6 +52,12 @@ export class JobApplicationDb {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TRIGGER IF NOT EXISTS update_applications_timestamp 
+            AFTER UPDATE ON applications
+            BEGIN
+                UPDATE applications SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+            END;
         `;
 
         const applicationEventsTable = `
