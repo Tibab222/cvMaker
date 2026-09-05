@@ -69,7 +69,7 @@ The application processes structured JSON data for each experience and project. 
 ### 2. Mandate Analysis (Input)
 When a job description (JD) is submitted, the engine can analyze it in two ways, depending on the user's choice:
 - **Hybrid/Local:** Fast keyword and techno extraction based on local whitelists.
-- **AI-Powered:** Mistral analyzes the context to extract a structured target profile: { "job_title", "skills", "key_focus" }.
+- **AI-Powered:** LLM (Gemini API or Ollama) analyzes the context to extract a structured target profile: `{ "job_title", "skills", "key_focus" }`.
 
 ### 3. Scoring & Assembly (Output)
 The software calculates the Cosine Similarity between the target mandate vectors and your personal experience database.
@@ -99,13 +99,13 @@ Get your local development environment up and running in less than two minutes:
 
 ```bash
 # 1. Clone the repository
-git clone [https://github.com/Tibab222/cvMaker.git](https://github.com/Tibab222/cvMaker.git)
+git clone https://github.com/Tibab222/cvMaker.git
 cd cvMaker
 
 # 2. Install dependencies
 npm install
 
-# 4. Run the app in development mode (Electron + React Hot Reload)
+# 3. Run the app in development mode (Electron + React Hot Reload)
 npm run dev
 ```
 
