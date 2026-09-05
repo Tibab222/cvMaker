@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import {
   Building2,
   CalendarDays,
   Clipboard,
-  Dot,
   ExternalLink,
   FileText,
   FolderOpen,
+  Loader2,
   RefreshCw,
   Wallet,
 } from "lucide-react";
@@ -17,20 +18,63 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useDashboard } from "./provider/hook";
+import { mapApplicationWithEventsToJobCard } from "./mapApplicationToJabCard";
+import type { ApplicationWithEvents } from "@shared/jobApplications.type";
 
 interface Props {
-  job: JobCard | null;
+  rawJob: JobCard | null;
   onOpenChange: (open: boolean) => void;
 }
 
-export default function JobDrawer({ job, onOpenChange }: Props) {
+export default function JobDrawer({ rawJob, onOpenChange }: Props) {
+  const { getApplicationInfos } = useDashboard();
+  const [jobDetails, setJobDetails] = useState<ApplicationWithEvents | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const updateJobDetails = async () => {
+      if (!rawJob) {
+        setJobDetails(null);
+        return;
+      }
+  
+      setIsLoading(true);
+      try {
+        const details = await getApplicationInfos(rawJob.id);
+        if (!cancelled) {
+          setJobDetails(details);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    updateJobDetails();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [getApplicationInfos, rawJob]);
+
+  const isOpen = !!rawJob;
+  const job = jobDetails ? mapApplicationWithEventsToJobCard(jobDetails) : null;
+  
   return (
-    <Sheet open={!!job} onOpenChange={onOpenChange}>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
         className="flex w-full flex-col gap-0 border-border/70 bg-surface/95 p-0 text-foreground backdrop-blur-xl sm:max-w-xl"
       >
-        {job && (
+        {isLoading || !job ? (
+          <div className="flex h-full w-full items-center justify-center">
+            <Loader2 className="size-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
           <>
             <SheetHeader className="gap-3 border-b border-border/70 p-6">
               <div className="flex items-start gap-3">
@@ -42,8 +86,8 @@ export default function JobDrawer({ job, onOpenChange }: Props) {
                   <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                     <Building2 className="size-3.5" />
                     {job.company}
-                    <Dot className="size-4" />
-                    <span className="text-brand">{job.match}% match</span>
+                    {/* <Dot className="size-4" /> */}
+                    {/* <span className="text-brand">{job.match}% match</span> */}
                   </p>
                 </div>
               </div>
@@ -90,7 +134,7 @@ export default function JobDrawer({ job, onOpenChange }: Props) {
                   <ol className="relative space-y-5 border-l border-border/70 pl-6">
                     {job.timeline.map((event, i) => (
                       <motion.li
-                        key={event.at + event.label}
+                        key={i}
                         initial={{ opacity: 0, x: -6 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.05 }}

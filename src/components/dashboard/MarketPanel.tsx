@@ -1,12 +1,4 @@
 import { motion } from "framer-motion";
-import {
-  AlertTriangle,
-  BellRing,
-  CalendarClock,
-  FileText,
-} from "lucide-react";
-import { REMINDERS } from "@/lib/dashboard-data";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useDashboard } from "./provider/hook";
@@ -82,7 +74,7 @@ export default function MarketPanel() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/70 bg-surface/70 backdrop-blur">
+      {/* <Card className="border-border/70 bg-surface/70 backdrop-blur">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <BellRing className="size-4 text-brand" /> Today's Focus & Relances
@@ -130,7 +122,7 @@ export default function MarketPanel() {
             </motion.div>
           ))}
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }

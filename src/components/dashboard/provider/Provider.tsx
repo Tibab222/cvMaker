@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { DashboardContext } from "./Context";
 import type { KeywordStat } from "@shared/Keywords.types";
 import { api } from "@/api";
-import type { Application, ApplicationWithEvents, JobApplicationStatus, KeyStats } from "@shared/jobApplications.type";
+import { JobApplicationStatus, type Application, type ApplicationWithEvents, type KeyStats } from "@shared/jobApplications.type";
 
 export interface DashboardContextType {
   keywords: KeywordStat[];
@@ -62,8 +62,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, [fetchApplications]);
 
     const updateApplicationStatus = async (id: string, newStatus: JobApplicationStatus) => {
+      const isApplied = newStatus === JobApplicationStatus.APPLIED;
       setApplications((prev) =>
-        prev.map((app) => (app.id === id ? { ...app, status: newStatus } : app))
+        prev.map((app) => (app.id === id ? { ...app, status: newStatus, applied_at: isApplied ? (new Date()).toDateString() : app.applied_at } : app))
       );
 
       try {
@@ -77,8 +78,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const getApplicationInfos = async (applicationId: string): Promise<ApplicationWithEvents | null> => {
       try {
-        const applicationInfos = await api.getApplicationWithTimeline(applicationId);
-        return applicationInfos;
+        return await api.getApplicationWithTimeline(applicationId);
       } catch (error) {
         console.error("Error fetching application infos:", error);
         return null;

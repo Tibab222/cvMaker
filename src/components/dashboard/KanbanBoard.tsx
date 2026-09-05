@@ -152,7 +152,7 @@ export default function KanbanBoard() {
         })}
       </div>
 
-      <JobDrawer job={active} onOpenChange={(open) => !open && setActive(null)} />
+      <JobDrawer rawJob={active} onOpenChange={(open) => !open && setActive(null)} />
     </>
   );
 }

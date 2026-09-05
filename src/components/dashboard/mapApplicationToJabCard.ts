@@ -1,5 +1,5 @@
 import type { ColumnId, JobCard } from "@/lib/dashboard-data";
-import { JobApplicationStatus, type Application } from "@shared/jobApplications.type";
+import { JobApplicationStatus, type Application, type ApplicationWithEvents } from "@shared/jobApplications.type";
 
 const statusToColumnMap: Record<JobApplicationStatus, {
     label: string;
@@ -44,3 +44,16 @@ export const columnToStatusMap: Record<ColumnId, JobApplicationStatus> = {
   "offer": JobApplicationStatus.OFFER,
   "archived": JobApplicationStatus.ARCHIVED,
 };
+
+export function mapApplicationWithEventsToJobCard(application: ApplicationWithEvents): JobCard {
+    const applicationAlone = mapApplicationToJobCard(application);
+    const timeline = application.events.map(event => ({
+            at: new Date(event.event_date).toLocaleDateString(),
+            label: event.event_type,
+            file: event.description || undefined,
+        }));
+    return {
+        ...applicationAlone,
+        timeline: timeline,
+    };
+}
