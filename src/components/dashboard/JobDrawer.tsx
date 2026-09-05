@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDashboard } from "./provider/hook";
 import { mapApplicationWithEventsToJobCard } from "./mapApplicationToJabCard";
 import type { ApplicationWithEvents } from "@shared/jobApplications.type";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 interface Props {
   rawJob: JobCard | null;
@@ -103,7 +104,7 @@ export default function JobDrawer({ rawJob, onOpenChange }: Props) {
                   <p className="flex items-center gap-1 text-muted-foreground">
                     <Wallet className="size-3" /> Salary range
                   </p>
-                  <p className="mt-0.5 font-medium text-foreground">{job.salary}</p>
+                  <p className="mt-0.5 font-medium text-foreground">{job.salary || "Coming soon..."}</p>
                 </div>
               </div>
 
@@ -117,17 +118,39 @@ export default function JobDrawer({ rawJob, onOpenChange }: Props) {
 
             <Tabs defaultValue="timeline" className="flex min-h-0 flex-1 flex-col">
               <div className="px-6 pt-4">
-                <TabsList className="w-full">
-                  <TabsTrigger value="timeline" className="flex-1">
-                    Timeline
-                  </TabsTrigger>
-                  <TabsTrigger value="resume" className="flex-1">
-                    Tailored Resume
-                  </TabsTrigger>
-                  <TabsTrigger value="notes" className="flex-1">
-                    Notes & Prep
-                  </TabsTrigger>
-                </TabsList>
+                <TooltipProvider>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="timeline" className="flex-1">
+                      Timeline
+                    </TabsTrigger>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex-1 cursor-not-allowed">
+                          <TabsTrigger value="resume" className="flex-1" disabled title="Coming soon...">
+                              Tailored Resume 
+                          </TabsTrigger>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Coming soon...</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex-1 cursor-not-allowed">
+                          <TabsTrigger value="notes" className="flex-1" disabled title="Coming soon...">
+                            Notes & Prep
+                          </TabsTrigger>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Coming soon...</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TabsList>
+                </TooltipProvider>
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto p-6">

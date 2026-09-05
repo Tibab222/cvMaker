@@ -48,6 +48,7 @@ export class JobApplicationDb {
                 status TEXT NOT NULL CHECK (status IN (${statusString})),
                 keywords TEXT,
                 salary INTEGER, -- Optional salary field
+                recruiter_contact TEXT, -- Optional recruiter contact field
                 url TEXT, -- Original job offer URL
                 json_file_path TEXT, -- .json local
                 pdf_file_path TEXT, -- exported Resume PDF
