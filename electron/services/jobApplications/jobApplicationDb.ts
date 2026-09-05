@@ -47,9 +47,12 @@ export class JobApplicationDb {
                 company_name TEXT NOT NULL,
                 status TEXT NOT NULL CHECK (status IN (${statusString})),
                 keywords TEXT,
+                salary INTEGER, -- Optional salary field
                 url TEXT, -- Original job offer URL
                 json_file_path TEXT, -- .json local
-                pdf_file_path TEXT, -- exported PDF
+                pdf_file_path TEXT, -- exported Resume PDF
+                motivation_letter_file_path TEXT, -- exported Motivation Letter PDF
+                notes TEXT, -- User notes
                 applied_at DATETIME, -- Date when the application was submitted
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

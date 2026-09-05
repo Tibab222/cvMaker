@@ -1,7 +1,3 @@
-import {
-  Bell,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 import StatsRow from "./StatsRow";
 import KanbanBoard from "./KanbanBoard";
 import MarketPanel from "./MarketPanel";
@@ -13,7 +9,7 @@ export default function DashboardShell() {
             <div>
                 <h1 className="text-sm font-semibold">Career Analytics</h1>
                 <p className="hidden text-[11px] text-muted-foreground sm:block">
-                    Local pipeline · 24 mandates indexed
+                    Local pipeline
                 </p>
             </div>
             <div className="relative ml-auto hidden w-72 lg:block">
@@ -26,9 +22,9 @@ export default function DashboardShell() {
                     <Command className="size-2.5" />K
                 </kbd> */}
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto lg:ml-0" aria-label="Notifications">
+            {/* <Button variant="ghost" size="icon" className="ml-auto lg:ml-0" aria-label="Notifications">
                 <Bell className="size-4" />
-            </Button>
+            </Button> */}
         </header>
 
         <main className="flex-1 space-y-6 p-4 md:p-6 min-w-0 overflow-y-auto">

@@ -42,7 +42,6 @@ export default function StatsRow() {
     ghostingRate: 0,
     offerRate: 0,
   };
-  console.log("StatsRow: keyStats", keyStats, "stats", stats);
   const trend = stats.activitySpark[stats.activitySpark.length - 1] - stats.activitySpark[0];
 
   const STATS = [

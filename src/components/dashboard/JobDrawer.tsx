@@ -107,11 +107,12 @@ export default function JobDrawer({ rawJob, onOpenChange }: Props) {
                 </div>
               </div>
 
-              <Button asChild variant="outline" size="sm" className="w-fit">
+              { job.url &&
+                <Button asChild variant="outline" size="sm" className="w-fit">
                 <a href={job.url} target="_blank" rel="noreferrer">
                   <ExternalLink className="size-3.5" /> Open job posting
                 </a>
-              </Button>
+              </Button>}
             </SheetHeader>
 
             <Tabs defaultValue="timeline" className="flex min-h-0 flex-1 flex-col">

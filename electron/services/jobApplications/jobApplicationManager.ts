@@ -34,7 +34,7 @@ export class JobApplicationManager {
         const rawDb = this.getDb();
 
         const sql = `
-            SELECT id, job_title, company_name, status, keywords, json_file_path, pdf_file_path, applied_at, created_at, updated_at
+            SELECT *
             FROM applications
             ORDER BY created_at DESC
         `;
@@ -50,7 +50,7 @@ export class JobApplicationManager {
     public getApplicationWithTimeline(applicationId: string): ApplicationWithEvents | null {
         const rawDb = this.getDb();
         const appSql = `
-            SELECT id, job_title, company_name, status, json_file_path, pdf_file_path, applied_at, created_at, updated_at
+            SELECT *
             FROM applications
             WHERE id = ?
         `;
@@ -59,7 +59,7 @@ export class JobApplicationManager {
         application.keywords = application.keywords ? (application.keywords as unknown as string).split(',') : [];
 
         const eventsSql = `
-            SELECT id, application_id, event_type, description, event_date
+            SELECT *
             FROM application_events
             WHERE application_id = ?
             ORDER BY event_date DESC

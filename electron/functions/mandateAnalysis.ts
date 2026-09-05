@@ -35,9 +35,7 @@ export async function analyzeMandate({ event, options }: AnalyseMandateProps): P
             })) as unknown as { job_title: string; skills: string[]; key_focus: string };
             // update affinity database with new keywords
             const dbAffinity = KeywordsAffinityDatabase.getInstance();
-            console.log('Analysis result:', analysisResult);
             const skills = analysisResult.skills.map((skill) => skill.toLowerCase());
-            console.log('Incrementing keywords in affinity database:', skills);
             dbAffinity.incrementKeywords(skills);
             keywords = analysisResult.skills;
             dbAffinity.runEvictionPolicy();

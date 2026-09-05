@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol } from 'electron';
+import { app, BrowserWindow, protocol, shell } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { registerIpcHandlers } from './ipcHandlers';
@@ -48,6 +48,13 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
     }
+  });
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http:') || url.startsWith('https:')) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
   });
 
   const isDev = !app.isPackaged;

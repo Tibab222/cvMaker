@@ -23,7 +23,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const fetchApplications = useCallback(async () => {
       try {
         setIsLoading(true);
-        const data = await api.getApplications(); // TODO
+        const data = await api.getApplications();
         setApplications(data);
       } catch (error) {
         console.error("Error fetching applications:", error);
@@ -68,7 +68,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       );
 
       try {
-        await api.updateApplicationStatus(id, newStatus); // TODO
+        await api.updateApplicationStatus(id, newStatus);
         fetchKeyStats();
       } catch (error) {
         console.error("Failed to update status on server:", error);
