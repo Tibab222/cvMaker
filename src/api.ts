@@ -1,6 +1,6 @@
 import type { AIAnalysisStatus } from "@shared/AIAnalysisStatus";
 import type { Experience } from "@shared/Experience.interface";
-import type { CVSessionDataDTO } from "@shared/jobApplications.type";
+import type { CVSessionDataDTO, JobApplicationStatus } from "@shared/jobApplications.type";
 import type { OnProgressCallback } from "@shared/OllamaDownloadStatus";
 import type { Language } from "@shared/profile.interface";
 import type { ProfilesData } from "@shared/profilesData.interface";
@@ -38,4 +38,7 @@ export const api = {
     getTopKeywords: async (limit: number = 10) => { return await window.api.getTopKeywords(limit) },
     saveCVSession: async (data: Partial<CVSessionDataDTO>) => { return await window.api.saveCVSession(data) },
     getKeyStats: async () => { return await window.api.getKeyStats() },
+    getApplications: async () => { return await window.api.getApplications() },
+    updateApplicationStatus: async (id: string, newStatus: JobApplicationStatus) => { return await window.api.updateApplicationStatus(id, newStatus) },
+    getApplicationWithTimeline: async (applicationId: string) => { return await window.api.getApplicationWithTimeline(applicationId) }
 }

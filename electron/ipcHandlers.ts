@@ -19,7 +19,7 @@ import { selectExportFolder, setDefaultExportPath } from './functions/exportPath
 import { ProfileService } from './services/ProfileService';
 import { rewriteResume } from './functions/rewriteResume';
 import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
-import { CVSessionDataDTO } from '../shared/jobApplications.type';
+import { CVSessionDataDTO, JobApplicationStatus } from '../shared/jobApplications.type';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
@@ -152,4 +152,11 @@ export function registerIpcHandlers() {
         return jobApplicationManager.saveOrUpdateApplication(data);
     });
     ipcMain.handle('get-key-stats', () => { return JobApplicationManager.getInstance().getKeyStats(); });
+    ipcMain.handle('get-applications', () => { return JobApplicationManager.getInstance().getAllApplications(); });
+    ipcMain.handle('get-application-with-timeline', (event, applicationId: string) => {
+        return JobApplicationManager.getInstance().getApplicationWithTimeline(applicationId);
+    });
+    ipcMain.handle('update-application-status', (event, applicationId: string, newStatus: JobApplicationStatus, note?: string) => {
+        return JobApplicationManager.getInstance().updateStatus(applicationId, newStatus as JobApplicationStatus, note);
+    });
 }

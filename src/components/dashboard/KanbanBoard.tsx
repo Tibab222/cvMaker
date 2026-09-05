@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CalendarDays, CircleCheck, GripVertical, TriangleAlert, Sparkles } from "lucide-react";
-import { COLUMNS, JOBS, type ColumnId, type JobCard } from "@/lib/dashboard-data";
+import { CalendarDays, CircleCheck, GripVertical, TriangleAlert, Sparkles, Loader2 } from "lucide-react";
+import { COLUMNS, type ColumnId, type JobCard } from "@/lib/dashboard-data";
 import { Badge } from "@/components/ui/badge";
 import JobDrawer from "./JobDrawer";
+import { useDashboard } from "./provider/hook";
+import { columnToStatusMap, mapApplicationToJobCard } from "./mapApplicationToJabCard";
 
-function matchTone(match: number) {
-  if (match >= 85) return "bg-success/12 text-success border-success/25";
-  if (match >= 70) return "bg-warning/12 text-warning border-warning/25";
-  return "bg-muted text-muted-foreground border-border";
-}
+// function matchTone(match: number) {
+//   if (match >= 85) return "bg-success/12 text-success border-success/25";
+//   if (match >= 70) return "bg-warning/12 text-warning border-warning/25";
+//   return "bg-muted text-muted-foreground border-border";
+// }
 
 function StatusChip({ label, tone }: { label: string; tone: "info" | "warn" | "ok" }) {
   const Icon = tone === "warn" ? TriangleAlert : tone === "ok" ? CircleCheck : Sparkles;
@@ -28,18 +30,32 @@ function StatusChip({ label, tone }: { label: string; tone: "info" | "warn" | "o
 }
 
 export default function KanbanBoard() {
-  const [jobs, setJobs] = useState<JobCard[]>(JOBS);
+  const { applications, updateApplicationStatus, isLoading } = useDashboard();
+  // const [jobs, setJobs] = useState<JobCard[]>(JOBS);
   const [active, setActive] = useState<JobCard | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overColumn, setOverColumn] = useState<ColumnId | null>(null);
 
+  const jobs: JobCard[] = applications.map(mapApplicationToJobCard);
+
   const drop = (column: ColumnId) => {
     if (dragId) {
-      setJobs((prev) => prev.map((j) => (j.id === dragId ? { ...j, column } : j)));
+      const newStatus = columnToStatusMap[column];
+      if (newStatus) {
+        updateApplicationStatus(dragId, newStatus);
+      }
     }
     setDragId(null);
     setOverColumn(null);
   };
+
+  if (isLoading && jobs.length === 0) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -98,11 +114,11 @@ export default function KanbanBoard() {
                     </div>
 
                     <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                      <span
+                      {/* <span
                         className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${matchTone(job.match)}`}
                       >
                         {job.match}% Match
-                      </span>
+                      </span> */}
                       <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                         <CalendarDays className="size-3" />
                         {job.dateTag}

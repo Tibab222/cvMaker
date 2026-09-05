@@ -4,6 +4,7 @@ import { SystemRecommendations } from '../shared/SystemRecommendation';
 import { OnProgressCallback } from '../shared/OllamaDownloadStatus';
 import { RewriteResumeOptions } from '../shared/RewriteResume.type';
 import { KeywordStat } from '../shared/Keywords.types';
+import { Application, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats } from '../shared/jobApplications.type';
 
 export {};
 
@@ -40,6 +41,9 @@ declare global {
       getTopKeywords: (limit?: number) => Promise<KeywordStat[]>;
       saveCVSession: (data: Partial<CVSessionDataDTO>) => Promise<{ success: boolean; id?: string; error?: string }>;
       getKeyStats: () => Promise<KeyStats>;
+      getApplications: () => Promise<Application[]>;
+      updateApplicationStatus: (id: string, newStatus: JobApplicationStatus) => Promise<void>;
+      getApplicationWithTimeline: (applicationId: string) => Promise<ApplicationWithEvents | null>;
     };
   }
 }

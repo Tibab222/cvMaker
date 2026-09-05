@@ -1,5 +1,5 @@
 import { Experience } from "../shared/Experience.interface";
-import { CVSessionDataDTO, KeyStats } from "../shared/jobApplications.type";
+import { Application, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats } from "../shared/jobApplications.type";
 import { OnProgressCallback, SetupProgressStatus } from "../shared/OllamaDownloadStatus";
 import { Language } from "../shared/profile.interface";
 import { ProfilesData } from "../shared/profilesData.interface";
@@ -56,4 +56,7 @@ contextBridge.exposeInMainWorld('api', {
   getTopKeywords: (limit: number = 10) => ipcRenderer.invoke('get-top-keywords', limit),
   saveCVSession: (data: Partial<CVSessionDataDTO>) => ipcRenderer.invoke('save-CV-session', data) as Promise<{ id: string; success: boolean; error?: string }>, // return the id of the saved session or an error message if it fails
   getKeyStats: () => ipcRenderer.invoke('get-key-stats') as Promise<KeyStats>,
+  getApplications: () => ipcRenderer.invoke('get-applications') as Promise<Application[]>,
+  getApplicationWithTimeline: (applicationId: string) => ipcRenderer.invoke('get-application-with-timeline', applicationId) as Promise<ApplicationWithEvents | null>,
+  updateApplicationStatus: (applicationId: string, newStatus: JobApplicationStatus, note?: string) => ipcRenderer.invoke('update-application-status', applicationId, newStatus, note) as Promise<void>,
 });

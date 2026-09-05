@@ -1,5 +1,5 @@
 import path from "node:path";
-import { ApplicationEventType, CreateApplicationDto, CVSessionDataDTO, JobApplicationStatus, KeyStats } from "../../../shared/jobApplications.type";
+import { Application, ApplicationEvent, ApplicationEventType, ApplicationWithEvents, CreateApplicationDto, CVSessionDataDTO, JobApplicationStatus, KeyStats } from "../../../shared/jobApplications.type";
 import { JobApplicationDb } from "./jobApplicationDb";
 import fs from "node:fs";
 
@@ -30,6 +30,45 @@ export class JobApplicationManager {
         this.sessionsDir = sessionsDir;
     }
 
+    public getAllApplications(): Application[] {
+        const rawDb = this.getDb();
+
+        const sql = `
+            SELECT id, job_title, company_name, status, keywords, json_file_path, pdf_file_path, applied_at, created_at, updated_at
+            FROM applications
+            ORDER BY created_at DESC
+        `;
+
+        const rows = rawDb.prepare(sql).all() as Partial<Application>[];
+
+        return rows.map((row) => ({
+            ...row,
+            keywords: row.keywords ? (row.keywords as unknown as string).split(',') : []
+        } as Application));
+    }
+
+    public getApplicationWithTimeline(applicationId: string): ApplicationWithEvents | null {
+        const rawDb = this.getDb();
+        const appSql = `
+            SELECT id, job_title, company_name, status, json_file_path, pdf_file_path, applied_at, created_at, updated_at
+            FROM applications
+            WHERE id = ?
+        `;
+        const application = rawDb.prepare(appSql).get(applicationId) as Application | undefined;
+        if (!application) return null;
+        application.keywords = application.keywords ? (application.keywords as unknown as string).split(',') : [];
+
+        const eventsSql = `
+            SELECT id, application_id, event_type, description, event_date
+            FROM application_events
+            WHERE application_id = ?
+            ORDER BY event_date DESC
+        `;
+        const events = rawDb.prepare(eventsSql).all(applicationId) as ApplicationEvent[];
+
+        return { ...application, events };
+    }
+
     public createApplication(dto: CreateApplicationDto) {
         if (!this.sessionsDir) throw new Error("Sessions path not set. Call connect() first.");
         const id = `app_${crypto.randomUUID()}`; // I hope it's unique enough for our use case. If not, we can add like jobTitle + companyName + timestamp or something like that.
@@ -50,9 +89,12 @@ export class JobApplicationManager {
 
         fs.writeFileSync(fullJsonPath, JSON.stringify(fullSessionData, null, 2), "utf-8");
 
+        const keywords = dto.jobInfos?.keywords || [];
+        const url = dto.jobInfos?.url || "";
+
         const stmt = rawDb.prepare(`
-            INSERT INTO applications (id, job_title, company_name, status, json_file_path)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO applications (id, job_title, company_name, status, keywords, url, json_file_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         `);
 
         const eventStmt = rawDb.prepare(`
@@ -62,7 +104,7 @@ export class JobApplicationManager {
 
         try {
             const transaction = rawDb.transaction(() => {
-                stmt.run(id, jobTitle, companyName, initialStatus, relativeJsonPath);
+                stmt.run(id, jobTitle, companyName, initialStatus, keywords.join(','), url, relativeJsonPath);
                 eventStmt.run(id, ApplicationEventType.STATUS_CHANGE, `Created with status ${initialStatus}`);
             });
             transaction();
@@ -158,7 +200,7 @@ export class JobApplicationManager {
         const query = `
             SELECT COUNT(*) AS count 
             FROM applications 
-            WHERE status NOT IN ('${JobApplicationStatus.DRAFT}', '${JobApplicationStatus.REJECTED}', '${JobApplicationStatus.OFFER}', '${JobApplicationStatus.WITHDRAWN}', '${JobApplicationStatus.ARCHIVED}');
+            WHERE status NOT IN ('${JobApplicationStatus.DRAFT}', '${JobApplicationStatus.REJECTED}', '${JobApplicationStatus.OFFER}', '${JobApplicationStatus.WITHDRAWN}', '${JobApplicationStatus.ARCHIVED}', '${JobApplicationStatus.REVIEW}');
         `;
         const result = rawDb.prepare(query).get() as { count: number };
         return result.count;
@@ -189,7 +231,6 @@ export class JobApplicationManager {
             }
         }
 
-        console.log("Activity Sparkline Data:", sparkline);
         return sparkline;
     }
 
@@ -307,14 +348,16 @@ export class JobApplicationManager {
 
         const jobTitle = sessionData.jobInfos?.title || sessionData.title || "Unknown";
         const companyName = sessionData.jobInfos?.company || "Unknown";
+        const keywords = sessionData.jobInfos?.keywords || [];
+        const url = sessionData.jobInfos?.url || "";
 
         const updateStmt = rawDb.prepare(`
             UPDATE applications 
-            SET job_title = ?, company_name = ?, updated_at = CURRENT_TIMESTAMP 
+            SET job_title = ?, company_name = ?, keywords = ?, url = ?, updated_at = CURRENT_TIMESTAMP 
             WHERE id = ?
         `);
 
-        updateStmt.run(jobTitle, companyName, sessionData.id);
+        updateStmt.run(jobTitle, companyName, keywords.join(','), url, sessionData.id);
     }
 
     private getDb() {

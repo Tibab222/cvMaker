@@ -53,3 +53,29 @@ export interface KeyStats {
     ghostingRate: number;  // Ex: 12.0 (for 12.0%)
     offerRate: number;     // Ex: 5.0  (for 5.0%)
 }
+
+export interface Application {
+    id: string;                      // PRIMARY KEY (UUID)
+    job_title: string;               // NOT NULL
+    company_name: string;            // NOT NULL
+    status: JobApplicationStatus;    // CHECK (status IN (...))
+    keywords: string[];
+    url?: string | null;             // NULLABLE
+    json_file_path?: string | null;  // NULLABLE
+    pdf_file_path?: string | null;   // NULLABLE
+    applied_at?: string | null;      // DATETIME (Format ISO/string en JS)
+    created_at: string;              // DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at: string;              // DATETIME DEFAULT CURRENT_TIMESTAMP
+}
+
+export interface ApplicationEvent {
+  id: number;                      // PRIMARY KEY AUTOINCREMENT
+  application_id: string;          // FOREIGN KEY -> applications(id)
+  event_type: ApplicationEventType; // CHECK (event_type IN (...))
+  description?: string | null;     // TEXT
+  event_date: string;              // DATETIME DEFAULT CURRENT_TIMESTAMP
+}
+
+export interface ApplicationWithEvents extends Application {
+  events: ApplicationEvent[];
+}

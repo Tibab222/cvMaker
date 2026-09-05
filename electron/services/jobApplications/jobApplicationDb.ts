@@ -46,6 +46,8 @@ export class JobApplicationDb {
                 job_title TEXT NOT NULL,
                 company_name TEXT NOT NULL,
                 status TEXT NOT NULL CHECK (status IN (${statusString})),
+                keywords TEXT,
+                url TEXT, -- Original job offer URL
                 json_file_path TEXT, -- .json local
                 pdf_file_path TEXT, -- exported PDF
                 applied_at DATETIME, -- Date when the application was submitted

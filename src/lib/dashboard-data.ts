@@ -16,18 +16,18 @@ export interface JobCard {
   id: string;
   title: string;
   company: string;
-  logo: string;
-  match: number;
+  logo?: string;
+  // match: number;
   dateTag: string;
   stack: string[];
   status: { label: string; tone: "info" | "warn" | "ok" }[];
   column: ColumnId;
-  salary: string;
-  url: string;
+  salary?: string;
+  url?: string;
   appliedAt: string;
-  resume: string;
+  resume?: string;
   timeline: TimelineEvent[];
-  notes: string;
+  notes?: string;
 }
 
 export const COLUMNS: { id: ColumnId; label: string; hint: string }[] = [
@@ -45,7 +45,7 @@ export const JOBS: JobCard[] = [
     title: "Senior Full-Stack Engineer",
     company: "Stripe",
     logo: "ST",
-    match: 92,
+    // match: 92,
     dateTag: "Applied Sep 2",
     stack: ["React", "Node.js", "PostgreSQL"],
     status: [
@@ -70,7 +70,7 @@ export const JOBS: JobCard[] = [
     title: "Platform Engineer (LLM Infra)",
     company: "Vercel",
     logo: "VC",
-    match: 88,
+    // match: 88,
     dateTag: "Imported Sep 8",
     stack: ["Python", "LLMs", "Kubernetes"],
     status: [{ label: "Awaiting AI pass", tone: "info" }],
@@ -87,7 +87,7 @@ export const JOBS: JobCard[] = [
     title: "Backend Engineer, Geo Systems",
     company: "Mapbox",
     logo: "MB",
-    match: 79,
+    // match: 79,
     dateTag: "Drafted Sep 6",
     stack: ["NestJS", "PostGIS", "TypeScript"],
     status: [{ label: "CV v1 Generated", tone: "ok" }],
@@ -107,7 +107,7 @@ export const JOBS: JobCard[] = [
     title: "Systems Engineer, C++ Runtime",
     company: "Nvidia",
     logo: "NV",
-    match: 71,
+    // match: 71,
     dateTag: "Applied Aug 28",
     stack: ["C++", "CUDA", "Python"],
     status: [{ label: "Screening passed", tone: "ok" }],
@@ -129,7 +129,7 @@ export const JOBS: JobCard[] = [
     title: "Full-Stack Engineer, AI Tools",
     company: "Linear",
     logo: "LN",
-    match: 84,
+    // match: 84,
     dateTag: "Applied Aug 20",
     stack: ["React", "GraphQL", "Node.js"],
     status: [{ label: "Offer pending signature", tone: "ok" }],
@@ -150,7 +150,7 @@ export const JOBS: JobCard[] = [
     title: "Senior Software Engineer",
     company: "Datadog",
     logo: "DD",
-    match: 63,
+    // match: 63,
     dateTag: "Closed Aug 14",
     stack: ["Go", "PostgreSQL", "AWS"],
     status: [{ label: "Rejected after screen", tone: "warn" }],
@@ -170,7 +170,7 @@ export const JOBS: JobCard[] = [
     title: "Product Engineer",
     company: "Supabase",
     logo: "SB",
-    match: 90,
+    // match: 90,
     dateTag: "Imported Sep 11",
     stack: ["TypeScript", "PostgreSQL", "Deno"],
     status: [{ label: "High affinity", tone: "info" }],
@@ -187,7 +187,7 @@ export const JOBS: JobCard[] = [
     title: "AI Application Engineer",
     company: "Anthropic",
     logo: "AN",
-    match: 86,
+    // match: 86,
     dateTag: "Applied Sep 1",
     stack: ["Python", "LLMs", "React"],
     status: [{ label: "Technical round Sep 15", tone: "info" }],
