@@ -37,4 +37,5 @@ export const api = {
     rewriteResume: async (options: RewriteResumeOptions) => { return await window.api.rewriteResume(options) },
     getTopKeywords: async (limit: number = 10) => { return await window.api.getTopKeywords(limit) },
     saveCVSession: async (data: Partial<CVSessionDataDTO>) => { return await window.api.saveCVSession(data) },
+    getKeyStats: async () => { return await window.api.getKeyStats() },
 }

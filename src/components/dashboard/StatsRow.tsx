@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { ArrowDownRight, ArrowUpRight, Briefcase, Clock, Target, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useDashboard } from "./provider/hook";
 
 function Sparkline({ points }: { points: number[] }) {
   const max = Math.max(...points);
@@ -29,43 +30,59 @@ function Sparkline({ points }: { points: number[] }) {
   );
 }
 
-const STATS = [
-  {
-    key: "apps",
-    label: "Active Applications",
-    value: "14",
-    icon: Briefcase,
-    badge: "+3 this week",
-    trend: "up" as const,
-    spark: [4, 6, 5, 8, 7, 11, 14],
-  },
-  {
-    key: "rate",
-    label: "Interview Rate",
-    value: "28.5%",
-    icon: TrendingUp,
-    sub: "4 out of 14 converted",
-    progress: 28.5,
-  },
-  {
-    key: "time",
-    label: "Avg Response Time",
-    value: "8 Days",
-    icon: Clock,
-    badge: "2 days faster than avg",
-    trend: "down" as const,
-  },
-  {
-    key: "match",
-    label: "Top Market Match",
-    value: "92%",
-    icon: Target,
-    sub: "Senior Full-Stack affinity",
-    progress: 92,
-  },
-];
-
 export default function StatsRow() {
+  const { keyStats } = useDashboard();
+
+  const stats = keyStats ?? {
+    activeApplications: 0,
+    activitySpark: [0, 0, 0, 0, 0, 0, 0, 0],
+    applicationsLastWeek: 0,
+    avgResponseTimeDays: 0,
+    interviewRate: 0,
+    ghostingRate: 0,
+    offerRate: 0,
+  };
+  console.log("StatsRow: keyStats", keyStats, "stats", stats);
+  const trend = stats.activitySpark[stats.activitySpark.length - 1] - stats.activitySpark[0];
+
+  const STATS = [
+    {
+      key: "apps",
+      label: "Active Applications",
+      value: `${stats.activeApplications}`,
+      icon: Briefcase,
+      badge: `+${stats.applicationsLastWeek} this week`,
+      trend: trend >= 0 ? "up" : "down",
+      spark: stats.activitySpark,
+    },
+    {
+      key: "interview-rate",
+      label: "Interview Rate",
+      value: `${stats.interviewRate}%`,
+      icon: TrendingUp,
+      sub: "Conversion from total applications",
+      progress: Math.min(stats.interviewRate, 100),
+    },
+    {
+      key: "response-time",
+      label: "Avg Response Time",
+      value: `${stats.avgResponseTimeDays} Days`,
+      icon: Clock,
+      sub: "From application to 1st status change",
+      // badge: "2 days faster than avg",
+      // trend: "down" as const,
+    },
+    {
+      key: "offer-rate",
+      label: "Offer Rate",
+      value: `${stats.offerRate}%`,
+      icon: Target,
+      sub: "Conversion from interviews to offers",
+      progress: Math.min(stats.offerRate, 100),
+    },
+  ];
+
+
   return (
     <div className="grid w-full gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {STATS.map((stat, i) => {

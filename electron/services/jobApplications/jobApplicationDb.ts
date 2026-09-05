@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import path from "node:path";
 import fs from "node:fs";
-import { JobApplicationStatus } from "../../../shared/jobApplications.type";
+import { ApplicationEventType, JobApplicationStatus } from "../../../shared/jobApplications.type";
 
 export class JobApplicationDb {
     private db: Database.Database | null = null;
@@ -60,12 +60,13 @@ export class JobApplicationDb {
             END;
         `;
 
+        const eventsString = Object.values(ApplicationEventType).map(event => `'${event}'`).join(', ');
         const applicationEventsTable = `
             CREATE TABLE IF NOT EXISTS application_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 application_id TEXT NOT NULL,
-                event_type TEXT NOT NULL,          -- 'STATUS_CHANGE', 'INTERVIEW_SCHEDULED', 'NOTE_ADDED'
-                description TEXT,                  -- Ex: "Entrevue RH passée avec succès"
+                event_type TEXT NOT NULL CHECK (event_type IN (${eventsString})), -- 'STATUS_CHANGE', 'INTERVIEW_SCHEDULED', 'NOTE_ADDED'
+                description TEXT,
                 event_date DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE
             );

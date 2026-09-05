@@ -1,5 +1,5 @@
 import path from "node:path";
-import { CreateApplicationDto, CVSessionDataDTO, JobApplicationStatus } from "../../../shared/jobApplications.type";
+import { ApplicationEventType, CreateApplicationDto, CVSessionDataDTO, JobApplicationStatus, KeyStats } from "../../../shared/jobApplications.type";
 import { JobApplicationDb } from "./jobApplicationDb";
 import fs from "node:fs";
 
@@ -57,13 +57,13 @@ export class JobApplicationManager {
 
         const eventStmt = rawDb.prepare(`
             INSERT INTO application_events (application_id, event_type, description)
-            VALUES (?, 'STATUS_CHANGE', ?)
+            VALUES (?, ?, ?)
         `);
 
         try {
             const transaction = rawDb.transaction(() => {
                 stmt.run(id, jobTitle, companyName, initialStatus, relativeJsonPath);
-                eventStmt.run(id, `Created with status ${initialStatus}`);
+                eventStmt.run(id, ApplicationEventType.STATUS_CHANGE, `Created with status ${initialStatus}`);
             });
             transaction();
             return id;
@@ -109,13 +109,13 @@ export class JobApplicationManager {
 
         const eventStmt = rawDb.prepare(`
             INSERT INTO application_events (application_id, event_type, description)
-            VALUES (?, 'STATUS_CHANGE', ?)
+            VALUES (?, ?, ?)
         `);
 
         const transaction = rawDb.transaction(() => {
             updateStmt.run(newStatus, id);
             const desc = note ? `New status: ${newStatus} : ${note}` : `New status: ${newStatus}`;
-            eventStmt.run(id, desc);
+            eventStmt.run(id, ApplicationEventType.STATUS_CHANGE, desc);
         });
 
         transaction();
@@ -128,6 +128,161 @@ export class JobApplicationManager {
         }
         
         return { id: this.createApplication(data as CreateApplicationDto), success: true };
+    }
+
+    public getKeyStats(): KeyStats {
+        const activeApplications = this.getActiveApplicationsCount();
+        const activitySpark = this.getActivitySpark();
+        const applicationsLastWeek = this.getApplicationsLastWeekCount();
+        const avgResponseTimeDays = this.getAvgResponseTimeDays();
+        const interviewRate = this.getInterviewRate();
+        const ghostingRate = this.getGhostingRate();
+        const offerRate = this.getOfferRate();
+
+        return {
+            activeApplications,
+            activitySpark,
+            applicationsLastWeek,
+            avgResponseTimeDays,
+            interviewRate,
+            ghostingRate,
+            offerRate
+        };
+    }
+
+    /**
+     * Number of active applications
+     */
+    private getActiveApplicationsCount(): number {
+        const rawDb = this.getDb();
+        const query = `
+            SELECT COUNT(*) AS count 
+            FROM applications 
+            WHERE status NOT IN ('${JobApplicationStatus.DRAFT}', '${JobApplicationStatus.REJECTED}', '${JobApplicationStatus.OFFER}', '${JobApplicationStatus.WITHDRAWN}', '${JobApplicationStatus.ARCHIVED}');
+        `;
+        const result = rawDb.prepare(query).get() as { count: number };
+        return result.count;
+    }
+
+    /**
+     * Generates a sparkline data array representing the number of applications submitted per week 
+     * over the last 8 weeks (including the current week).
+     */
+    private getActivitySpark(): number[] {
+        const rawDb = this.getDb();
+
+        const query = `
+            SELECT CAST((julianday('now') - julianday(applied_at)) / 7 AS INTEGER) AS weeks_ago,
+                COUNT(*) AS count
+            FROM applications
+            WHERE applied_at >= datetime('now', '-56 days')
+            AND applied_at IS NOT NULL
+            GROUP BY weeks_ago;
+        `;
+
+        const rows = rawDb.prepare(query).all() as Array<{ weeks_ago: number; count: number }>;
+
+        const sparkline = new Array(8).fill(0);
+        for (const row of rows) {
+            if (row.weeks_ago >= 0 && row.weeks_ago < 8) {
+                sparkline[7 - row.weeks_ago] = row.count;
+            }
+        }
+
+        console.log("Activity Sparkline Data:", sparkline);
+        return sparkline;
+    }
+
+    /**
+     * Number of applications submitted in the last 7 days (including today).
+     */
+    private getApplicationsLastWeekCount(): number {
+        const rawDb = this.getDb();
+        const query = `
+            SELECT COUNT(*) AS count 
+            FROM applications 
+            WHERE applied_at >= datetime('now', '-7 days');
+        `;
+        const result = rawDb.prepare(query).get() as { count: number };
+        return result.count;
+    }
+
+    /**
+     * Average response time in days for applications that have received a response (status change or interview scheduled) after being applied.
+     */
+    private getAvgResponseTimeDays(): number {
+        const rawDb = this.getDb();
+        const query = `
+            SELECT ROUND(AVG(julianday(e.first_event) - julianday(a.applied_at)), 1) AS avg_days
+            FROM applications a
+            INNER JOIN (
+                SELECT ae.application_id, MIN(ae.event_date) AS first_event
+                FROM application_events ae
+                INNER JOIN applications ap ON ap.id = ae.application_id
+                WHERE (
+                    ae.event_type = '${ApplicationEventType.INTERVIEW_SCHEDULED}'
+                    OR (ae.event_type = '${ApplicationEventType.STATUS_CHANGE}' AND ae.description NOT LIKE 'New status: APPLIED%')
+                )
+                AND ap.applied_at IS NOT NULL
+                AND ae.event_date > ap.applied_at
+                GROUP BY ae.application_id
+            ) e ON a.id = e.application_id
+            WHERE a.applied_at IS NOT NULL;
+        `;
+        const result = rawDb.prepare(query).get() as { avg_days: number | null };
+        return result?.avg_days ?? 0;
+    }
+
+    /**
+     * interview rate: percentage of applications that have led to an interview (status 'INTERVIEW' or event 'INTERVIEW_SCHEDULED') out of all applications that have been applied (status not 'DRAFT' and applied_at is not null).
+     */
+    private getInterviewRate(): number {
+        const rawDb = this.getDb();
+        const query = `
+            SELECT 
+                ROUND(
+                    (COUNT(DISTINCT CASE WHEN e.event_type = '${ApplicationEventType.INTERVIEW_SCHEDULED}' OR a.status = '${JobApplicationStatus.INTERVIEW}' THEN a.id END) * 100.0) / 
+                    NULLIF(COUNT(DISTINCT CASE WHEN a.status != '${JobApplicationStatus.DRAFT}' AND a.applied_at IS NOT NULL THEN a.id END), 0), 1
+                ) AS rate
+            FROM applications a
+            LEFT JOIN application_events e ON a.id = e.application_id;
+        `;
+        const result = rawDb.prepare(query).get() as { rate: number | null };
+        return result?.rate ?? 0;
+    }
+
+    /**
+     * Ghosting rate: percentage of applications that have been applied (status not 'DRAFT' and applied_at is not null) but have not received any response (no status change or interview scheduled) within 30 days of being applied.
+     */
+    private getGhostingRate(): number {
+        const rawDb = this.getDb();
+        const query = `
+            SELECT 
+                ROUND(
+                    (COUNT(CASE WHEN status = '${JobApplicationStatus.APPLIED}' AND applied_at <= datetime('now', '-30 days') THEN 1 END) * 100.0) / 
+                    NULLIF(COUNT(CASE WHEN status != '${JobApplicationStatus.DRAFT}' AND applied_at IS NOT NULL THEN 1 END), 0), 1
+                ) AS rate
+            FROM applications;
+        `;
+        const result = rawDb.prepare(query).get() as { rate: number | null };
+        return result?.rate ?? 0;
+    }
+
+    /**
+     * Conversion rate: percentage of applications that have received an offer (status 'OFFER_RECEIVED', 'OFFER_ACCEPTED', or 'OFFER_DECLINED') out of all applications that have been applied (status not 'DRAFT' and applied_at is not null).
+     */
+    private getOfferRate(): number {
+        const rawDb = this.getDb();
+        const query = `
+            SELECT 
+                ROUND(
+                    (COUNT(CASE WHEN status IN ('${JobApplicationStatus.OFFER}', '${JobApplicationStatus.ACCEPTED}', '${JobApplicationStatus.WITHDRAWN}') THEN 1 END) * 100.0) / 
+                    NULLIF(COUNT(CASE WHEN status != '${JobApplicationStatus.DRAFT}' AND applied_at IS NOT NULL THEN 1 END), 0), 1
+                ) AS rate
+            FROM applications;
+        `;
+        const result = rawDb.prepare(query).get() as { rate: number | null };
+        return result?.rate ?? 0;
     }
 
     private applicationExists(id: string): boolean {

@@ -71,8 +71,8 @@ export function registerIpcHandlers() {
 
         vectorDb.connect(profilePath);
         keywordsAffinityDb.connect(profilePath);
-        const profile = await profileService.loadProfile(profilePath);
         jobApplicationManager.connect(profilePath);
+        const profile = await profileService.loadProfile(profilePath);
 
         return profile;
     });
@@ -151,4 +151,5 @@ export function registerIpcHandlers() {
         const jobApplicationManager = JobApplicationManager.getInstance();
         return jobApplicationManager.saveOrUpdateApplication(data);
     });
+    ipcMain.handle('get-key-stats', () => { return JobApplicationManager.getInstance().getKeyStats(); });
 }

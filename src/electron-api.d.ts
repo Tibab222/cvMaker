@@ -39,6 +39,7 @@ declare global {
       rewriteResume: (options: RewriteResumeOptions) => Promise<{ success?: boolean; error?: string }>;
       getTopKeywords: (limit?: number) => Promise<KeywordStat[]>;
       saveCVSession: (data: Partial<CVSessionDataDTO>) => Promise<{ success: boolean; id?: string; error?: string }>;
+      getKeyStats: () => Promise<KeyStats>;
     };
   }
 }

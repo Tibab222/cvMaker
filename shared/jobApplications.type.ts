@@ -7,6 +7,13 @@ export enum JobApplicationStatus {
     ACCEPTED = 'ACCEPTED',   // Offer accepted by the user
     REJECTED = 'REJECTED',   // Rejected by the company
     WITHDRAWN = 'WITHDRAWN', // Offer declined by the user
+    ARCHIVED = 'ARCHIVED',   // Application archived by the user
+}
+
+export enum ApplicationEventType {
+    STATUS_CHANGE = 'STATUS_CHANGE',       // Status change event
+    INTERVIEW_SCHEDULED = 'INTERVIEW_SCHEDULED', // Interview scheduled event
+    NOTE_ADDED = 'NOTE_ADDED',             // Note added event
 }
 
 export type CreateApplicationDto = Omit<CVSessionDataDTO, "id">;
@@ -35,4 +42,14 @@ export interface JobInfos {
     description: string;
     focus?: string;
     keywords?: string[];
+}
+
+export interface KeyStats {
+    activeApplications: number;
+    activitySpark: number[];
+    applicationsLastWeek: number;
+    avgResponseTimeDays: number;
+    interviewRate: number; // Ex: 25.5 (for 25.5%)
+    ghostingRate: number;  // Ex: 12.0 (for 12.0%)
+    offerRate: number;     // Ex: 5.0  (for 5.0%)
 }
