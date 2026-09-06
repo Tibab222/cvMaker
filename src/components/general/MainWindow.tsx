@@ -13,6 +13,7 @@ import LeftMenu from "./LeftMenu";
 import { Menu } from "lucide-react";
 import { useProfileStore } from "@/store/profile";
 import Dashboard from "../dashboard/Dashboard";
+import ResumeLibrary from "../resumeLibrary/ResumeLibrary";
 
 export default function MainWindow() {
     const { selectedTab, setSelectedTab } = useUiStore();
@@ -41,6 +42,8 @@ export default function MainWindow() {
                 return <SettingsMain />;
             case Tabs.DASHBOARD:
                 return <Dashboard />;
+            case Tabs.RESUME_LIBRARY:
+                return <ResumeLibrary />;
             default:
                 return (
                     <div className="w-full h-full flex flex-col items-center justify-center">

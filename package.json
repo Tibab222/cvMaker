@@ -32,6 +32,7 @@
     "bindings": "^1.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cn": "^0.2.5",
     "compromise": "^14.15.0",
     "csv-parse": "^6.2.1",
     "date-fns": "^4.3.0",

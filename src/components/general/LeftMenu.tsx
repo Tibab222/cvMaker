@@ -5,6 +5,7 @@ import {
   BriefcaseBusiness,
   FileText,
   FolderKanban,
+  Library,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -247,6 +248,21 @@ export default function LeftMenu({ selectedTab, onSelectTab, profile, onLogout }
                   <FileText className="size-4.5 group-data-[collapsible=icon]:mx-auto" />
                   <span className="group-data-[collapsible=icon]:hidden">Create your CV</span>
                   <WandSparkles className="ml-auto size-3.5 opacity-60 group-data-[collapsible=icon]:hidden" />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  size="lg"
+                  isActive={selectedTab === Tabs.RESUME_LIBRARY}
+                  tooltip="View your resume library"
+                  onClick={() => onSelectTab(Tabs.RESUME_LIBRARY)}
+                  className="h-11 rounded-md px-3 text-sidebar-foreground/70 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-2.5"
+                >
+                  <Library className="size-4.5 group-data-[collapsible=icon]:mx-auto" />
+                  <span className="group-data-[collapsible=icon]:hidden">Resume library</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
