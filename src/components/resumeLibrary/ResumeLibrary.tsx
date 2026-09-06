@@ -9,7 +9,6 @@ import {
   Download,
   FilePlus2,
   FileText,
-  MoreHorizontal,
   Pencil,
   Plus,
   Search,
@@ -122,7 +121,7 @@ function ResumeCard({ resume, onDelete, onRename, onLoadResume }: ResumeCardProp
         <DocumentPreview resume={resume} />
 
         <CardContent className="flex flex-1 flex-col gap-4 p-5">
-          <div className="space-y-2">
+          {resume.match && <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-medium">Role affinity</span>
               <span className="font-semibold text-foreground">
@@ -130,7 +129,7 @@ function ResumeCard({ resume, onDelete, onRename, onLoadResume }: ResumeCardProp
               </span>
             </div>
             <Progress value={resume.match ?? 0} className="h-1.5" />
-          </div>
+          </div>}
 
           <div className="flex flex-wrap gap-1.5">
             {resume.tags.map((tag) => (
@@ -158,9 +157,9 @@ function ResumeCard({ resume, onDelete, onRename, onLoadResume }: ResumeCardProp
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" aria-label={`More actions for ${resume.title}`}>
+              {/* <Button variant="outline" size="icon" aria-label={`More actions for ${resume.title}`}>
                 <MoreHorizontal />
-              </Button>
+              </Button> */}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               {/* <DropdownMenuItem onSelect={() => onDuplicate(resume)}>

@@ -5,7 +5,6 @@ export default function CVHeader({ profile }: { profile: Profile }) {
 
   return (
     <header className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-2">
-      {/* Nom et Titre (Optionnel si tu l'ajoutes au profile plus tard) */}
       <div className="flex flex-col">
         <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">
           {profile.firstName} <span className="text-slate-500">{profile.lastName}</span>
