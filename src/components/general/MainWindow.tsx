@@ -12,6 +12,7 @@ import SettingsMain from "../settings/SettingsMain";
 import LeftMenu from "./LeftMenu";
 import { Menu } from "lucide-react";
 import { useProfileStore } from "@/store/profile";
+import Dashboard from "../dashboard/Dashboard";
 
 export default function MainWindow() {
     const { selectedTab, setSelectedTab } = useUiStore();
@@ -38,6 +39,8 @@ export default function MainWindow() {
                 return <Maker />;
             case Tabs.SETTINGS:
                 return <SettingsMain />;
+            case Tabs.DASHBOARD:
+                return <Dashboard />;
             default:
                 return (
                     <div className="w-full h-full flex flex-col items-center justify-center">
@@ -49,7 +52,7 @@ export default function MainWindow() {
     }
     return (
         <motion.div className="relative w-full h-full min-h-0 flex" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
-            <SidebarProvider defaultOpen style={{ "--sidebar-width": "17rem", "--sidebar-width-icon": "4rem" } as React.CSSProperties}>
+            <SidebarProvider defaultOpen={false} style={{ "--sidebar-width": "17rem", "--sidebar-width-icon": "4rem" } as React.CSSProperties}>
                 <LeftMenu selectedTab={selectedTab} onSelectTab={setSelectedTab} onLogout={handleLogout} profile={profile ? profile : undefined} />
                 <SidebarInset className="min-w-0">
                     <header className="sticky top-0 z-20 flex h-14 items-center border-b border-border bg-background/95 px-4 backdrop-blur md:hidden">
@@ -58,8 +61,8 @@ export default function MainWindow() {
                         </SidebarTrigger>
                         <span className="ml-3 text-sm font-semibold">CV Maker</span>
                     </header>
-                    <ScrollArea className="flex-1 h-full w-full bg-zinc-200/50">
-                        <div className="p-4">
+                    <ScrollArea className="h-full w-full flex-1 bg-zinc-200/50">
+                        <div className="w-full min-w-0" id="render-tab">
                             {renderTab()}
                         </div>
                     </ScrollArea>

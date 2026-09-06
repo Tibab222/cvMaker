@@ -7,6 +7,10 @@
   <img src="https://img.shields.io/github/license/tibab222/cvMaker?style=for-the-badge&color=green" alt="license" />
 </p>
 
+<p align="center">
+  <img src="docs/dashboard-preview.png" alt="CV Maker Engine Dashboard Preview" width="100%" />
+</p>
+
 <h3 align="center">Built With</h3>
 
 <p align="center">
@@ -17,12 +21,12 @@
 </p>
 
 <p align="center">
-  <sub>Fight the ATS, empower the job seeker, 100% locally</sub>
+  <sub>Fight the ATS and take full control of your job search. Track applications, analyze match rates, and tailor resumes 100% locally.</sub>
 </p>
 
-Let's face it: modern recruitment is broken. Companies use **ATS (Applicant Tracking Systems)** to automatically filter out resumes before a human even looks at them. To stand a chance, you now need to create *10 times more resumes*, manually tailoring every single bullet point to match complex job descriptions. 
+Modern recruitment is broken. Companies use **ATS (Applicant Tracking Systems)** to automatically filter out resumes before a human even looks at them, while online application trackers and resume builders lock essential tools behind expensive subscriptions.
 
-To make matters worse, online "resume builders" charge monthly subscriptions. **Charging people who don't have a job (and therefore, no money) is fundamentally broken.** **CV Maker Engine** is a geeky, local-first open-source alternative. It's a powerful desktop CV Hub designed to help you organize your experiences and dynamically adapt your resume to any job mandate in seconds—using everything from simple 1-click layout toggles to local semantic AI matching. 
+**CV Maker Engine** is a local-first, open-source personal recruitment command center. It bridges application tracking with intelligent resume tailoring—allowing you to track your application pipeline, analyze keyword matching, and build tailored PDF resumes without subscription fees or cloud privacy concerns.
 
 No cloud dependencies, no privacy leaks, zero subscription fees. It's time to build a shield against the corporate bots.
 
@@ -30,12 +34,14 @@ No cloud dependencies, no privacy leaks, zero subscription fees. It's time to bu
 
 ## Key Features
 
-* **Multi-language Support:** Ready for global tracking with native French and English resume management.
-* **1-Click Modular Interface:** Dynamically show/hide entire sections (experiences, projects, education) or sub-blocks to adapt your resume layout in seconds.
-* **Hybrid Matching Engine:** * **Lightweight Local NLP:** Instant keyword matching and techno-extraction against local whitelists.
-    * **Vector & RAG Search:** Local vectorization (`transformers.js` + SQLite) to calculate semantic similarity scores between your profile and a job mandate.
-    * **Optional LLM Power:** Deep mandate analysis using Mistral (via Ollama).
-* **Visual Preview & Export:** Real-time rendering and clean PDF export.
+* **Application Dashboard & Kanban:** Track your application pipeline stage-by-stage (Wishlist, Applied, Interviewing, Offered, Rejected) with an interactive Kanban board.
+* **Analytics & Keyword Insights:** Real-time stats on your job hunt, status breakdowns, and key tech stack/keyword frequency extraction.
+* **Hybrid Matching Engine:** 
+  * **Lightweight Local NLP/RAKE:** Instant keyword matching and technology extraction against local rule-sets.
+  * **Vector & RAG Search:** Local vectorization (`transformers.js` + SQLite) to calculate semantic similarity scores between your profile and job mandates.
+  * **Automated Flexible AI Pipeline:** Seamlessly switch between zero-config **Ollama** (autodetected or automatically set up by the app) and cloud-based **Google Gemini API**.
+* **Tailored Resume Builder:** Dynamically show/hide sections or sub-blocks, match bullet points to mandates, and export clean PDFs.
+* **Local-First Architecture:** Your job search and master profile stay saved locally on your machine.
 ---
 
 ## Technical Stack
@@ -47,8 +53,8 @@ The project is built on a modern "Local-First" desktop stack:
 * Database: SQLite (better-sqlite3) for metadata persistence and local vector storage.
 * AI & NLP:
     - Embeddings: transformers.js (Model: Xenova/all-MiniLM-L6-v2) for local vectorization.
-    - LLM (Optional): Mistral (via Ollama) for advanced semantic analysis of job mandates.
-    - Fallback: Local NLP extraction rule-set for lightweight, zero-dependency processing.
+    - **Local LLM:** Integrated **Ollama** detection and auto-configuration pipeline.
+    - **Cloud LLM:** **Google Gemini API** integration for cloud-assisted mandate parsing.
 
 ---
 
@@ -63,7 +69,7 @@ The application processes structured JSON data for each experience and project. 
 ### 2. Mandate Analysis (Input)
 When a job description (JD) is submitted, the engine can analyze it in two ways, depending on the user's choice:
 - **Hybrid/Local:** Fast keyword and techno extraction based on local whitelists.
-- **AI-Powered:** Mistral analyzes the context to extract a structured target profile: { "job_title", "skills", "key_focus" }.
+- **AI-Powered:** LLM (Gemini API or Ollama) analyzes the context to extract a structured target profile: `{ "job_title", "skills", "key_focus" }`.
 
 ### 3. Scoring & Assembly (Output)
 The software calculates the Cosine Similarity between the target mandate vectors and your personal experience database.
@@ -99,35 +105,24 @@ cd cvMaker
 # 2. Install dependencies
 npm install
 
-# 3. (Optional) Start Ollama if you want to use the Mistral pipeline
-# Ensure Mistral is pulled: 'ollama pull mistral'
-ollama serve
-
-# 4. Run the app in development mode (Electron + React Hot Reload)
+# 3. Run the app in development mode (Electron + React Hot Reload)
 npm run dev
 ```
 
-### 📝 Note on LLM Configuration (Ollama)
-The advanced AI analysis pipeline is optimized for **Mistral 7B (Q4_K_M quantization)**. To ensure optimal parsing and avoid context truncation with long job descriptions, make sure you have it pulled locally:
+---
 
-```bash
-ollama pull mistral
-```
+### 📝 Note on LLM
+The application manages AI integration out of the box with zero complex manual setup:
 
-***Specs tested:***
-- Architecture: Llama
-- Parameters: 7.2B
-- Context Length: 32,768 tokens (Crucial for handling large job descriptions + resume data)
-- Quantization: Q4_K_M (Perfect balance between speed and accuracy on local machines)
+1. **Local AI (Ollama):** If you have Ollama installed, the app detects it automatically. If not, the engine assists with the local environment configuration directly from the desktop settings.
+2. **Cloud AI (Google Gemini):** Prefer using Gemini? Enter your Gemini API key in the application settings to handle deep mandate parsing and keyword analysis instantly.
+3. **Fallback (Offline NLP):** No LLM? No problem. The app falls back to local vector math and keyword rule-sets to keep all scoring features operational offline.
 
 ---
 
 ## Future Ideas & Contributions (We are hiring ideas!)
 
 We want this application to become the ultimate power-tool for job seekers. We have a massive backlog of features we want to explore, including:
-- Advanced Matching Dashboard: Visual charts showing missing vs. present keywords.
-- Multi-LLM Integration: Adding cloud provider API keys (OpenAI, Anthropic) alongside Ollama.
-- AI-Powered Block Rewriting: Optional local LLM prompts to refine bullet points for specific roles.
 - Custom Template Engine: A system allowing users to import or visually design their own CSS/Tailwind CV templates.
 - Smart PDF Onboarding (Resume Importer): Drop your existing PDF resume during profile creation to automatically populate your master JSON database using local text-extraction and NLP parsing.
 

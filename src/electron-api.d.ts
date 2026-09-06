@@ -3,6 +3,8 @@ import { UserConfig } from '../electron/services/config/UserConfig.interface';
 import { SystemRecommendations } from '../shared/SystemRecommendation';
 import { OnProgressCallback } from '../shared/OllamaDownloadStatus';
 import { RewriteResumeOptions } from '../shared/RewriteResume.type';
+import { KeywordStat } from '../shared/Keywords.types';
+import { Application, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats } from '../shared/jobApplications.type';
 
 export {};
 
@@ -36,6 +38,12 @@ declare global {
       selectExportFolder: () => Promise<string | null>;
       setDefaultExportPath: (path: string) => Promise<void>;
       rewriteResume: (options: RewriteResumeOptions) => Promise<{ success?: boolean; error?: string }>;
+      getTopKeywords: (limit?: number) => Promise<KeywordStat[]>;
+      saveCVSession: (data: Partial<CVSessionDataDTO>) => Promise<{ success: boolean; id?: string; error?: string }>;
+      getKeyStats: () => Promise<KeyStats>;
+      getApplications: () => Promise<Application[]>;
+      updateApplicationStatus: (id: string, newStatus: JobApplicationStatus) => Promise<void>;
+      getApplicationWithTimeline: (applicationId: string) => Promise<ApplicationWithEvents | null>;
     };
   }
 }

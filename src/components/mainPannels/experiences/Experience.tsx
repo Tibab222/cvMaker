@@ -27,7 +27,7 @@ export default function ExperienceComponent() {
 
     return (
         <motion.div 
-            className="w-full h-full flex flex-col gap-4" 
+            className="w-full h-full flex flex-col gap-4 p-4" 
             initial={{ opacity: 0, x: -200 }} 
             animate={{ opacity: 1, x: 0 }} 
             exit={{ opacity: 0 }} 

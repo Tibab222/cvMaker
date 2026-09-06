@@ -4,13 +4,15 @@ import CvPicker from "./cvPicker/CvPicker";
 import CVTemplate from "./cvTemplate/cvTemplate";
 import ResumeTitle from "./ResumeTitle";
 import ToolsButtons from "./ToolsButtons";
+import NewDialog from "./NewDialog";
 
 export default function Maker() {
     const [pickerOpen, setPickerOpen] = useState(false);
 
     return (
         <CVSelectionProvider>
-            <div className="w-full flex flex-col h-full relative">
+            <NewDialog defaultOpen={true} />
+            <div className="w-full flex flex-col h-full relative p-2">
                 <div className="m-auto w-full">
                     <ResumeTitle />
                 </div>

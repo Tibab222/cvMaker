@@ -9,7 +9,8 @@ export enum Tabs {
   PROJECTS = 'projects',
   SKILLS = 'skills',
   CVMAKER = 'cv_maker',
-  SETTINGS = "SETTINGS"
+  SETTINGS = "SETTINGS",
+  DASHBOARD = "DASHBOARD"
 }
 
 type UiState = {

@@ -79,6 +79,16 @@
   --tree-categorical: 260 50% 50%;
   --tree-categorical-bg: 260 40% 94%;
 
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  --brand: oklch(0.58 0.21 274);
+  --brand-foreground: oklch(0.985 0.005 270);
+  --brand-muted: oklch(0.58 0.21 274 / 15%);
+
   @keyframes accordion-down {
     from { height: 0; }
     to { height: var(--radix-accordion-content-height); }
@@ -160,6 +170,16 @@
     --tree-presence: 40 80% 50%;
     --tree-categorical: 260 50% 50%;
     --tree-categorical-bg: 260 40% 94%;
+
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+
+    --brand: oklch(0.58 0.21 274);
+    --brand-foreground: oklch(0.985 0.005 270);
+    --brand-muted: oklch(0.58 0.21 274 / 15%);
   }
 
   .dark {
@@ -296,6 +316,15 @@
   --sidebar-accent-foreground: oklch(0.988 0.003 106.5);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.58 0.031 107.3);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  --brand: oklch(0.58 0.21 274);
+  --brand-foreground: oklch(0.985 0.005 270);
+  --brand-muted: oklch(0.58 0.21 274 / 15%);
 }
 
 @theme inline {
@@ -339,6 +368,19 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --color-chart-1: oklch(0.646 0.222 41.116);
+  --color-chart-2: oklch(0.6 0.118 184.704);
+  --color-chart-3: oklch(0.398 0.07 227.392);
+  --color-chart-4: oklch(0.828 0.189 84.429);
+  --color-chart-5: oklch(0.769 0.188 70.08);
+
+  --color-brand: oklch(0.58 0.21 274);
+  --color-brand-foreground: oklch(0.985 0.005 270);
+  --color-brand-muted: oklch(0.58 0.21 274 / 15%);
+
+  --color-success: oklch(0.76 0.18 155);
+  --color-warning: oklch(0.82 0.16 80);
+  --color-surface: oklch(0.985 0.003 250);
 }
 
 .titlebar {

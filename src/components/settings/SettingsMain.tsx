@@ -19,7 +19,7 @@ export default function SettingsMain() {
     }
 
     return <>
-        <div className="w-full flex flex-row items-center justify-start gap-4 mb-4">
+        <div className="w-full flex flex-row items-center justify-start gap-4 mb-4 p-4">
             {/* nav header */}
             <div className="flex flex-row items-center mb-4">
                 <Settings className="mr-2" />

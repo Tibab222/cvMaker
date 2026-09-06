@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Tabs } from "@/store/ui";
 import type { Profile } from "@shared/profile.interface";
+import { IconLayoutBoard } from "@tabler/icons-react";
 
 interface LeftMenuProps {
   selectedTab: Tabs;
@@ -189,7 +190,29 @@ export default function LeftMenu({ selectedTab, onSelectTab, profile, onLogout }
       <SidebarContent className="px-1 py-3">
         <SidebarGroup>
           <SidebarGroupLabel className="px-3 text-[11px] font-semibold uppercase text-sidebar-foreground/45">
-            Build your profile
+            General
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-1">
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  size="lg"
+                  isActive={selectedTab === Tabs.DASHBOARD}
+                  tooltip="Dashboard"
+                  onClick={() => onSelectTab(Tabs.DASHBOARD)}
+                  className="h-11 relative z-100 rounded-md px-3 text-sidebar-foreground/70 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-2.5"
+                >
+                  <IconLayoutBoard className="size-4.5 group-data-[collapsible=icon]:mx-auto" />
+                  <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup className="mt-2">
+          <SidebarGroupLabel className="px-3 text-[11px] font-semibold uppercase text-sidebar-foreground/45">
+            Your profile
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">

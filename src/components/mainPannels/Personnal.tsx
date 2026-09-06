@@ -36,7 +36,7 @@ export default function Personal() {
     if (!formData) return <p>Loading...</p>;
 
     return (
-        <motion.div className="w-full h-full flex" initial={{ opacity: 0, x: -200 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div className="w-full h-full flex p-4" initial={{ opacity: 0, x: -200 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
             <Card className="w-full h-fit">
                 <CardHeader>
                     <CardTitle>Personal Information</CardTitle>

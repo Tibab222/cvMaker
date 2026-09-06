@@ -18,6 +18,8 @@ import { ConfigurationManager } from './services/config/ConfigurationManager';
 import { selectExportFolder, setDefaultExportPath } from './functions/exportPathSetting';
 import { ProfileService } from './services/ProfileService';
 import { rewriteResume } from './functions/rewriteResume';
+import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
+import { CVSessionDataDTO, JobApplicationStatus } from '../shared/jobApplications.type';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
@@ -65,9 +67,11 @@ export function registerIpcHandlers() {
     ipcMain.handle('loadProfile', async (event, profileId: string) => {
         const profilePath = path.join(profilesDir, profileId);
         const profileService = ProfileService.getInstance();
+        const jobApplicationManager = JobApplicationManager.getInstance();
 
         vectorDb.connect(profilePath);
         keywordsAffinityDb.connect(profilePath);
+        jobApplicationManager.connect(profilePath);
         const profile = await profileService.loadProfile(profilePath);
 
         return profile;
@@ -142,4 +146,17 @@ export function registerIpcHandlers() {
     ipcMain.handle('select-export-folder', selectExportFolder);
     ipcMain.handle('set-default-export-path', (_, path: string) => setDefaultExportPath(path));
     ipcMain.handle('rewrite-resume', (event, options) => rewriteResume({ event, options }));
+    ipcMain.handle('get-top-keywords', (event, limit: number = 10) => keywordsAffinityDb.getTopKeywords(limit));
+    ipcMain.handle('save-CV-session', (event, data: Partial<CVSessionDataDTO>) => {
+        const jobApplicationManager = JobApplicationManager.getInstance();
+        return jobApplicationManager.saveOrUpdateApplication(data);
+    });
+    ipcMain.handle('get-key-stats', () => { return JobApplicationManager.getInstance().getKeyStats(); });
+    ipcMain.handle('get-applications', () => { return JobApplicationManager.getInstance().getAllApplications(); });
+    ipcMain.handle('get-application-with-timeline', (event, applicationId: string) => {
+        return JobApplicationManager.getInstance().getApplicationWithTimeline(applicationId);
+    });
+    ipcMain.handle('update-application-status', (event, applicationId: string, newStatus: JobApplicationStatus, note?: string) => {
+        return JobApplicationManager.getInstance().updateStatus(applicationId, newStatus as JobApplicationStatus, note);
+    });
 }
