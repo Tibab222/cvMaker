@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
@@ -35,86 +35,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-type ResumeKind = "Master Version" | "Tailored";
-
-interface Resume {
-  id: string;
-  title: string;
-  kind: ResumeKind;
-  targetRole?: string;
-  company?: string;
-  match?: number;
-  updated: string;
-  updatedOrder: number;
-  tags: string[];
-}
-
-const STARTER_RESUMES: Resume[] = [
-  {
-    id: "resume-1",
-    title: "Senior Frontend Engineer — React / Node",
-    kind: "Tailored",
-    targetRole: "Senior Frontend Engineer",
-    company: "Vercel",
-    match: 92,
-    updated: "Updated 2 hours ago",
-    updatedOrder: 1,
-    tags: ["React", "TypeScript", "Node.js"],
-  },
-  {
-    id: "resume-2",
-    title: "Fullstack Developer (General)",
-    kind: "Master Version",
-    targetRole: "General applications",
-    match: 84,
-    updated: "Updated 2 days ago",
-    updatedOrder: 2,
-    tags: ["PostgreSQL", "React", "Python"],
-  },
-  {
-    id: "resume-3",
-    title: "AI Application Engineer",
-    kind: "Tailored",
-    targetRole: "AI Application Engineer",
-    company: "Anthropic",
-    match: 88,
-    updated: "Updated 4 days ago",
-    updatedOrder: 4,
-    tags: ["LLMs", "Python", "RAG"],
-  },
-  {
-    id: "resume-4",
-    title: "Backend & Platform Engineer",
-    kind: "Tailored",
-    targetRole: "Platform Engineer",
-    company: "Stripe",
-    match: 79,
-    updated: "Updated 1 week ago",
-    updatedOrder: 7,
-    tags: ["Node.js", "AWS", "PostgreSQL"],
-  },
-  {
-    id: "resume-5",
-    title: "Systems Engineer — C++ Runtime",
-    kind: "Tailored",
-    targetRole: "Systems Engineer",
-    company: "Nvidia",
-    match: 86,
-    updated: "Updated 9 days ago",
-    updatedOrder: 9,
-    tags: ["C++", "CUDA", "Linux"],
-  },
-  {
-    id: "resume-6",
-    title: "Software Engineer — Core Profile",
-    kind: "Master Version",
-    targetRole: "Software Engineer",
-    updated: "Updated 2 weeks ago",
-    updatedOrder: 14,
-    tags: ["TypeScript", "Python", "SQL"],
-  },
-];
+import { mapApplicationToResume, type Resume } from "./mapper";
+import { api } from "@/api";
 
 const cardMotion = {
   initial: { opacity: 0, y: 16, scale: 0.98 },
@@ -258,9 +180,17 @@ function ResumeCard({ resume, onDelete, onDuplicate, onRename }: ResumeCardProps
 }
 
 export default function ResumeLibrary() {
-  const [resumes, setResumes] = useState<Resume[]>(STARTER_RESUMES);
+  const [resumes, setResumes] = useState<Resume[]>([]);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("modified");
+
+  useEffect(() => {
+    const fetchResumes = async () => {
+        const applications = await api.getApplications();
+        setResumes(applications.map(mapApplicationToResume));
+    }
+    fetchResumes();
+  }, [])
 
   const visibleResumes = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -273,7 +203,9 @@ export default function ResumeLibrary() {
       .sort((a, b) => {
         if (sort === "title") return a.title.localeCompare(b.title);
         if (sort === "match") return (b.match ?? 0) - (a.match ?? 0);
-        return a.updatedOrder - b.updatedOrder;
+        const aUpdated = new Date(a.updated).getTime();
+        const bUpdated = new Date(b.updated).getTime();
+        return aUpdated - bUpdated;
       });
   }, [resumes, search, sort]);
 
@@ -284,7 +216,6 @@ export default function ResumeLibrary() {
       kind: "Tailored",
       targetRole: "New target role",
       updated: "Updated just now",
-      updatedOrder: 0,
       tags: ["New"],
     };
     setResumes((current) => [resume, ...current]);
