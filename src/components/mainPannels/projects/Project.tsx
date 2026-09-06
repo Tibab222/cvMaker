@@ -1,14 +1,18 @@
 import { useProfileStore } from "@/store/profile";
 import type { Project } from "@shared/projects.interface";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import ProjectCard from "./ProjectCard";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { getModifierKeyLabel, useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
 
 export default function ProjectComponent() {
     const { projects, updateSection } = useProfileStore();
     const [ addNew, setAddNew ] = useState(false);
+
+    const handleAddShortcut = useCallback(() => setAddNew(true), []);
+    useKeyboardShortcut("n", handleAddShortcut, { enabled: !addNew });
 
     const handleOnSave = (updatedProject: Project) => {
         const newProjectList = projects.map((project) => project.id === updatedProject.id ? updatedProject : project);
@@ -80,6 +84,7 @@ export default function ProjectComponent() {
                     className="h-12 w-full rounded-xl border-dashed text-muted-foreground hover:text-foreground"
                     >
                     <Plus size={16} className="mr-2" /> Add Project
+                    <kbd className="ml-2 text-xs bg-muted-foreground/10 px-1.5 py-0.5 rounded">{getModifierKeyLabel()}+N</kbd>
                     </Button>
                 </motion.div>
                 )}
