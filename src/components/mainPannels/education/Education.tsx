@@ -1,12 +1,16 @@
 import { useProfileStore } from "@/store/profile";
 import EducationCard from "./EducationCard";
 import type { Education } from "@shared/Education.interface";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
+import { getModifierKeyLabel, useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
 
 export default function Education() {
     const { education, updateSection } = useProfileStore();
     const [ addNew, setAddNew ] = useState(false);
+
+    const handleAddShortcut = useCallback(() => setAddNew(true), []);
+    useKeyboardShortcut("n", handleAddShortcut, { enabled: !addNew });
 
     const handleOnSave = (updatedEducation: Education) => {
         const newEducationList = education.map((edu) => edu.id === updatedEducation.id ? updatedEducation : edu);
@@ -36,9 +40,10 @@ export default function Education() {
             ) : (
                 <button
                     onClick={() => setAddNew(true)}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-flex items-center gap-2 w-fit"
                 >
                     Add Education
+                    <kbd className="text-xs font-normal bg-blue-700/60 px-1.5 py-0.5 rounded">{getModifierKeyLabel()}+N</kbd>
                 </button>
             )}
         </motion.div>
