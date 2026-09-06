@@ -7,6 +7,7 @@ import { useProfileStore } from '@/store/profile';
 import { Language } from '@shared/profile.interface';
 import { type CVSelection, type CVSessionDataDTO, type JobInfos } from '@shared/jobApplications.type';
 import { toast } from 'sonner';
+import { useUiStore } from '@/store/ui';
 
 export interface CVSelectionContextType {
   title: string;
@@ -53,6 +54,7 @@ const buildScoreKey = (entityType: EntityType, id: string): string => {
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
   const { education, profile, experience, projects } = useProfileStore();
+  const { activeCvSessionId } = useUiStore();
   const [title, setTitle] = useState<string>(() => "Resume - " + (profile?.firstName || "Draft") + " - " + Date.now());
   const [selection, setSelection] = useState<CVSelection>({
     selectedExpIds: [],
@@ -166,6 +168,34 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     const key = buildCustomKey(entityType, id, field);
     setCustomTexts(prev => ({ ...prev, [key]: value }));
   }, []);
+
+  const loadSession = useCallback((sessionData: CVSessionDataDTO) => {
+    setId(sessionData.id);
+    setTitle(sessionData.title);
+    setSelection(sessionData.selection);
+    if (sessionData.jobInfos) {
+      setJobInfos(sessionData.jobInfos);
+    }
+    setCustomTexts(sessionData.customTexts || {});
+    setScores(sessionData.scores || {});
+
+  }, []);
+
+  useEffect(() => {
+    async function fetchAndHydrate() {
+      if (!activeCvSessionId) return;
+      try {
+        const sessionData = await api.getCVSession(activeCvSessionId); 
+        if (sessionData) {
+          loadSession(sessionData);
+        }
+      } catch (error) {
+        toast.error("Erreur lors du chargement de la session CV :" + (error instanceof Error ? error.message : ""));
+      }
+    }
+
+    fetchAndHydrate();
+  }, [activeCvSessionId, loadSession]);
 
   useEffect(() => {
     const removeStatus = api.onAnalysisStatus((data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => {

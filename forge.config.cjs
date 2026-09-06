@@ -1,8 +1,13 @@
+const path = require('path');
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
 module.exports = {
   packagerConfig: {
+    icon: './build/logo',
+    extraResource: [
+      './build'
+    ],
     asar: {
       unpack: [
         '**/better-sqlite3/**/*',
@@ -23,7 +28,7 @@ module.exports = {
         name: 'cvmaker',
         authors: 'Thibaut Delahaie and contributors',
         description: 'A helper to make your CV, Fight the ATS, empower the job seeker, 100% locally, free and open source.',
-        // setupIcon: path.join(__dirname, 'assets', 'icon.ico'),
+        setupIcon: './build/logo.ico',
       },
     },
     {
@@ -33,7 +38,11 @@ module.exports = {
     {
       name: '@electron-forge/maker-deb',
       platforms: ['linux'],
-      config: {},
+      config: {
+        options: {
+          icon: './build/logo.png',
+        }
+      },
     },
     {
       name: '@electron-forge/maker-rpm',

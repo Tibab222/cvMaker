@@ -59,4 +59,5 @@ contextBridge.exposeInMainWorld('api', {
   getApplications: () => ipcRenderer.invoke('get-applications') as Promise<Application[]>,
   getApplicationWithTimeline: (applicationId: string) => ipcRenderer.invoke('get-application-with-timeline', applicationId) as Promise<ApplicationWithEvents | null>,
   updateApplicationStatus: (applicationId: string, newStatus: JobApplicationStatus, note?: string) => ipcRenderer.invoke('update-application-status', applicationId, newStatus, note) as Promise<void>,
+  getCVSession: (applicationId: string) => ipcRenderer.invoke('get-CV-session', applicationId) as Promise<CVSessionDataDTO | null>,
 });

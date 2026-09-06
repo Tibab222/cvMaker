@@ -39,10 +39,15 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 function createWindow() {
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'build/logo.png')
+    : path.join(__dirname, '../build/logo.png');
+
   const win = new BrowserWindow({
     width: 800,
     height: 600,
     frame: false,
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

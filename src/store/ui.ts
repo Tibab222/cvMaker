@@ -10,7 +10,8 @@ export enum Tabs {
   SKILLS = 'skills',
   CVMAKER = 'cv_maker',
   SETTINGS = "SETTINGS",
-  DASHBOARD = "DASHBOARD"
+  DASHBOARD = "DASHBOARD",
+  RESUME_LIBRARY = "RESUME_LIBRARY"
 }
 
 type UiState = {
@@ -18,6 +19,8 @@ type UiState = {
   setAiAvailable: (available: boolean) => void
   selectedTab: Tabs
   setSelectedTab: (tab: Tabs) => void
+  activeCvSessionId: string | null;
+  loadCvSession: (id: string) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -28,5 +31,9 @@ export const useUiStore = create<UiState>((set) => ({
   selectedTab: Tabs.PROFILE_SELECTOR,
   setSelectedTab: (tab: Tabs) => {
     set({ selectedTab: tab })
+  },
+  activeCvSessionId: null,
+  loadCvSession: (id: string) => {
+    set({ activeCvSessionId: id })
   }
 }))
