@@ -1,12 +1,16 @@
 import { useProfileStore } from "@/store/profile";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Experience } from "@shared/Experience.interface";
 import ExperienceCard from "./ExperienceCard";
+import { getModifierKeyLabel, useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
 
 export default function ExperienceComponent() {
     const { experience, updateSection } = useProfileStore();
     const [ addNew, setAddNew ] = useState(false);
+
+    const handleAddShortcut = useCallback(() => setAddNew(true), []);
+    useKeyboardShortcut("n", handleAddShortcut, { enabled: !addNew });
 
     const handleOnSave = (updatedExperience: Experience) => {
         const newExperienceList = experience.map((exp) => exp.id === updatedExperience.id ? updatedExperience : exp);
@@ -72,9 +76,10 @@ export default function ExperienceComponent() {
             {!addNew && (
                 <button
                     onClick={() => setAddNew(true)}
-                    className="bg-primary hover:bg-primary/70 text-white font-bold py-2 px-4 rounded transition-colors duration-200 mt-2"
+                    className="bg-primary hover:bg-primary/70 text-white font-bold py-2 px-4 rounded transition-colors duration-200 mt-2 inline-flex items-center gap-2 w-fit"
                 >
                     Add Experience
+                    <kbd className="text-xs font-normal bg-black/20 px-1.5 py-0.5 rounded">{getModifierKeyLabel()}+N</kbd>
                 </button>
             )}
         </motion.div>
