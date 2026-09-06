@@ -51,7 +51,7 @@ export default function CVHeader({ profile }: { profile: Profile }) {
         </div>}
         {profile.github && <div className="col-span-2 flex items-center gap-1.5 justify-end mt-0.5">
           <a 
-            href={profile.github} 
+            href={"https://github.com/" + profile.github} 
             target="_blank" 
             rel="noopener noreferrer"
             className="font-mono text-[9px] bg-slate-100 px-1.5 py-0.5 rounded italic"
