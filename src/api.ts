@@ -40,5 +40,6 @@ export const api = {
     getKeyStats: async () => { return await window.api.getKeyStats() },
     getApplications: async () => { return await window.api.getApplications() },
     updateApplicationStatus: async (id: string, newStatus: JobApplicationStatus) => { return await window.api.updateApplicationStatus(id, newStatus) },
-    getApplicationWithTimeline: async (applicationId: string) => { return await window.api.getApplicationWithTimeline(applicationId) }
+    getApplicationWithTimeline: async (applicationId: string) => { return await window.api.getApplicationWithTimeline(applicationId) },
+    getCVSession: async (applicationId: string) => { return await window.api.getCVSession(applicationId) },
 }

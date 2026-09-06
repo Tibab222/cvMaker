@@ -49,9 +49,9 @@ function Field({
 }
 
 export default function NewDialog({ defaultOpen = false }: Props) {
-    const { setSelectedTab } = useUiStore();
+    const { setSelectedTab, activeCvSessionId } = useUiStore();
   const { initJobMandate } = useCVSelection();
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(defaultOpen && !activeCvSessionId);
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [url, setUrl] = useState("");

@@ -5,7 +5,7 @@ import {
   BriefcaseBusiness,
   Check,
   Clock3,
-  Copy,
+//   Copy,
   Download,
   FilePlus2,
   FileText,
@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import { mapApplicationToResume, type Resume } from "./mapper";
 import { api } from "@/api";
+import { Tabs, useUiStore } from "@/store/ui";
 
 const cardMotion = {
   initial: { opacity: 0, y: 16, scale: 0.98 },
@@ -85,11 +86,12 @@ function DocumentPreview({ resume }: { resume: Resume }) {
 interface ResumeCardProps {
   resume: Resume;
   onDelete: (id: string) => void;
-  onDuplicate: (resume: Resume) => void;
+//   onDuplicate: (resume: Resume) => void;
   onRename: (id: string, title: string) => void;
+  onLoadResume: (id: string) => void;
 }
 
-function ResumeCard({ resume, onDelete, onDuplicate, onRename }: ResumeCardProps) {
+function ResumeCard({ resume, onDelete, onRename, onLoadResume }: ResumeCardProps) {
   const handleRename = () => {
     const nextTitle = window.prompt("Rename this CV", resume.title)?.trim();
     if (nextTitle) onRename(resume.id, nextTitle);
@@ -147,7 +149,10 @@ function ResumeCard({ resume, onDelete, onDuplicate, onRename }: ResumeCardProps
         <CardFooter className="gap-2 border-t border-border/40 p-3">
           <Button
             className="flex-1 justify-between"
-            onClick={() => toast.success(`${resume.title} loaded in the editor`)}
+            onClick={() => {
+              onLoadResume(resume.id);
+              toast.success(`${resume.title} loaded in the editor`);
+            }}
           >
             Load in Editor <ArrowRight />
           </Button>
@@ -158,9 +163,9 @@ function ResumeCard({ resume, onDelete, onDuplicate, onRename }: ResumeCardProps
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onSelect={() => onDuplicate(resume)}>
+              {/* <DropdownMenuItem onSelect={() => onDuplicate(resume)}>
                 <Copy /> Duplicate
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
               <DropdownMenuItem onSelect={() => toast.success("PDF export prepared")}> 
                 <Download /> Export PDF
               </DropdownMenuItem>
@@ -181,6 +186,7 @@ function ResumeCard({ resume, onDelete, onDuplicate, onRename }: ResumeCardProps
 
 export default function ResumeLibrary() {
   const [resumes, setResumes] = useState<Resume[]>([]);
+  const { setSelectedTab, loadCvSession } = useUiStore();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("modified");
 
@@ -210,26 +216,13 @@ export default function ResumeLibrary() {
   }, [resumes, search, sort]);
 
   const createResume = () => {
-    const resume: Resume = {
-      id: `resume-${Date.now()}`,
-      title: "Untitled CV",
-      kind: "Tailored",
-      targetRole: "New target role",
-      updated: "Updated just now",
-      tags: ["New"],
-    };
-    setResumes((current) => [resume, ...current]);
-    setSearch("");
-    toast.success("New CV created");
+    loadCvSession(""); // Load a new CV session
+    setSelectedTab(Tabs.CVMAKER);
   };
 
-  const duplicateResume = (resume: Resume) => {
-    setResumes((current) => [
-      { ...resume, id: `resume-${Date.now()}`, title: `${resume.title} — Copy`, kind: "Tailored", updated: "Updated just now", updatedOrder: 0 },
-      ...current,
-    ]);
-    toast.success("CV duplicated");
-  };
+//   const duplicateResume = (resume: Resume) => {
+//     // TODO (maybe if necessary)
+//   };
 
   const deleteResume = (id: string) => {
     setResumes((current) => current.filter((resume) => resume.id !== id));
@@ -240,6 +233,11 @@ export default function ResumeLibrary() {
     setResumes((current) => current.map((resume) => (resume.id === id ? { ...resume, title } : resume)));
     toast.success("CV renamed");
   };
+
+  const onLoadResume = (id: string) => {
+    loadCvSession(id);
+    setSelectedTab(Tabs.CVMAKER);
+  }
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -298,7 +296,8 @@ export default function ResumeLibrary() {
                     key={resume.id}
                     resume={resume}
                     onDelete={deleteResume}
-                    onDuplicate={duplicateResume}
+                    // onDuplicate={duplicateResume}
+                    onLoadResume={onLoadResume}
                     onRename={renameResume}
                   />
                 ))}

@@ -159,4 +159,7 @@ export function registerIpcHandlers() {
     ipcMain.handle('update-application-status', (event, applicationId: string, newStatus: JobApplicationStatus, note?: string) => {
         return JobApplicationManager.getInstance().updateStatus(applicationId, newStatus as JobApplicationStatus, note);
     });
+    ipcMain.handle('get-CV-session', (event, applicationId: string) => {
+        return JobApplicationManager.getInstance().getCVSession(applicationId);
+    });
 }

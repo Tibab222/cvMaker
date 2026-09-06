@@ -14,7 +14,8 @@ export interface Resume {
 export function mapApplicationToResume(application: Application): Resume {
     return {
         id: application.id,
-        title: application.job_title,
+        title: application.company_name,
+        targetRole: application.job_title,
         kind: application.status,
         updated: application.updated_at,
         tags: []

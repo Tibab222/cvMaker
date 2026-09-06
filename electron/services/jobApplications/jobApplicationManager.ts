@@ -118,6 +118,7 @@ export class JobApplicationManager {
     }
 
     public getCVSession(id: string): CVSessionDataDTO | null {
+        console.log(`[JobApplicationManager] Fetching CV session for application ID: ${id}`);
         if (!this.sessionsDir) throw new Error("Sessions path not set. Call connect() first.");
 
         const rawDb = this.getDb();
@@ -127,12 +128,14 @@ export class JobApplicationManager {
             return null;
         }
 
+        console.log(`[JobApplicationManager] Found JSON file path: ${row.json_file_path} for application ID: ${id}`);
         const fullPath = path.join(this.sessionsDir, row.json_file_path);
         if (!fs.existsSync(fullPath)) {
             console.warn(`[JobApplicationManager] JSON file not found at: ${fullPath}`);
             return null;
         }
 
+        console.log(`[JobApplicationManager] Reading JSON file: ${fullPath}`);
         const content = fs.readFileSync(fullPath, "utf-8");
         return JSON.parse(content) as CVSessionDataDTO;
     }
