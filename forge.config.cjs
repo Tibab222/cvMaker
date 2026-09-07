@@ -4,9 +4,9 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
 module.exports = {
   packagerConfig: {
-    icon: './build/logo',
+    icon: path.resolve(__dirname, 'build/logo'),
     extraResource: [
-      './build'
+      path.resolve(__dirname, 'build')
     ],
     asar: {
       unpack: [
@@ -28,7 +28,7 @@ module.exports = {
         name: 'cvmaker',
         authors: 'Thibaut Delahaie and contributors',
         description: 'A helper to make your CV, Fight the ATS, empower the job seeker, 100% locally, free and open source.',
-        setupIcon: './build/logo.ico',
+        setupIcon: path.resolve(__dirname, 'build/logo.ico'),
       },
     },
     {
@@ -40,7 +40,7 @@ module.exports = {
       platforms: ['linux'],
       config: {
         options: {
-          icon: './build/logo.png',
+          icon: path.resolve(__dirname, 'build/logo.png'),
         }
       },
     },
