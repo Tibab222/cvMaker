@@ -40,8 +40,8 @@ protocol.registerSchemesAsPrivileged([
 
 function createWindow() {
   const iconPath = app.isPackaged
-    ? path.join(process.resourcesPath, 'build/logo.png')
-    : path.join(__dirname, '../build/logo.png');
+    ? path.join(process.resourcesPath, 'assets/logo.png')
+    : path.join(__dirname, '../assets/logo.png');
 
   const win = new BrowserWindow({
     width: 800,
