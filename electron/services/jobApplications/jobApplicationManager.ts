@@ -69,10 +69,10 @@ export class JobApplicationManager {
         return { ...application, events };
     }
 
-    public createApplication(dto: CreateApplicationDto) {
+    public createApplication(dto: CreateApplicationDto, status: JobApplicationStatus = JobApplicationStatus.DRAFT): string {
         if (!this.sessionsDir) throw new Error("Sessions path not set. Call connect() first.");
         const id = `app_${crypto.randomUUID()}`; // I hope it's unique enough for our use case. If not, we can add like jobTitle + companyName + timestamp or something like that.
-        const initialStatus = JobApplicationStatus.DRAFT;
+        const initialStatus = status || JobApplicationStatus.DRAFT;
 
         const rawDb = this.getDb();
 
@@ -166,13 +166,13 @@ export class JobApplicationManager {
         transaction();
     }
 
-    public saveOrUpdateApplication(data: Partial<CVSessionDataDTO>): { id: string; success: boolean; error?: string } {
+    public saveOrUpdateApplication(data: Partial<CVSessionDataDTO>, status?: JobApplicationStatus): { id: string; success: boolean; error?: string } {
         if (data.id && this.applicationExists(data.id)) {
-            this.saveCVSession(data as CVSessionDataDTO);
+            this.saveCVSession(data as CVSessionDataDTO, status);
             return { id: data.id, success: true };
         }
         
-        return { id: this.createApplication(data as CreateApplicationDto), success: true };
+        return { id: this.createApplication(data as CreateApplicationDto, status), success: true };
     }
 
     public getKeyStats(): KeyStats {
@@ -335,7 +335,7 @@ export class JobApplicationManager {
         return Boolean(row);
     }
 
-    private saveCVSession(sessionData: CVSessionDataDTO): void {
+    private saveCVSession(sessionData: CVSessionDataDTO, status: JobApplicationStatus = JobApplicationStatus.DRAFT): void {
         if (!this.sessionsDir) throw new Error("Sessions path not set. Call connect() first.");
 
         const rawDb = this.getDb();
@@ -356,11 +356,11 @@ export class JobApplicationManager {
 
         const updateStmt = rawDb.prepare(`
             UPDATE applications 
-            SET job_title = ?, company_name = ?, keywords = ?, url = ?, updated_at = CURRENT_TIMESTAMP 
+            SET job_title = ?, company_name = ?, status = ?, keywords = ?, url = ?, updated_at = CURRENT_TIMESTAMP 
             WHERE id = ?
         `);
 
-        updateStmt.run(jobTitle, companyName, keywords.join(','), url, sessionData.id);
+        updateStmt.run(jobTitle, companyName, status, keywords.join(','), url, sessionData.id);
     }
 
     private getDb() {
