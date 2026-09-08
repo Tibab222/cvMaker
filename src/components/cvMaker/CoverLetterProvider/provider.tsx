@@ -1,4 +1,4 @@
-import type { CoverLetterData } from "@shared/coverLetter.types";
+import type { CoverLetterData } from "@shared/CoverLetter.types";
 import React from "react";
 import { CoverLetterContext } from "./Context";
 import type { Profile } from "@shared/profile.interface";

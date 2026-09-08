@@ -1,6 +1,6 @@
 // import type { CoverLetterBlock } from "@shared/coverLetter.types";
 
-import type { CoverLetterBlock } from "@shared/coverLetter.types";
+import type { CoverLetterBlock } from "@shared/CoverLetter.types";
 
 // this can be changed if necessary
 interface Props {
