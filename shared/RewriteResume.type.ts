@@ -1,3 +1,4 @@
+import type { CVSessionDataDTO } from "./jobApplications.type";
 import { Language } from "./profile.interface";
 
 export interface BulletToRewrite {
@@ -24,4 +25,5 @@ export interface RewriteResumeOptions {
   language: Language;
   experiences: ExperienceToRewrite[];
   projects: ProjectToRewrite[];
+  resumeData: Partial<CVSessionDataDTO>;
 }

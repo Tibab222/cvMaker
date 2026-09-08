@@ -5,6 +5,7 @@ import { api } from '@/api';
 import { AIAnalysisStatus } from '@shared/AIAnalysisStatus';
 import { useProfileStore } from '@/store/profile';
 import { Language } from '@shared/profile.interface';
+import { type EntityType, buildCustomKey, buildScoreKey } from '@shared/utils';
 import { type CVSelection, type CVSessionDataDTO, type JobInfos } from '@shared/jobApplications.type';
 import { toast } from 'sonner';
 import { useUiStore } from '@/store/ui';
@@ -18,6 +19,7 @@ export interface CVSelectionContextType {
   scores: ScoreMap;
   rewritingKeys: string[];
   isSaving: boolean;
+  summaryBullets: string[];
   save: () => Promise<string | null>;
   isItemRewriting: (entityType: EntityType, id: string) => boolean;
   setTitle: (title: string) => void;
@@ -37,20 +39,11 @@ export interface CVSelectionContextType {
   runAIRewrite: () => Promise<void>;
   initJobMandate: (infos: Partial<JobInfos>) => void;
   updateJobInfos: (infos: Partial<JobInfos>) => void;
+  setSummaryBullets: (bullets: string[]) => void;
 }
-
-export type EntityType = 'experience' | 'project' | 'bullet' | 'education' | 'skill';
 
 export type CustomTextMap = Record<string, string>;
 export type ScoreMap = Record<string, number>;
-
-const buildCustomKey = (entityType: EntityType, id: string, field: string): string => {
-  return `${entityType}:${id}:${field}`;
-};
-
-const buildScoreKey = (entityType: EntityType, id: string): string => {
-  return `${entityType}:${id}`;
-};
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
   const { education, profile, experience, projects } = useProfileStore();
@@ -80,6 +73,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   const [rewritingKeys, setRewritingKeys] = useState<string[]>([]);
   const [id, setId] = useState<string | null>(null); // can be null or undefined at the beginning!
   const [isSaving, setIsSaving] = useState(false);
+  const [summaryBullets, setSummaryBullets] = useState<string[]>([]);
 
   const runFullAIAnalysis = useCallback(async (rawMandate: string) => {
     setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Loading, isCurrentJob: true }));
@@ -157,12 +151,22 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       })
       .filter(p => p.bullets.length > 0);
 
+      const cvSessionData: Partial<CVSessionDataDTO> = {
+        id: id || undefined,
+        title,
+        selection,
+        jobInfos,
+        customTexts,
+        scores,
+      };
+
     await api.rewriteResume({
       language: profile?.language || Language.ENGLISH,
       experiences: expsToRewrite,
       projects: projsToRewrite,
+      resumeData: cvSessionData
     });
-  }, [experience, projects, profile?.language, selection.selectedExpIds, selection.selectedProjectIds, selection.selectedBullets, jobInfos.keywords]);
+  }, [experience, projects, id, title, selection, jobInfos, customTexts, scores, profile?.language]);
 
   const updateCustomField = useCallback((entityType: EntityType, id: string, field: string, value: string) => {
     const key = buildCustomKey(entityType, id, field);
@@ -178,6 +182,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     }
     setCustomTexts(sessionData.customTexts || {});
     setScores(sessionData.scores || {});
+    setSummaryBullets(sessionData.topResumeSummary || []);
 
   }, []);
 
@@ -319,6 +324,13 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
           });
           const finishedBulletKeys = item.bullets.map(b => `bullet:${b.bullet_id}`);
           setRewritingKeys(prev => prev.filter(k => !finishedBulletKeys.includes(k)));
+          break;
+        }
+
+        case AIAnalysisStatus.TOP_RESUME: {
+          const item = data.data as { topResumeSummary: string[] };
+          setSummaryBullets(item.topResumeSummary);
+          setAiState(prev => ({ ...prev, status: AIAnalysisStatus.TOP_RESUME }));
           break;
         }
 
@@ -474,6 +486,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       scores,
       rewritingKeys,
       isSaving,
+      summaryBullets,
       save,
       isItemRewriting,
       toggleExperience, 
@@ -490,7 +503,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       resetCustomField,
       runAIRewrite,
       initJobMandate,
-      updateJobInfos
+      updateJobInfos,
+      setSummaryBullets
     }}>
       {children}
     </CVSelectionContext.Provider>

@@ -88,5 +88,28 @@ Répondez EXCLUSIVEMENT avec un objet JSON valide correspondant à ce schéma. P
       "rewritten_text": "Verbe d'action + accomplissement technique + impact/valeur..."
     }
   ]
+}`,
+  GENERATE_TOP_RESUME: (context: string) => `
+Tu es un expert en rédaction de CV et en recrutement ATS.
+Génère un résumé professionnel ("Summary" / "Profil") percutant à placer en haut du CV pour valoriser le candidat par rapport au poste visé.
+
+DONNÉES DU CV ET DU POSTE :
+${context}
+
+CONSIGNES :
+1. Rédige entre 3 et 4 puces (bullet points) percutantes (1 phrase par puce).
+2. FOCUS STRICT SUR LE POSTE VISÉ (Target Job) :
+   - Ignore totalement les expériences secondaires ou non technologiques (ex: restauration, vente, caisse) sauf si elles apportent une compétence directement demandée.
+   - Synthétise uniquement les compétences techniques, réalisations et le leadership pertinent.
+3. Reste cohérent avec les mots-clés cibles (Target Keywords) transmis.
+4. Ne génère PAS de titre, uniquement le tableau sous "summary_bullets".
+5. Reponds uniquement avec un objet JSON valide, sans formatage markdown ni commentaires.
+FORMAT DE RÉPONSE :
+{
+  "summary_bullets": [
+    "Première puce percutante...",
+    "Deuxième puce axée sur les compétences...",
+    "Troisième puce orientée valeur ajoutée..."
+  ]
 }`
 };

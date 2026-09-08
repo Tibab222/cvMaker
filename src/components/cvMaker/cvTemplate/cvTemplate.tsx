@@ -5,6 +5,7 @@ import CVExperience from "./parts/CVExperience";
 import CVProject from "./parts/CVProject";
 import CVSkills from "./parts/CVSkills";
 import CVEducation from "./parts/CVEducation";
+import CVSummary from "./parts/CVSummary";
 
 export default function CVTemplate() {
   const { profile, experience, projects, skills, education } = useProfileStore();
@@ -26,6 +27,7 @@ export default function CVTemplate() {
       style={{ boxSizing: 'border-box' }}
     >
       <CVHeader profile={profile} />
+      <CVSummary lang={lang} />
       <CVEducation educations={education} lang={lang} />
       {selectedExps.length > 0 && <CVExperience experiences={selectedExps} lang={lang} />}
       <CVProject projects={projects} lang={lang} />

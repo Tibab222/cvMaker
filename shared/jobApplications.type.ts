@@ -29,6 +29,7 @@ export interface CVSelection {
 export interface CVSessionDataDTO {
   id: string;
   title: string;
+  topResumeSummary?: string[];
   selection: CVSelection;
   jobInfos: JobInfos | null;
   customTexts?: Record<string, string>;

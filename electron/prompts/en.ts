@@ -87,5 +87,29 @@ Respond EXCLUSIVELY with a valid JSON object matching this schema. No markdown f
       "rewritten_text": "Action verb + technical accomplishment + impact/value..."
     }
   ]
+}`,
+  GENERATE_TOP_RESUME: (context: string) => `
+You are an expert ATS resume writer and career coach.
+Generate an impactful professional summary to be placed at the top of the resume, tailored to the target job.
+
+RESUME & JOB DATA:
+${context}
+
+INSTRUCTIONS:
+1. Write 3 to 4 impactful bullet points (1 concise sentence per bullet).
+2. STRICT FOCUS ON TARGET JOB:
+   - Completely ignore unrelated or non-tech experiences (e.g., retail, cashier, food service) unless directly relevant to the role.
+   - Highlight only core technical skills, software achievements, leadership, and relevant background.
+   - ACCURACY CHECK: Ensure technical terms are used correctly. Do not mix framework capabilities.
+   - AVOID REPETITION: Do not copy-paste lines directly from the experience/projects section; synthesize them into higher-level achievements.
+3. Align naturally with the provided Target Keywords and Job Title.
+4. Do NOT generate a job title, only the array of bullets under "summary_bullets".
+5. Respond STRICTLY in JSON, no markdown or commentary, using this exact structure:
+{
+  "summary_bullets": [
+    "First impactful bullet point...",
+    "Second bullet highlighting key skills...",
+    "Third bullet focused on value delivered..."
+  ]
 }`
 }

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useCVSelection } from "../../provider/hook";
-import type { EntityType } from '../../provider/provider';
 import { TemplateSkeleton } from './TemplateSkeleton';
+import type { EntityType } from '@shared/utils';
 
 interface FieldProps {
   entityType: EntityType;
