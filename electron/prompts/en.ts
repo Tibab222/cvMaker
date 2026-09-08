@@ -100,6 +100,8 @@ INSTRUCTIONS:
 2. STRICT FOCUS ON TARGET JOB:
    - Completely ignore unrelated or non-tech experiences (e.g., retail, cashier, food service) unless directly relevant to the role.
    - Highlight only core technical skills, software achievements, leadership, and relevant background.
+   - ACCURACY CHECK: Ensure technical terms are used correctly. Do not mix framework capabilities.
+   - AVOID REPETITION: Do not copy-paste lines directly from the experience/projects section; synthesize them into higher-level achievements.
 3. Align naturally with the provided Target Keywords and Job Title.
 4. Do NOT generate a job title, only the array of bullets under "summary_bullets".
 5. Respond STRICTLY in JSON, no markdown or commentary, using this exact structure:
