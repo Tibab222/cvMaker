@@ -9,7 +9,7 @@ export default function ResumeTitle() {
   if (!context) return null;
 
   return (
-    <div className="flex w-fit mx-auto items-center gap-2 group">
+    <div className="flex w-fit items-center gap-2 group">
       <Input
         type="text"
         value={context.title}
