@@ -8,10 +8,15 @@ import NewDialog from "./NewDialog";
 import { CoverLetterProvider } from "./CoverLetterProvider/provider";
 import CoverLetterTemplate from "./coverLetter/CoverLetterTemplate";
 import { Button } from "../ui/button";
+import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
 
 export default function Maker() {
     const [pickerOpen, setPickerOpen] = useState(false);
     const [coverLetterActive, setCoverLetterActive] = useState(false);
+
+    useKeyboardShortcut("k", () => {
+        setPickerOpen((prev) => !prev);
+    });
 
     return (
         <CVSelectionProvider>
