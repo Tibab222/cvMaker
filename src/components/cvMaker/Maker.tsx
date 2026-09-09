@@ -9,6 +9,7 @@ import { CoverLetterProvider } from "./CoverLetterProvider/provider";
 import CoverLetterTemplate from "./coverLetter/CoverLetterTemplate";
 import { Button } from "../ui/button";
 import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
+import CoverLetterButtons from "./coverLetter/CoverLetterButtons";
 
 export default function Maker() {
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -42,6 +43,7 @@ export default function Maker() {
                     </div>
                     <ToolsButtons openPicker={() => setPickerOpen(true)} />
                     {pickerOpen && <CvPicker onClose={() => setPickerOpen(false)} />}
+                    { coverLetterActive && <CoverLetterButtons />}
                 </div>
             </CoverLetterProvider>
         </CVSelectionProvider>

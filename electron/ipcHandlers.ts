@@ -20,6 +20,7 @@ import { ProfileService } from './services/ProfileService';
 import { rewriteResume } from './functions/rewriteResume';
 import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
 import { CVSessionDataDTO, JobApplicationStatus } from '../shared/jobApplications.type';
+import { generateCoverLetter } from './functions/generateCoverLetter';
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
@@ -162,4 +163,5 @@ export function registerIpcHandlers() {
     ipcMain.handle('get-CV-session', (event, applicationId: string) => {
         return JobApplicationManager.getInstance().getCVSession(applicationId);
     });
+    ipcMain.handle('generate-cover-letter', async (event, options) => generateCoverLetter(options));
 }

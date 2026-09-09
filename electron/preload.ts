@@ -1,3 +1,4 @@
+import { GenerateCoverLetterDTO } from "../shared/CoverLetter.types";
 import { Experience } from "../shared/Experience.interface";
 import { Application, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats } from "../shared/jobApplications.type";
 import { OnProgressCallback, SetupProgressStatus } from "../shared/OllamaDownloadStatus";
@@ -60,4 +61,5 @@ contextBridge.exposeInMainWorld('api', {
   getApplicationWithTimeline: (applicationId: string) => ipcRenderer.invoke('get-application-with-timeline', applicationId) as Promise<ApplicationWithEvents | null>,
   updateApplicationStatus: (applicationId: string, newStatus: JobApplicationStatus, note?: string) => ipcRenderer.invoke('update-application-status', applicationId, newStatus, note) as Promise<void>,
   getCVSession: (applicationId: string) => ipcRenderer.invoke('get-CV-session', applicationId) as Promise<CVSessionDataDTO | null>,
+  generateCoverLetter: (options: GenerateCoverLetterDTO) => ipcRenderer.invoke('generate-cover-letter', options)
 });

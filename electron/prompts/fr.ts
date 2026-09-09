@@ -111,5 +111,59 @@ FORMAT DE RÉPONSE :
     "Deuxième puce axée sur les compétences...",
     "Troisième puce orientée valeur ajoutée..."
   ]
-}`
-};
+}`,
+// COVER LETTER PROMPTS
+// TODO: translate those prompts to french
+  EXPERIENCE_PARAGRAPH: (workExperiences: string, education: string, targetRole: string, companyName: string, targetKeywords: string) => `
+You are an expert ATS career coach and professional technical writer.
+Write a single, cohesive paragraph for a cover letter highlighting the candidate's professional background and core technical skills relevant to the target job.
+
+CANDIDATE WORK EXPERIENCES:
+${workExperiences}
+
+CANDIDATE EDUCATION:
+${education}
+
+TARGET JOB: ${targetRole}
+TARGET COMPANY: ${companyName}
+TARGET KEYWORDS: ${targetKeywords}
+
+LANGUAGE: Write the response strictly in english.
+
+INSTRUCTIONS:
+1. Focus ON RELEVANT EXPERIENCE:
+   - Highlight core technical achievements, software engineering experience, and key skills aligned with the target role.
+   - Synthesize experience without list-like repetition; make it flow as a professional narrative.
+2. Maintain a confident, professional, and authentic tone.
+3. Keep the paragraph concise (3 to 5 well-structured sentences max).
+4. Respond STRICTLY in JSON with no markdown formatting or commentary:
+{
+  "paragraph": "Your generated paragraph text here..."
+}
+`,
+  PROJECT_FITTING_PARAGRAPH: (projects: string, targetRole: string, companyName: string, targetKeywords: string) => `
+You are an expert ATS career coach and professional technical writer.
+Write a single, cohesive paragraph for a cover letter connecting the candidate's key personal and open-source projects to the target company and role.
+
+CANDIDATE PROJECTS:
+${projects}
+
+TARGET JOB: ${targetRole}
+TARGET COMPANY: ${companyName}
+TARGET KEYWORDS: ${targetKeywords}
+
+LANGUAGE: Write the response strictly in english.
+
+INSTRUCTIONS:
+1. FOCUS ON PROJECTS & IMPACT:
+   - Select 1 or 2 relevant projects from the candidate's background.
+   - Explain how building these projects demonstrates practical problem-solving and technical expertise directly beneficial to ${companyName}.
+2. ALIGN WITH TARGET KEYWORDS:
+   - Naturally incorporate relevant target keywords where applicable.
+3. Keep the paragraph concise (3 to 5 well-structured sentences max).
+4. Respond STRICTLY in JSON with no markdown formatting or commentary:
+{
+  "paragraph": "Your generated paragraph text here..."
+}
+`
+}

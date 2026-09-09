@@ -45,6 +45,7 @@ declare global {
       updateApplicationStatus: (id: string, newStatus: JobApplicationStatus) => Promise<void>;
       getApplicationWithTimeline: (applicationId: string) => Promise<ApplicationWithEvents | null>;
       getCVSession: (applicationId: string) => Promise<CVSessionDataDTO | null>;
+      generateCoverLetter: (options: GenerateCoverLetterDTO) => Promise<{ success: boolean; error?: string }>;
     };
   }
 }
