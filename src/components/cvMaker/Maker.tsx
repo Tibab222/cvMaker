@@ -41,7 +41,7 @@ export default function Maker() {
                             {coverLetterActive ? <CoverLetterTemplate /> : <CVTemplate />}
                         </div>
                     </div>
-                    <ToolsButtons openPicker={() => setPickerOpen(true)} />
+                    <ToolsButtons openPicker={() => setPickerOpen(true)} coverLetterActive={coverLetterActive} />
                     {pickerOpen && <CvPicker onClose={() => setPickerOpen(false)} />}
                     { coverLetterActive && <CoverLetterButtons />}
                 </div>

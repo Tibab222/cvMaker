@@ -7,6 +7,7 @@ import { Button } from "../ui/button";
 import type { Profile } from "@shared/profile.interface";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import ProfilePhoto from "./photo/ProfilePhoto";
 
 export default function Personal() {
     const { profile, updateSection } = useProfileStore();
@@ -26,6 +27,11 @@ export default function Personal() {
         setFormData({ ...formData, [field]: value });
     };
 
+    const handlePhotoChange = (photo: string | undefined) => {
+        if (!formData) return;
+        setFormData({ ...formData, photo });
+    };
+
     const handleSave = async () => {
         if (formData) {
             await updateSection("profile", formData);
@@ -42,6 +48,9 @@ export default function Personal() {
                     <CardTitle>Personal Information</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
+                    <div className="mb-2">
+                        <ProfilePhoto photo={formData.photo} isDirty={formData.photo !== profile?.photo} onChange={handlePhotoChange} />
+                    </div>
                     <InputGroup>
                         <InputGroupInput placeholder="Surname" value={formData?.firstName} onChange={(e) => handleChange("firstName", e.target.value)} />
                         <InputGroupAddon><PersonStanding /></InputGroupAddon>

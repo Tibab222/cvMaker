@@ -1,14 +1,25 @@
 import type { Profile } from "@shared/profile.interface";
 import { Mail, Phone, Globe, Linkedin, Github } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export default function CVHeader({ profile }: { profile: Profile }) {
+export default function CVHeader({ profile, showPhoto = false }: { profile: Profile; showPhoto?: boolean }) {
+  const photo = showPhoto ? profile.photo : undefined;
 
   return (
-    <header className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-2">
-      <div className="flex flex-col">
-        <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">
-          {profile.firstName} <span className="text-slate-500">{profile.lastName}</span>
-        </h1>
+    <header className={cn("flex justify-between border-b-2 border-slate-900 pb-4 mb-2", photo ? "items-center" : "items-start")}>
+      <div className="flex items-center gap-4">
+        {photo && (
+          <img
+            src={photo}
+            alt={`${profile.firstName} ${profile.lastName}`}
+            className="size-[24mm] shrink-0 rounded-full object-cover"
+          />
+        )}
+        <div className="flex flex-col">
+          <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">
+            {profile.firstName} <span className="text-slate-500">{profile.lastName}</span>
+          </h1>
+        </div>
       </div>
 
       {/* Contact & Liens - Grid compacte */}
