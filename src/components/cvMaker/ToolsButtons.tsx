@@ -1,15 +1,27 @@
 import { Download, Save, SidebarClose } from "lucide-react";
 import { Button } from "../ui/button";
 import { exportToPdf } from "./cvTemplate/exportCV";
+import { exportCoverLetterToPdf } from "./coverLetter/exportCoverLetter";
 import { useState } from "react";
 import { useCVSelection } from "./provider/hook";
+import useCoverLetterContext from "./CoverLetterProvider/hook";
 
-export default function ToolsButtons({ openPicker }: { openPicker: () => void }) {
+interface ToolsButtonsProps {
+    openPicker: () => void;
+    coverLetterActive?: boolean;
+}
+
+export default function ToolsButtons({ openPicker, coverLetterActive = false }: ToolsButtonsProps) {
     const [isExporting, setIsExporting] = useState(false);
     const { title, save, isSaving } = useCVSelection();
+    const { coverLetter } = useCoverLetterContext();
+
     const handleExport = async () => {
         setIsExporting(true);
-        exportToPdf(title).finally(() => setIsExporting(false));
+        const exporting = coverLetterActive
+            ? exportCoverLetterToPdf(coverLetter?.companyName, coverLetter?.roleName)
+            : exportToPdf(title);
+        exporting.finally(() => setIsExporting(false));
     };
     
     return (
