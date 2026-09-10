@@ -5,6 +5,7 @@ import { exportCoverLetterToPdf } from "./coverLetter/exportCoverLetter";
 import { useState } from "react";
 import { useCVSelection } from "./provider/hook";
 import useCoverLetterContext from "./CoverLetterProvider/hook";
+import { useUiStore } from "@/store/ui";
 
 interface ToolsButtonsProps {
     openPicker: () => void;
@@ -13,14 +14,15 @@ interface ToolsButtonsProps {
 
 export default function ToolsButtons({ openPicker, coverLetterActive = false }: ToolsButtonsProps) {
     const [isExporting, setIsExporting] = useState(false);
-    const { title, save, isSaving } = useCVSelection();
+    const { save, isSaving } = useCVSelection();
     const { coverLetter } = useCoverLetterContext();
+    const { activeCvSessionId } = useUiStore()
 
     const handleExport = async () => {
         setIsExporting(true);
         const exporting = coverLetterActive
-            ? exportCoverLetterToPdf(coverLetter?.companyName, coverLetter?.roleName)
-            : exportToPdf(title);
+            ? exportCoverLetterToPdf(coverLetter?.companyName, coverLetter?.roleName, activeCvSessionId || undefined)
+            : exportToPdf(coverLetter?.companyName, coverLetter?.roleName, activeCvSessionId || undefined);
         exporting.finally(() => setIsExporting(false));
     };
     
