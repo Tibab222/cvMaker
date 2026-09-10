@@ -93,7 +93,6 @@ export default function ProjectPicker() {
                 </div>
               </motion.div>
 
-              {/* Liste des Bullets (Points d'impact) */}
               <AnimatePresence>
                 {isSelected && (
                   <motion.div
