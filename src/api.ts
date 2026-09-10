@@ -1,4 +1,5 @@
 import type { AIAnalysisStatus } from "@shared/AIAnalysisStatus";
+import type { CoverLetterStatusPayload, GenerateCoverLetterDTO } from "@shared/CoverLetter.types";
 import type { Experience } from "@shared/Experience.interface";
 import type { CVSessionDataDTO, JobApplicationStatus } from "@shared/jobApplications.type";
 import type { OnProgressCallback } from "@shared/OllamaDownloadStatus";
@@ -42,4 +43,6 @@ export const api = {
     updateApplicationStatus: async (id: string, newStatus: JobApplicationStatus) => { return await window.api.updateApplicationStatus(id, newStatus) },
     getApplicationWithTimeline: async (applicationId: string) => { return await window.api.getApplicationWithTimeline(applicationId) },
     getCVSession: async (applicationId: string) => { return await window.api.getCVSession(applicationId) },
+    generateCoverLetter: async (options: GenerateCoverLetterDTO) => { return await window.api.generateCoverLetter(options) },
+    onCoverLetterStatusUpdate: (callback: (payload: CoverLetterStatusPayload) => void) => window.api.onCoverLetterStatusUpdate(callback),
 }

@@ -1,3 +1,8 @@
+import type { Education } from "./Education.interface";
+import type { Experience } from "./Experience.interface";
+import type { Language } from "./profile.interface";
+import type { Project } from "./projects.interface";
+
 export interface CoverLetterBlock {
   id: string;
   position: number; // 1, 2, 3, 4...
@@ -5,9 +10,17 @@ export interface CoverLetterBlock {
   isEditable: boolean; // true if the block can be edited by the user, false if it's a static block (e.g., a header or footer)
 }
 
+export interface GenerateCoverLetterDTO {
+  coverLetterData: CoverLetterData;
+  experiences: Experience[];
+  projects: Project[];
+  education: Education[];
+  targetKeywords: string[];
+  language: Language;
+}
+
 export interface CoverLetterData {
   id: string;
-  jobApplicationId: string;
 
   roleName: string;
   companyName: string;
@@ -15,14 +28,13 @@ export interface CoverLetterData {
 
   blocks: CoverLetterBlock[];
 
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // FOR TESTS PURPOSES ONLY
 export const MOCK_COVER_LETTER_DATA: CoverLetterData = {
   id: "cl_9b18f2a4",
-  jobApplicationId: "app_4f89d1e2",
   roleName: "Senior Full-Stack & Desktop Software Engineer",
   companyName: "CloudScale Systems",
   date: "September 8, 2026",
@@ -40,6 +52,23 @@ export const MOCK_COVER_LETTER_DATA: CoverLetterData = {
       isEditable: true
     }
   ],
-  createdAt: "2026-09-08T14:30:00.000Z",
-  updatedAt: "2026-09-08T15:45:00.000Z"
+  createdAt: new Date("2026-09-08T14:30:00.000Z"),
+  updatedAt: new Date("2026-09-08T15:45:00.000Z")
 };
+
+export enum COVER_LETTER_EVENTS {
+    START = 'cover-letter:start',
+    BLOCK_GENERATED= 'cover-letter:block-generated',
+    ERROR= 'cover-letter:error',
+    COMPLETE= 'cover-letter:complete'
+};
+
+export interface CoverLetterStatusPayload {
+  status: COVER_LETTER_EVENTS;
+  message: string;
+  data?: {
+    block?: CoverLetterBlock;
+    totalBlocks?: number;
+    error?: string;
+  };
+}
