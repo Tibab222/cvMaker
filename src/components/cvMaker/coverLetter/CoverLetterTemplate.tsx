@@ -1,10 +1,10 @@
-// import useCoverLetterContext from "../CoverLetterProvider/hook";
-
+import useCoverLetterContext from "../CoverLetterProvider/hook";
 import CoverLetterFooter from "./CoverFooter";
 import CoverLetterHeader from "./CoverHeader";
 import CoverLetterMeta from "./CoverMeta";
 
 export default function CoverLetterTemplate() {
+    const { profileInfo } = useCoverLetterContext();
     // all infos required for the cover letter are pulled from the profileInfo in the CoverLetterProvider
     // const { profileInfo, coverLetter, setCoverLetter} = useCoverLetterContext();
     return (
@@ -14,7 +14,7 @@ export default function CoverLetterTemplate() {
         style={{ boxSizing: 'border-box' }}
         >
             <div>
-                <CoverLetterHeader />
+                <CoverLetterHeader lang={profileInfo?.language} />
                 <CoverLetterMeta />
                 <div className="flex flex-col gap-3 my-4">
                     {/* TODO: Sort blocks by position and map over CoverLetterBlockItem */}
@@ -23,6 +23,10 @@ export default function CoverLetterTemplate() {
             </div>
 
             <CoverLetterFooter />
+
+            <div className="absolute top-[297mm] left-0 w-full hidden-print border-t border-red-600">
+                <span className="italic text-[8px] text-shadow-xs text-red-600/50 text-left">End of page</span>
+            </div>
         </div>
     )
 }
