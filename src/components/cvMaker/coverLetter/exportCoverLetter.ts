@@ -33,7 +33,7 @@ const buildFileName = (companyName?: string, roleName?: string) => {
   return `${parts.join(" - ")}.pdf`;
 };
 
-export const exportCoverLetterToPdf = async (companyName?: string, roleName?: string) => {
+export const exportCoverLetterToPdf = async (companyName?: string, roleName?: string, applicationId?: string) => {
   const element = document.getElementById(COVER_LETTER_ELEMENT_ID);
   if (!element) {
     toast.error("Cover letter not found, open it before exporting.");
@@ -83,14 +83,26 @@ export const exportCoverLetterToPdf = async (companyName?: string, roleName?: st
   `;
 
   try {
-    const success = await api.generatePDF(fullHTML, buildFileName(companyName, roleName));
+    const success = await api.generatePDF(fullHTML, buildFileName(companyName, roleName), applicationId);
     // the IPC handler also returns false when the save dialog is dismissed
-    if (success) toast.success("Cover letter exported successfully!");
+    if (success) {
+      const fileName = success.split(/[/\\]/).pop() || "PDF";
+      toast.success("Cover letter exported successfully!", {
+        description: `The cover letter has been exported to ${fileName}.`,
+        action: {
+          label: "Open folder",
+          onClick: () => {
+            const folderPath = success.substring(0, Math.max(success.lastIndexOf("/"), success.lastIndexOf("\\")));
+            api.openFolder(folderPath);
+          }
+        }
+      });
+    }
     else toast.error("Cover letter export cancelled or failed.");
     return success;
   } catch (e: unknown) {
     console.error("Error exporting cover letter:", e);
     toast.error("Cover letter export failed.");
-    return false;
+    return null;
   }
 };

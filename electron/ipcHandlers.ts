@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, shell } from 'electron';
 import { profilesDir } from './main.dev';
 import * as fs from 'fs';
 import { createProfile } from './functions/createProfile';
@@ -48,6 +48,22 @@ export function registerIpcHandlers() {
         BrowserWindow.fromWebContents(event.sender)?.close();
     });
 
+    ipcMain.handle("open-folder", async (_event, folderPath: string) => {
+        if (!folderPath) return false;
+
+        try {
+            const errorMessage = await shell.openPath(folderPath);
+            if (errorMessage) {
+                console.error("Error opening folder:", errorMessage);
+                return false;
+            }
+            return true;
+        } catch (error) {
+            console.error("Error opening folder:", error);
+            return false;
+        }
+    });
+
     ipcMain.handle('getProfilesList', async () => {
         const profiles = [];
         try {
@@ -86,8 +102,8 @@ export function registerIpcHandlers() {
         return updateSection(id, section, newData);
     });
 
-    ipcMain.handle('generatePdf', async (event, htmlContent, fileName) => {
-        return await generatePdf(htmlContent, fileName);
+    ipcMain.handle('generatePdf', async (event, htmlContent, fileName, applicationId?: string) => {
+        return await generatePdf(htmlContent, fileName, applicationId);
     });
 
     ipcMain.handle('syncDb', async (event, profileId: string, experiences: Experience[], projects: Project[]) => {
