@@ -5,13 +5,26 @@ import { aiService } from "../ipcHandlers";
 import { ENGLISH_PROMPTS } from "../prompts/en";
 import { FRENCH_PROMPTS } from "../prompts/fr";
 
-const firstParagraph = (companyName: string, roleName: string) => 
-    `Dear Hiring Team at ${companyName}, 
-    I am writing to express my strong interest in ${roleName} position at ${companyName}.`;
+const firstParagraph = (companyName: string, roleName: string, lang: Language = Language.ENGLISH) => {
+  if (lang === Language.FRENCH) {
+    const companyText = companyName ? `au sein de ${companyName}` : "au sein de votre entreprise";
+    return `Madame, Monsieur,\n\nC'est avec un grand intérêt que je vous adresse ma candidature pour le poste de ${roleName} ${companyText}.`;
+  }
 
-const closing = (companyName: string) => 
-    `Thank you for your time and consideration. 
-    I would welcome the opportunity to discuss how my technical background and project experience align with the goals of ${companyName}.`;
+  const companyText = companyName ? `at ${companyName}` : "at your company";
+  return `Dear Hiring Team,\n\nI am writing to express my strong interest in the ${roleName} position ${companyText}.`;
+};
+
+const closing = (companyName: string, lang: Language = Language.ENGLISH) => {
+  if (lang === Language.FRENCH) {
+    const companyText = companyName ? `de ${companyName}` : "de votre entreprise";
+    return `Je vous remercie pour le temps et l'attention accordés à ma candidature. Je reste à votre entière disposition pour échanger de vive voix sur la manière dont mon parcours et mes projets s'alignent avec les objectifs ${companyText}.`;
+  }
+
+  // Fallback English
+  const companyText = companyName ? `of ${companyName}` : "of your company";
+  return `Thank you for your time and consideration. I would welcome the opportunity to discuss how my technical background and project experience align with the goals ${companyText}.`;
+};
 
 function buildBlockParagraph(content: string, position: number): CoverLetterBlock {
     return {
@@ -56,7 +69,7 @@ export async function generateCoverLetter(event: IpcMainInvokeEvent, options: Ge
     try {
         sendStatus(COVER_LETTER_EVENTS.START, `Starting cover letter generation (0/${totalBlocks})...`, { totalBlocks });
         
-        const firstParaContent = firstParagraph(coverLetterData.companyName, coverLetterData.roleName);
+        const firstParaContent = firstParagraph(coverLetterData.companyName, coverLetterData.roleName, language);
         const firstBlock = buildBlockParagraph(firstParaContent, 0);
         sendStatus(COVER_LETTER_EVENTS.BLOCK_GENERATED, `Generated introduction paragraph (1/${totalBlocks})`, { block: firstBlock });
         
@@ -76,7 +89,7 @@ export async function generateCoverLetter(event: IpcMainInvokeEvent, options: Ge
         const thirdBlock = buildBlockParagraph(thirdParaContent, 2);
         sendStatus(COVER_LETTER_EVENTS.BLOCK_GENERATED, `Generated skills paragraph (3/${totalBlocks})`, { block: thirdBlock });
 
-        const closingParaContent = closing(coverLetterData.companyName);
+        const closingParaContent = closing(coverLetterData.companyName, language);
         const closingBlock = buildBlockParagraph(closingParaContent, 3);
         sendStatus(COVER_LETTER_EVENTS.BLOCK_GENERATED, `Generated closing paragraph (4/${totalBlocks})`, { block: closingBlock });
 
