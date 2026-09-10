@@ -10,7 +10,7 @@ import { toast } from "sonner";
 export interface CoverLetterContextType {
   isGenerating: boolean;
   profileInfo: Profile | null;
-  coverLetter: CoverLetterData | null;
+  coverLetter: CoverLetterData;
   generateCoverLetter: () => void;
   setCoverLetter: (coverLetter: CoverLetterData) => void;
 }

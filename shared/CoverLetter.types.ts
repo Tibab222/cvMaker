@@ -24,6 +24,8 @@ export interface CoverLetterData {
 
   roleName: string;
   companyName: string;
+  recipientName?: string;
+  companyAddress?: string;
   date: string;
 
   blocks: CoverLetterBlock[];
