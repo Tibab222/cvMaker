@@ -1,11 +1,12 @@
+import { Sparkles } from "lucide-react";
 import useCoverLetterContext from "../CoverLetterProvider/hook";
+import { TemplateSkeleton } from "../cvTemplate/templateFields/TemplateSkeleton";
+import CoverLetterBlockItem from "./CoverBlockItem";
 import CoverLetterFooter from "./CoverFooter";
 import CoverLetterHeader from "./CoverHeader";
 
 export default function CoverLetterTemplate() {
-    const { profileInfo } = useCoverLetterContext();
-    // all infos required for the cover letter are pulled from the profileInfo in the CoverLetterProvider
-    // const { profileInfo, coverLetter, setCoverLetter} = useCoverLetterContext();
+    const { profileInfo, coverLetter, isGenerating } = useCoverLetterContext();
     return (
         <div 
         id="cover-letter-content" 
@@ -15,8 +16,21 @@ export default function CoverLetterTemplate() {
             <div>
                 <CoverLetterHeader lang={profileInfo?.language} />
                 <div className="flex flex-col gap-3 my-4">
-                    {/* TODO: Sort blocks by position and map over CoverLetterBlockItem */}
-                    {/* blocks.sort((a,b) => a.position - b.position).map(b => <CoverLetterBlockItem key={b.id} block={b} />) */}
+                    {
+                        coverLetter?.blocks
+                        .sort((a, b) => a.position - b.position)
+                        .map((block) => (
+                            <CoverLetterBlockItem key={block.id} block={block} />
+                        ))
+                    }
+                    {
+                        isGenerating && (
+                            <div className="flex items-center gap-2 py-0.5">
+                                <Sparkles size={13} className="animate-spin text-amber-500 shrink-0" />
+                                <TemplateSkeleton lines={3} />
+                            </div>
+                        )
+                    }
                 </div>
             </div>
 

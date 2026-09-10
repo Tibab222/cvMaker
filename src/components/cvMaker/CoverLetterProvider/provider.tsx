@@ -1,5 +1,5 @@
 import { type CoverLetterData, type GenerateCoverLetterDTO, COVER_LETTER_EVENTS } from "@shared/CoverLetter.types";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, type Dispatch } from "react";
 import { CoverLetterContext } from "./Context";
 import { Language, type Profile } from "@shared/profile.interface";
 import { useProfileStore } from "@/store/profile";
@@ -12,7 +12,7 @@ export interface CoverLetterContextType {
   profileInfo: Profile | null;
   coverLetter: CoverLetterData;
   generateCoverLetter: () => void;
-  setCoverLetter: (coverLetter: CoverLetterData) => void;
+  setCoverLetter: Dispatch<React.SetStateAction<CoverLetterData>>;
 }
 
 export function CoverLetterProvider({ children }: { children: React.ReactNode }) {
