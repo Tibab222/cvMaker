@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useCVSelection } from "../../provider/hook";
 import { TemplateSkeleton } from './TemplateSkeleton';
 import type { EntityType } from '@shared/utils';
+import { toggleBold } from "../utils/toggleBold";
+import { renderFormattedText } from "../utils/renderFormattedText";
 
 interface FieldProps {
   entityType: EntityType;
@@ -45,9 +47,42 @@ export function TemplateInput({
     updateCustomField(entityType, id, field, tempValue);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleBlur();
-    if (e.key === 'Escape') {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      e.key.toLowerCase() === "b"
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const selectionStart = e.currentTarget.selectionStart ?? 0;
+      const selectionEnd =
+        e.currentTarget.selectionEnd ?? selectionStart;
+
+      const result = toggleBold(
+        tempValue,
+        selectionStart,
+        selectionEnd,
+      );
+
+      setTempValue(result.value);
+
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+        inputRef.current?.setSelectionRange(
+          result.selectionStart,
+          result.selectionEnd,
+        );
+      });
+
+      return;
+    }
+
+    if (e.key === "Enter") {
+      handleBlur();
+    }
+
+    if (e.key === "Escape") {
       setTempValue(value);
       setIsEditing(false);
     }
@@ -81,7 +116,10 @@ export function TemplateInput({
       title="Cliquer pour modifier"
       className={`cursor-text hover:bg-slate-100 rounded px-0.5 transition-colors print:hover:bg-transparent ${className}`}
     >
-      {value || <span className="italic opacity-40">{placeholder}</span>}
+      {value
+        ? renderFormattedText(value)
+        : <span className="italic opacity-40">{placeholder}</span>
+      }
     </span>
   );
 }
