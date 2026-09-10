@@ -1,7 +1,6 @@
 import useCoverLetterContext from "../CoverLetterProvider/hook";
 import CoverLetterFooter from "./CoverFooter";
 import CoverLetterHeader from "./CoverHeader";
-import CoverLetterMeta from "./CoverMeta";
 
 export default function CoverLetterTemplate() {
     const { profileInfo } = useCoverLetterContext();
@@ -15,7 +14,6 @@ export default function CoverLetterTemplate() {
         >
             <div>
                 <CoverLetterHeader lang={profileInfo?.language} />
-                <CoverLetterMeta />
                 <div className="flex flex-col gap-3 my-4">
                     {/* TODO: Sort blocks by position and map over CoverLetterBlockItem */}
                     {/* blocks.sort((a,b) => a.position - b.position).map(b => <CoverLetterBlockItem key={b.id} block={b} />) */}
