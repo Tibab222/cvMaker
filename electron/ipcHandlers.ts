@@ -163,5 +163,5 @@ export function registerIpcHandlers() {
     ipcMain.handle('get-CV-session', (event, applicationId: string) => {
         return JobApplicationManager.getInstance().getCVSession(applicationId);
     });
-    ipcMain.handle('generate-cover-letter', async (event, options) => generateCoverLetter(options));
+    ipcMain.handle('generate-cover-letter', async (event, options) => generateCoverLetter(event, options));
 }

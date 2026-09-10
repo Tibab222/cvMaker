@@ -1,4 +1,5 @@
-import type { CoverLetterBlock, GenerateCoverLetterDTO } from "../../shared/CoverLetter.types";
+import { IpcMainInvokeEvent } from "electron";
+import { COVER_LETTER_EVENTS, CoverLetterStatusPayload, type CoverLetterBlock, type GenerateCoverLetterDTO } from "../../shared/CoverLetter.types";
 import { Language } from "../../shared/profile.interface";
 import { aiService } from "../ipcHandlers";
 import { ENGLISH_PROMPTS } from "../prompts/en";
@@ -34,33 +35,38 @@ function parseAIJsonResponse<T>(rawResponse: string): T {
     throw new Error(`Unexpected response type from AI service: ${typeof rawResponse}`);
 }
 
-export async function generateCoverLetter(options: GenerateCoverLetterDTO) {
+export async function generateCoverLetter(event: IpcMainInvokeEvent, options: GenerateCoverLetterDTO) {
     const { coverLetterData, experiences, projects, education, targetKeywords, language } = options;
     const educationSummary = education.map(edu => `${edu.degree} from ${edu.institution}: ${edu.description}`).join(", ");
     const experienceSummary = experiences.map(exp => `${exp.jobTitle} at ${exp.company}`).join(", ");
-    const projectSummary = projects.map(proj => `${proj.title}: ${proj.bullets.join(", ")}`).join(", ");
+    const projectSummary = projects.map(proj => `${proj.title}: ${proj.bullets.map(bullet => bullet.text).join(", ")}`).join(", ");
+
+    const sendStatus = (status: COVER_LETTER_EVENTS, message: string, data?: CoverLetterStatusPayload['data']) => {
+        event.sender.send('cover-status', { status, message, data });
+    };
 
     if (!aiService.getAvailability()) {
+        sendStatus(COVER_LETTER_EVENTS.ERROR, "AI Service is not available.", { error: "AI Service unavailable" });
         return { error: "AI Service is not available. Check your configuration." };
     }
 
     const prompts = language === Language.FRENCH ? FRENCH_PROMPTS : ENGLISH_PROMPTS;
+    const totalBlocks = 4;
 
     try {
+        sendStatus(COVER_LETTER_EVENTS.START, `Starting cover letter generation (0/${totalBlocks})...`, { totalBlocks });
+        
         const firstParaContent = firstParagraph(coverLetterData.companyName, coverLetterData.roleName);
         const firstBlock = buildBlockParagraph(firstParaContent, 0);
-        // send an event to the renderer process with the first block
-        console.log("First paragraph block generated:", firstBlock);
-
+        sendStatus(COVER_LETTER_EVENTS.BLOCK_GENERATED, `Generated introduction paragraph (1/${totalBlocks})`, { block: firstBlock });
+        
         const expPrompt = prompts.EXPERIENCE_PARAGRAPH(experienceSummary, educationSummary, coverLetterData.roleName, coverLetterData.companyName, targetKeywords.join(', '));
-
         const rawResponse = await aiService.prompt(expPrompt, (err) => {
             console.error("[CoverLetter] Error on EXPERIENCE_PARAGRAPH:", err);
         });
         const secondParaContent = parseAIJsonResponse<{ paragraph: string }>(rawResponse).paragraph;
         const secondBlock = buildBlockParagraph(secondParaContent, 1);
-        // send an event to the renderer process with the second block
-        console.log("Second paragraph block generated:", secondBlock);
+        sendStatus(COVER_LETTER_EVENTS.BLOCK_GENERATED, `Generated experience paragraph (2/${totalBlocks})`, { block: secondBlock });
 
         const skillPrompt = prompts.PROJECT_FITTING_PARAGRAPH(projectSummary, coverLetterData.roleName, coverLetterData.companyName, targetKeywords.join(', '));
         const rawSkillResponse = await aiService.prompt(skillPrompt, (err) => {
@@ -68,17 +74,17 @@ export async function generateCoverLetter(options: GenerateCoverLetterDTO) {
         });
         const thirdParaContent = parseAIJsonResponse<{ paragraph: string }>(rawSkillResponse).paragraph;
         const thirdBlock = buildBlockParagraph(thirdParaContent, 2);
-        // send an event to the renderer process with the third block
-        console.log("Third paragraph block generated:", thirdBlock);
+        sendStatus(COVER_LETTER_EVENTS.BLOCK_GENERATED, `Generated skills paragraph (3/${totalBlocks})`, { block: thirdBlock });
 
         const closingParaContent = closing(coverLetterData.companyName);
         const closingBlock = buildBlockParagraph(closingParaContent, 3);
-        // send an event to the renderer process with the closing block
-        console.log("Closing paragraph block generated:", closingBlock);
+        sendStatus(COVER_LETTER_EVENTS.BLOCK_GENERATED, `Generated closing paragraph (4/${totalBlocks})`, { block: closingBlock });
+
+        sendStatus(COVER_LETTER_EVENTS.COMPLETE, "Cover letter generation completed successfully!");
 
     } catch (error) {
         console.error('[CoverLetter] Process failed:', error);
-        // send an event with error
+        sendStatus(COVER_LETTER_EVENTS.ERROR, "An error occurred during cover letter generation.", { error: error instanceof Error ? error.message : 'Unknown error' });
         return { error: error instanceof Error ? error.message : 'Unknown error' };
       }
 }

@@ -55,3 +55,20 @@ export const MOCK_COVER_LETTER_DATA: CoverLetterData = {
   createdAt: new Date("2026-09-08T14:30:00.000Z"),
   updatedAt: new Date("2026-09-08T15:45:00.000Z")
 };
+
+export enum COVER_LETTER_EVENTS {
+    START = 'cover-letter:start',
+    BLOCK_GENERATED= 'cover-letter:block-generated',
+    ERROR= 'cover-letter:error',
+    COMPLETE= 'cover-letter:complete'
+};
+
+export interface CoverLetterStatusPayload {
+  status: COVER_LETTER_EVENTS;
+  message: string;
+  data?: {
+    block?: CoverLetterBlock;
+    totalBlocks?: number;
+    error?: string;
+  };
+}

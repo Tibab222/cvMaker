@@ -55,8 +55,8 @@ export class OllamaSetup implements IAIProviderSetup<OllamaManager> {
         });
 
         // TODO: remove that in prod  /////////////////////////////
-        ollamaProcess.stdout.on('data', (data) => console.log(`[Ollama stdout]: ${data}`));
-        ollamaProcess.stderr.on('data', (data) => console.error(`[Ollama stderr]: ${data}`));
+        // ollamaProcess.stdout.on('data', (data) => console.log(`[Ollama stdout]: ${data}`));
+        // ollamaProcess.stderr.on('data', (data) => console.error(`[Ollama stderr]: ${data}`));
         // //////////////////////////////////////////////////////*/
 
         process.on('exit', () => ollamaProcess.kill());
