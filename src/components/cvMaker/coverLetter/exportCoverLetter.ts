@@ -23,7 +23,7 @@ const collectDocumentStyles = () =>
 
 /** Strip the characters that are not allowed in a file name. */
 const sanitizeFileNamePart = (value: string) =>
-  value.replace(/[\/:*?"<>|]/g, "").replace(/\s+/g, " ").trim();
+  value.replace(/[/:*?"<>|]/g, "").replace(/\s+/g, " ").trim();
 
 const buildFileName = (companyName?: string, roleName?: string) => {
   const parts = ["Cover Letter", companyName, roleName]
