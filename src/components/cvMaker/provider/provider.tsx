@@ -47,7 +47,7 @@ export type ScoreMap = Record<string, number>;
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
   const { education, profile, experience, projects } = useProfileStore();
-  const { activeCvSessionId } = useUiStore();
+  const { activeCvSessionId, loadCvSession } = useUiStore();
   const [title, setTitle] = useState<string>(() => "Resume - " + (profile?.firstName || "Draft") + " - " + Date.now());
   const [selection, setSelection] = useState<CVSelection>({
     selectedExpIds: [],
@@ -285,6 +285,11 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
         }
 
         case AIAnalysisStatus.Success:{
+          const item = data.data as { id: string };
+          if (item?.id) {
+            setId(item.id);
+            loadCvSession(item.id);
+          }
           setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Success, isCurrentJob: false }));
           setSelection(prev => ({
             ...prev,
@@ -344,6 +349,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       removeStatus();
       setRewritingKeys([]);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.language, education, updateCustomField]);
 
   const getCustomField = useCallback((entityType: EntityType, id: string, field: string, defaultValue: string = '') => {
