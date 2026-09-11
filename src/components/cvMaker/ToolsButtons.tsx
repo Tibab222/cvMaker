@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useCVSelection } from "./provider/hook";
 import useCoverLetterContext from "./CoverLetterProvider/hook";
 import { useUiStore } from "@/store/ui";
+import { getModifierKeyLabel } from "@/hooks/use-keyboard-shortcut";
 
 interface ToolsButtonsProps {
     openPicker: () => void;
@@ -33,6 +34,7 @@ export default function ToolsButtons({ openPicker, coverLetterActive = false }: 
                 className="bg-primary/70 hover:bg-green-700 text-primary-foreground/90 transition-all duration-200 transform hover:scale-105"
                 onClick={save}
                 disabled={isSaving}
+                title={`Save (${getModifierKeyLabel()}+S)`}
             >
                 <Save className="mr-2 h-4 w-4" />
                 {isSaving ? "Saving..." : "Save"}
