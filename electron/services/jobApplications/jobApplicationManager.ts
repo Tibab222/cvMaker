@@ -195,6 +195,38 @@ export class JobApplicationManager {
         };
     }
 
+    public updateExportedDocuments(
+        applicationId: string, 
+        paths: { pdfFilePath?: string; coverFilePath?: string }
+    ): void {
+        const rawDb = this.getDb();
+        const updates: string[] = [];
+        const params: unknown[] = [];
+
+        if (paths.pdfFilePath !== undefined) {
+            updates.push("pdf_file_path = ?");
+            params.push(paths.pdfFilePath);
+        }
+
+        if (paths.coverFilePath !== undefined) {
+            updates.push("motivation_letter_file_path = ?");
+            params.push(paths.coverFilePath);
+        }
+
+        if (updates.length === 0) return;
+
+        updates.push("updated_at = CURRENT_TIMESTAMP");
+        params.push(applicationId);
+
+        const query = `
+            UPDATE applications
+            SET ${updates.join(", ")}
+            WHERE id = ?
+        `;
+
+        rawDb.prepare(query).run(...params);
+    }
+
     /**
      * Number of active applications
      */

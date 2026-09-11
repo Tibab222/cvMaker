@@ -111,7 +111,7 @@ export default function EducationCard({education, onSave, defaultEdit = false, o
                 >
                     <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                        Modifier l'éducation
+                        Edit Education
                     </CardTitle>
                     <Input 
                         placeholder="Institution" 

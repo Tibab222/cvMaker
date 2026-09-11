@@ -2,26 +2,48 @@ import { app, BrowserWindow, dialog } from "electron";
 import * as fs from "fs";
 import path from "path";
 import { ConfigurationManager } from "../services/config/ConfigurationManager";
+import { JobApplicationManager } from "../services/jobApplications/jobApplicationManager";
 
 /**
- * Generate a unique folder path by appending a counter if the folder already exists.
- * @param basePath The base directory where the folder should be created.
- * @param folderName The desired name of the folder.
- * @returns A unique folder path that does not currently exist.
+ * Generate a unique file path by appending a counter (1), (2), etc. if the file already exists.
+ * @param folderPath The directory where the file should be saved.
+ * @param fileName The desired name of the file.
+ * @returns A unique full file path that does not currently exist.
  */
-const getUniqueFolderPath = (basePath: string, folderName: string): string => {
-  let targetPath = path.join(basePath, folderName);
+const getUniqueFilePath = (folderPath: string, fileName: string): string => {
+  const ext = fileName.endsWith(".pdf") ? "" : ".pdf";
+  const fullFileName = `${fileName}${ext}`;
+  const parsed = path.parse(fullFileName);
+  
+  let targetFilePath = path.join(folderPath, parsed.base);
   let counter = 1;
 
-  while (fs.existsSync(targetPath)) {
-    targetPath = path.join(basePath, `${folderName} (${counter})`);
+  while (fs.existsSync(targetFilePath)) {
+    targetFilePath = path.join(
+      folderPath,
+      `${parsed.name} (${counter})${parsed.ext}`
+    );
     counter++;
   }
 
-  return targetPath;
+  return targetFilePath;
 };
 
-export const generatePdf = async (htmlContent: string, fileName: string) => {
+const isCoverLetter = (fileName: string): boolean => {
+  return /^cover\s*letter\s*-/i.test(fileName.trim());
+}
+
+/**
+ * clean the folder name by removing any leading "Resume CV - " or "Cover Letter - " prefixes and trimming whitespace.
+ * @param fileName The original file name to be cleaned.
+ * @returns The cleaned folder name without the specified prefixes and leading/trailing whitespace.
+ */
+const cleanFolderName = (fileName: string): string => {
+  const rawName = path.parse(fileName).name;
+  return rawName.replace(/^(Resume CV|Cover Letter)\s*-\s*/i, "").trim();
+};
+
+export const generatePdf = async (htmlContent: string, fileName: string, applicationId?: string) => {
   const printWindow = new BrowserWindow({
     show: false,
     webPreferences: { offscreen: true, nodeIntegration: false },
@@ -38,15 +60,15 @@ export const generatePdf = async (htmlContent: string, fileName: string) => {
     const defaultExportPath = configManager.getExportPath();
 
     let finalFilePath: string | null = null;
+    const isCoverLetterFile = isCoverLetter(fileName);
 
     if (defaultExportPath && defaultExportPath.trim() !== "") {
-      const rawName = path.parse(fileName).name;
-      const targetFolder = getUniqueFolderPath(defaultExportPath, rawName);
-
-      fs.mkdirSync(targetFolder, { recursive: true });
-
-      const cleanFileName = fileName.endsWith(".pdf") ? fileName : `${fileName}.pdf`;
-      finalFilePath = path.join(targetFolder, cleanFileName);
+      const folderName = cleanFolderName(fileName);
+      const targetFolder = path.join(defaultExportPath, folderName);
+      if (!fs.existsSync(targetFolder)) {
+        fs.mkdirSync(targetFolder, { recursive: true });
+      }
+      finalFilePath = getUniqueFilePath(targetFolder, fileName);
     } else {
       const { filePath } = await dialog.showSaveDialog({
         defaultPath: path.join(app.getPath("downloads"), fileName),
@@ -68,10 +90,19 @@ export const generatePdf = async (htmlContent: string, fileName: string) => {
     });
 
     fs.writeFileSync(finalFilePath, data);
-    return true;
+
+    if (applicationId) {
+      const applicationManager = JobApplicationManager.getInstance();
+      if (isCoverLetterFile) {
+        applicationManager.updateExportedDocuments(applicationId, { coverFilePath: finalFilePath });
+      } else {
+        applicationManager.updateExportedDocuments(applicationId, { pdfFilePath: finalFilePath });
+      }
+    }
+    return finalFilePath;
   } catch (e: unknown) {
     console.error("Error generating PDF:", e);
-    return false;
+    return null;
   } finally {
     printWindow.close();
   }
