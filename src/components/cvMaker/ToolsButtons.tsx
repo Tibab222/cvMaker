@@ -16,7 +16,7 @@ interface ToolsButtonsProps {
 
 export default function ToolsButtons({ openPicker, coverLetterActive = false }: ToolsButtonsProps) {
     const [isExporting, setIsExporting] = useState(false);
-    const { title, save, isSaving, includePhoto, setIncludePhoto } = useCVSelection();
+    const { save, isSaving, includePhoto, setIncludePhoto } = useCVSelection();
     const hasPhoto = useProfileStore((state) => Boolean(state.profile?.photo));
     const { coverLetter } = useCoverLetterContext();
     const { activeCvSessionId } = useUiStore()
