@@ -9,6 +9,7 @@ import { type EntityType, buildCustomKey, buildScoreKey } from '@shared/utils';
 import { type CVSelection, type CVSessionDataDTO, type JobInfos } from '@shared/jobApplications.type';
 import { toast } from 'sonner';
 import { useUiStore } from '@/store/ui';
+import { useKeyboardShortcut } from '@/hooks/use-keyboard-shortcut';
 
 export interface CVSelectionContextType {
   title: string;
@@ -479,6 +480,12 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       setIsSaving(false);
     }
   }, [id, title, selection, jobInfos, customTexts, scores]);
+
+  useKeyboardShortcut('s', () => {
+    if (!isSaving) {
+      void save();
+    }
+  });
 
   return (
     <CVSelectionContext.Provider value={{ 
