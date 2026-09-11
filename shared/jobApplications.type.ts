@@ -24,6 +24,7 @@ export interface CVSelection {
   selectedBullets: Record<string, string[]>;
   selectedSkillsIds: string[];
   selectedEducationIds: string[];
+  includePhoto?: boolean; // show the profile photo on this resume; undefined means "yes if the profile has one"
 }
 
 export interface CVSessionDataDTO {

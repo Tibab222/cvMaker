@@ -9,7 +9,7 @@ import CVSummary from "./parts/CVSummary";
 
 export default function CVTemplate() {
   const { profile, experience, projects, skills, education } = useProfileStore();
-  const { selection } = useCVSelection();
+  const { selection, includePhoto } = useCVSelection();
 
   // keep the order of selected experiences
   const selectedExps = experience.filter(exp => selection.selectedExpIds.includes(exp.id)).sort((a, b) => {
@@ -26,7 +26,7 @@ export default function CVTemplate() {
       className="w-[210mm] min-h-[297mm] bg-white p-[15mm] relative text-slate-900 shadow-sm flex flex-col gap-3 font-sans antialiased"
       style={{ boxSizing: 'border-box' }}
     >
-      <CVHeader profile={profile} />
+      <CVHeader profile={profile} showPhoto={includePhoto} />
       <CVSummary lang={lang} />
       <CVEducation educations={education} lang={lang} />
       {selectedExps.length > 0 && <CVExperience experiences={selectedExps} lang={lang} />}

@@ -14,6 +14,7 @@ import { useKeyboardShortcut } from '@/hooks/use-keyboard-shortcut';
 export interface CVSelectionContextType {
   title: string;
   selection: CVSelection;
+  includePhoto: boolean; // resolved selection.includePhoto: shown by default when the profile has a photo
   jobInfos: JobInfos | null;
   aiState: AIAnalysisState;
   customTexts: CustomTextMap;
@@ -30,6 +31,7 @@ export interface CVSelectionContextType {
   isBulletSelected: (parentId: string, bulletId: string) => boolean;
   toggleSkill: (id: string) => void;
   toggleEducation: (id: string) => void;
+  setIncludePhoto: (include: boolean) => void;
   runFullAIAnalysis: (rawMandate: string) => Promise<void>;
   runLocalAnalysis: (rawMandate: string) => Promise<void>;
   removeKeyword: (keyword: string) => void;
@@ -439,6 +441,10 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     }));
   }, []);
 
+  const setIncludePhoto = useCallback((include: boolean) => {
+    setSelection(prev => ({ ...prev, includePhoto: include }));
+  }, []);
+
   const isBulletSelected = (parentId: string, bulletId: string) => {
     return selection.selectedBullets[parentId]?.includes(bulletId) || false;
   };
@@ -492,6 +498,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       title,
       setTitle,
       selection, 
+      includePhoto: selection.includePhoto ?? true,
       getScore,
       jobInfos,
       aiState,
@@ -507,6 +514,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       toggleBullet,
       toggleSkill,
       toggleEducation,
+      setIncludePhoto,
       isBulletSelected,
       runFullAIAnalysis,
       runLocalAnalysis,
