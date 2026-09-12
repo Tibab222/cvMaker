@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { CVSelectionContext } from './context';
-import { type AIAnalysisState } from './types';
+import { INITIAL_HEADER, type AIAnalysisState } from './types';
 import { api } from '@/api';
 import { AIAnalysisStatus } from '@shared/AIAnalysisStatus';
 import { useProfileStore } from '@/store/profile';
@@ -31,6 +31,7 @@ export interface CVSelectionContextType {
   isBulletSelected: (parentId: string, bulletId: string) => boolean;
   toggleSkill: (id: string) => void;
   toggleEducation: (id: string) => void;
+  setHeaderInfo: (field: keyof CVSelection['headerInfos'], value: boolean, customLinkLabel?: string) => void;
   setIncludePhoto: (include: boolean) => void;
   runFullAIAnalysis: (rawMandate: string) => Promise<void>;
   runLocalAnalysis: (rawMandate: string) => Promise<void>;
@@ -53,6 +54,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   const { activeCvSessionId, loadCvSession } = useUiStore();
   const [title, setTitle] = useState<string>(() => "Resume - " + (profile?.firstName || "Draft") + " - " + Date.now());
   const [selection, setSelection] = useState<CVSelection>({
+    headerInfos: INITIAL_HEADER,
     selectedExpIds: [],
     selectedProjectIds: [],
     selectedBullets: {},
@@ -187,6 +189,19 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     setScores(sessionData.scores || {});
     setSummaryBullets(sessionData.topResumeSummary || []);
 
+  }, []);
+
+  const setHeaderInfo = useCallback((field: keyof CVSelection['headerInfos'], value: boolean | string, customLinkLabel?: string) => {
+    setSelection(prev => {
+      const newHeaderInfos = {
+        ...prev.headerInfos,
+        ...(field !== 'customLinks' ? { [field]: value } : {}),
+      };
+      if (customLinkLabel && field === 'customLinks' && typeof value === 'boolean') {
+        newHeaderInfos.customLinks[customLinkLabel] = value;
+      }
+      return { ...prev, headerInfos: newHeaderInfos };
+    });
   }, []);
 
   useEffect(() => {
@@ -514,6 +529,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       toggleBullet,
       toggleSkill,
       toggleEducation,
+      setHeaderInfo,
       setIncludePhoto,
       isBulletSelected,
       runFullAIAnalysis,

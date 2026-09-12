@@ -15,16 +15,16 @@ export default function CvPicker({ onClose }: { onClose: () => void }) {
             <Tabs defaultValue="experience">
                 <TabsList className="w-full">
                     <Button onClick={onClose} variant={"ghost"}><SidebarOpen />Close</Button>
-                    {/* <TabsTrigger value="infos">Infos</TabsTrigger> */}
+                    <TabsTrigger value="header">Header</TabsTrigger>
                     <TabsTrigger value="experience">Experience</TabsTrigger>
                     <TabsTrigger value="project">Project</TabsTrigger>
                     <TabsTrigger value="skills">Skills</TabsTrigger>
                     <TabsTrigger value="education">Education</TabsTrigger>
                     <TabsTrigger value="analyse">Analyse</TabsTrigger>
                 </TabsList>
-                {/* <TabsContent value="infos">
+                <TabsContent value="header">
                     infos
-                </TabsContent> */}
+                </TabsContent>
                 <TabsContent value="experience">
                     <ExperiencePicker />
                 </TabsContent>
