@@ -26,5 +26,4 @@ export interface Profile {
     // others
     language: Language; // langue du profil (va générer le CV dans cette langue), ex: Language.FRENCH ou Language.ENGLISH
     photo?: string; // cropped profile photo as a JPEG data URL (kept inline so it survives the data: URL PDF export)
-    // TODO: add the social media links as optional fields
 }
