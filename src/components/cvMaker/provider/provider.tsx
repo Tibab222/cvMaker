@@ -31,7 +31,7 @@ export interface CVSelectionContextType {
   isBulletSelected: (parentId: string, bulletId: string) => boolean;
   toggleSkill: (id: string) => void;
   toggleEducation: (id: string) => void;
-  setHeaderInfo: (field: keyof CVSelection['headerInfos'], value: boolean, customLinkLabel?: string) => void;
+  setHeaderInfo: (field: keyof CVSelection['headerInfos'], value: boolean | string, customLinkLabel?: string) => void;
   setIncludePhoto: (include: boolean) => void;
   runFullAIAnalysis: (rawMandate: string) => Promise<void>;
   runLocalAnalysis: (rawMandate: string) => Promise<void>;
@@ -179,8 +179,10 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const loadSession = useCallback((sessionData: CVSessionDataDTO) => {
+    if (!sessionData) return;
     setId(sessionData.id);
     setTitle(sessionData.title);
+    if(!sessionData.selection.headerInfos) sessionData.selection.headerInfos = INITIAL_HEADER;
     setSelection(sessionData.selection);
     if (sessionData.jobInfos) {
       setJobInfos(sessionData.jobInfos);
