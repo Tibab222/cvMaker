@@ -3,6 +3,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupTextarea } from "@/components/ui/input-group";
+import LocationInput from "@/components/ui/LocationInput";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Education } from "@shared/Education.interface";
 import { AnimatePresence, motion } from "framer-motion";
@@ -141,14 +142,11 @@ export default function EducationCard({education, onSave, defaultEdit = false, o
                         <InputGroupAddon><Notebook className="h-4 w-4 text-muted-foreground" /></InputGroupAddon>
                     </InputGroup>
 
-                    <InputGroup>
-                        <InputGroupInput 
+                    <LocationInput 
                         placeholder="Location" 
                         value={formData.location} 
-                        onChange={(e) => setFormData({ ...formData, location: e.target.value })} 
-                        />
-                        <InputGroupAddon><MapPin className="h-4 w-4 text-muted-foreground" /></InputGroupAddon>
-                    </InputGroup>
+                        onChange={(next) => setFormData({ ...formData, location: next })} 
+                    />
 
                     {/* Date pickers row */}
                     <div className="flex flex-wrap items-center gap-4 bg-muted/20 p-3 rounded-lg border border-dashed border-muted/80">
