@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Building2, FileText, Link2, Plus, Type } from "lucide-react";
+import { Building2, FileText, Link2, Plus, Type, Wallet } from "lucide-react";
+import { parseSalary } from "@shared/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -56,7 +57,8 @@ export default function NewDialog({ defaultOpen = false }: Props) {
   const [company, setCompany] = useState("");
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
-  const [errors, setErrors] = useState<{ title?: string; company?: string }>({});
+  const [salary, setSalary] = useState("");
+  const [errors, setErrors] = useState<{ title?: string; company?: string; salary?: string }>({});
 
   const isSubmittingRef = useRef(false);
 
@@ -65,6 +67,7 @@ export default function NewDialog({ defaultOpen = false }: Props) {
     setCompany("");
     setUrl("");
     setDescription("");
+    setSalary("");
     setErrors({});
   };
 
@@ -79,8 +82,10 @@ export default function NewDialog({ defaultOpen = false }: Props) {
     const next: typeof errors = {};
     if (!title.trim()) next.title = "Job title is required";
     if (!company.trim()) next.company = "Company name is required";
+    const parsedSalary = parseSalary(salary);
+    if (salary.trim() && parsedSalary === null) next.salary = "Salary must be a positive number";
     setErrors(next);
-    if (next.title || next.company) return;
+    if (next.title || next.company || next.salary) return;
 
     isSubmittingRef.current = true;
 
@@ -89,6 +94,7 @@ export default function NewDialog({ defaultOpen = false }: Props) {
       company: company.trim(),
       url: url.trim(),
       description: description.trim(),
+      salary: parsedSalary,
     });
 
     setOpen(false);
@@ -153,16 +159,31 @@ export default function NewDialog({ defaultOpen = false }: Props) {
             </Field>
           </div>
 
-          <Field id="job-url" label="Link to job mandate" icon={Link2}>
-            <Input
-              id="job-url"
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://company.com/careers/role"
-              className="bg-surface-elevated/60"
-            />
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field id="job-url" label="Link to job mandate" icon={Link2}>
+              <Input
+                id="job-url"
+                type="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://company.com/careers/role"
+                className="bg-surface-elevated/60"
+              />
+            </Field>
+            <Field id="job-salary" label="Yearly salary" icon={Wallet} error={errors.salary}>
+              <Input
+                id="job-salary"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={1}
+                value={salary}
+                onChange={(e) => setSalary(e.target.value)}
+                placeholder="85000"
+                className="bg-surface-elevated/60"
+              />
+            </Field>
+          </div>
 
           <Field id="job-description" label="Job description / mandate" icon={FileText}>
             <Textarea

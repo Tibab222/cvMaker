@@ -102,9 +102,9 @@ export default function JobDrawer({ rawJob, onOpenChange }: Props) {
                 </div>
                 <div className="rounded-md border border-border/70 bg-surface-elevated/60 px-3 py-2">
                   <p className="flex items-center gap-1 text-muted-foreground">
-                    <Wallet className="size-3" /> Salary range
+                    <Wallet className="size-3" /> Salary
                   </p>
-                  <p className="mt-0.5 font-medium text-foreground">{job.salary || "Coming soon..."}</p>
+                  <p className="mt-0.5 font-medium text-foreground">{job.salary || "Not set"}</p>
                 </div>
               </div>
 

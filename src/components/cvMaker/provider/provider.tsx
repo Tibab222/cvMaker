@@ -165,12 +165,19 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
         scores,
       };
 
-    await api.rewriteResume({
+    const result = await api.rewriteResume({
       language: profile?.language || Language.ENGLISH,
       experiences: expsToRewrite,
       projects: projsToRewrite,
       resumeData: cvSessionData
     });
+
+    // some failures (e.g. AI unavailable) return before any status is emitted, so reset the state here
+    if (result?.error) {
+      setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Error, error: result.error }));
+      setRewritingKeys([]);
+      toast.error("Failed to rewrite resume", { description: result.error });
+    }
   }, [experience, projects, id, title, selection, jobInfos, customTexts, scores, profile?.language]);
 
   const updateCustomField = useCallback((entityType: EntityType, id: string, field: string, value: string) => {
@@ -356,6 +363,12 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
           const item = data.data as { topResumeSummary: string[] };
           setSummaryBullets(item.topResumeSummary);
           setAiState(prev => ({ ...prev, status: AIAnalysisStatus.TOP_RESUME }));
+          break;
+        }
+
+        case AIAnalysisStatus.Error: {
+          setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Error, isCurrentJob: false, error: data.message }));
+          setRewritingKeys([]);
           break;
         }
 

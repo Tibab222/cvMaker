@@ -33,6 +33,7 @@ export function mapApplicationToJobCard(application: Application): JobCard {
         timeline: [],
         logo: logo,
         url: application.url || undefined,
+        salary: application.salary != null ? `${application.salary.toLocaleString()} / year` : undefined,
     }
 }
 

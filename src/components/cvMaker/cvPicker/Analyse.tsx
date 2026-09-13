@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Building2, Check, FileSearch, LoaderCircle, ScanSearch, Sparkles, Target, Wand2, X } from 'lucide-react';
+import { Building2, Check, FileSearch, LoaderCircle, ScanSearch, Sparkles, Target, Wallet, Wand2, X } from 'lucide-react';
+import { parseSalary } from "@shared/utils";
 import { useCVSelection } from "../provider/hook";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -117,6 +118,22 @@ export default function Analyse() {
                                     value={jobInfos?.company || ""}
                                     onChange={(event) => updateJobInfos({ company: event.target.value })}
                                     placeholder="Company name"
+                                    className="bg-background"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="analysis-salary" className="flex items-center gap-2 text-xs">
+                                    <Wallet className="size-3.5 text-muted-foreground" /> Yearly salary
+                                </Label>
+                                <Input
+                                    id="analysis-salary"
+                                    type="number"
+                                    inputMode="numeric"
+                                    min={0}
+                                    step={1}
+                                    value={jobInfos?.salary ?? ""}
+                                    onChange={(event) => updateJobInfos({ salary: parseSalary(event.target.value) })}
+                                    placeholder="85000"
                                     className="bg-background"
                                 />
                             </div>

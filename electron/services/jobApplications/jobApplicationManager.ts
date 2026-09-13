@@ -1,5 +1,6 @@
 import path from "node:path";
 import { Application, ApplicationEvent, ApplicationEventType, ApplicationWithEvents, CreateApplicationDto, CVSessionDataDTO, JobApplicationStatus, KeyStats } from "../../../shared/jobApplications.type";
+import { parseSalary } from "../../../shared/utils";
 import { JobApplicationDb } from "./jobApplicationDb";
 import fs from "node:fs";
 
@@ -91,10 +92,11 @@ export class JobApplicationManager {
 
         const keywords = dto.jobInfos?.keywords || [];
         const url = dto.jobInfos?.url || "";
+        const salary = parseSalary(dto.jobInfos?.salary);
 
         const stmt = rawDb.prepare(`
-            INSERT INTO applications (id, job_title, company_name, status, keywords, url, json_file_path)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO applications (id, job_title, company_name, status, keywords, salary, url, json_file_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         const eventStmt = rawDb.prepare(`
@@ -104,7 +106,7 @@ export class JobApplicationManager {
 
         try {
             const transaction = rawDb.transaction(() => {
-                stmt.run(id, jobTitle, companyName, initialStatus, keywords.join(','), url, relativeJsonPath);
+                stmt.run(id, jobTitle, companyName, initialStatus, keywords.join(','), salary, url, relativeJsonPath);
                 eventStmt.run(id, ApplicationEventType.STATUS_CHANGE, `Created with status ${initialStatus}`);
             });
             transaction();
@@ -385,14 +387,15 @@ export class JobApplicationManager {
         const companyName = sessionData.jobInfos?.company || "Unknown";
         const keywords = sessionData.jobInfos?.keywords || [];
         const url = sessionData.jobInfos?.url || "";
+        const salary = parseSalary(sessionData.jobInfos?.salary);
 
         const updateStmt = rawDb.prepare(`
-            UPDATE applications 
-            SET job_title = ?, company_name = ?, status = ?, keywords = ?, url = ?, updated_at = CURRENT_TIMESTAMP 
+            UPDATE applications
+            SET job_title = ?, company_name = ?, status = ?, keywords = ?, salary = ?, url = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         `);
 
-        updateStmt.run(jobTitle, companyName, status, keywords.join(','), url, sessionData.id);
+        updateStmt.run(jobTitle, companyName, status, keywords.join(','), salary, url, sessionData.id);
     }
 
     private getDb() {
