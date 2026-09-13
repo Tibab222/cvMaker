@@ -80,5 +80,18 @@ export class JobApplicationDb {
 
         this.db.exec(applicationTable);
         this.db.exec(applicationEventsTable);
+        this.migrateSchema();
+    }
+
+    /**
+    * Adds columns introduced after the table was first created, since CREATE TABLE IF NOT EXISTS leaves existing tables untouched.
+    */
+    private migrateSchema(): void {
+        if (!this.db) return;
+
+        const columns = this.db.prepare(`PRAGMA table_info(applications)`).all() as { name: string }[];
+        if (!columns.some(column => column.name === 'salary')) {
+            this.db.exec(`ALTER TABLE applications ADD COLUMN salary INTEGER`);
+        }
     }
 }

@@ -44,6 +44,7 @@ export interface JobInfos {
     description: string;
     focus?: string;
     keywords?: string[];
+    salary?: number | null; // yearly amount as an integer, e.g. 85000
 }
 
 export interface KeyStats {
@@ -62,6 +63,7 @@ export interface Application {
     company_name: string;            // NOT NULL
     status: JobApplicationStatus;    // CHECK (status IN (...))
     keywords: string[];
+    salary?: number | null;          // INTEGER NULLABLE
     url?: string | null;             // NULLABLE
     json_file_path?: string | null;  // NULLABLE
     pdf_file_path?: string | null;   // NULLABLE
