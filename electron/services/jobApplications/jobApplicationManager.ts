@@ -177,6 +177,24 @@ export class JobApplicationManager {
         return { id: this.createApplication(data as CreateApplicationDto, status), success: true };
     }
 
+    public setPdfFilePath(id: string, pdfFilePath: string): void {
+        const rawDb = this.getDb();
+        rawDb.prepare(`UPDATE applications SET pdf_file_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(pdfFilePath, id);
+    }
+
+    /**
+     * Absolute path of the exported resume PDF, or null if none was exported or the file is no longer on disk.
+     */
+    public getPdfFilePath(id: string): string | null {
+        const rawDb = this.getDb();
+        const row = rawDb.prepare(`SELECT pdf_file_path FROM applications WHERE id = ?`).get(id) as { pdf_file_path: string | null } | undefined;
+
+        if (!row?.pdf_file_path || !fs.existsSync(row.pdf_file_path)) {
+            return null;
+        }
+        return row.pdf_file_path;
+    }
+
     public getKeyStats(): KeyStats {
         const activeApplications = this.getActiveApplicationsCount();
         const activitySpark = this.getActivitySpark();

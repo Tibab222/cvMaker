@@ -12,11 +12,11 @@ interface ToolsButtonsProps {
 
 export default function ToolsButtons({ openPicker, coverLetterActive = false }: ToolsButtonsProps) {
     const [isExporting, setIsExporting] = useState(false);
-    const { title, save, isSaving, includePhoto, setIncludePhoto, showSummary, setShowSummary } = useCVSelection();
+    const { id, title, save, isSaving, includePhoto, setIncludePhoto, showSummary, setShowSummary } = useCVSelection();
     const hasPhoto = useProfileStore((state) => Boolean(state.profile?.photo));
     const handleExport = async () => {
         setIsExporting(true);
-        exportToPdf(title).finally(() => setIsExporting(false));
+        exportToPdf(title, id).finally(() => setIsExporting(false));
     };
     
     return (

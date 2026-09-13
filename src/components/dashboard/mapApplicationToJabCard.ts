@@ -34,6 +34,7 @@ export function mapApplicationToJobCard(application: Application): JobCard {
         logo: logo,
         url: application.url || undefined,
         salary: application.salary != null ? `${application.salary.toLocaleString()} / year` : undefined,
+        resume: application.pdf_file_path ? application.pdf_file_path.split(/[\\/]/).pop() : undefined,
     }
 }
 

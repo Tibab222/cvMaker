@@ -3,14 +3,16 @@ import { useEffect, useState } from "react";
 import {
   Building2,
   CalendarDays,
-  Clipboard,
   ExternalLink,
+  Eye,
   FileText,
+  FileX,
   FolderOpen,
   Loader2,
-  RefreshCw,
   Wallet,
 } from "lucide-react";
+import { toast } from "sonner";
+import { api } from "@/api";
 import type { JobCard } from "@/lib/dashboard-data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,7 @@ import { useDashboard } from "./provider/hook";
 import { mapApplicationWithEventsToJobCard } from "./mapApplicationToJabCard";
 import type { ApplicationWithEvents } from "@shared/jobApplications.type";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import ResumePreviewDialog from "./ResumePreviewDialog";
 
 interface Props {
   rawJob: JobCard | null;
@@ -32,6 +35,12 @@ export default function JobDrawer({ rawJob, onOpenChange }: Props) {
   const { getApplicationInfos } = useDashboard();
   const [jobDetails, setJobDetails] = useState<ApplicationWithEvents | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const handleOpenFolder = async (applicationId: string) => {
+    const opened = await api.openResumeFolder(applicationId);
+    if (!opened) toast.error("Resume file not found. It may have been moved or deleted.");
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -124,18 +133,9 @@ export default function JobDrawer({ rawJob, onOpenChange }: Props) {
                       Timeline
                     </TabsTrigger>
 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="flex-1 cursor-not-allowed">
-                          <TabsTrigger value="resume" className="flex-1" disabled title="Coming soon...">
-                              Tailored Resume 
-                          </TabsTrigger>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Coming soon...</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <TabsTrigger value="resume" className="flex-1">
+                      Tailored Resume
+                    </TabsTrigger>
 
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -181,24 +181,37 @@ export default function JobDrawer({ rawJob, onOpenChange }: Props) {
                 </TabsContent>
 
                 <TabsContent value="resume" className="mt-0 space-y-4">
-                  <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-elevated/50 text-center">
-                    <FileText className="size-8 text-muted-foreground" />
-                    <p className="mt-3 text-sm font-medium text-foreground">{job.resume}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Local PDF preview — generated on-device
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm">
-                      <RefreshCw className="size-3.5" /> Re-generate with AI
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <FolderOpen className="size-3.5" /> Open in Folder
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <Clipboard className="size-3.5" /> Copy Plain Text
-                    </Button>
-                  </div>
+                  {job.resume ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setIsPreviewOpen(true)}
+                        className="flex h-64 w-full flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-elevated/50 text-center transition-colors hover:border-brand/50"
+                      >
+                        <FileText className="size-8 text-muted-foreground" />
+                        <p className="mt-3 max-w-full truncate px-4 text-sm font-medium text-foreground">{job.resume}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Click to preview the exported PDF
+                        </p>
+                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" onClick={() => setIsPreviewOpen(true)}>
+                          <Eye className="size-3.5" /> Preview
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleOpenFolder(job.id)}>
+                          <FolderOpen className="size-3.5" /> Open in Folder
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-elevated/50 text-center">
+                      <FileX className="size-8 text-muted-foreground" />
+                      <p className="mt-3 text-sm font-medium text-foreground">No resume available</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Export a PDF from the resume editor to see it here
+                      </p>
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex flex-wrap gap-1.5">
                     {job.stack.map((tag) => (
@@ -234,6 +247,12 @@ export default function JobDrawer({ rawJob, onOpenChange }: Props) {
                 </TabsContent>
               </div>
             </Tabs>
+
+            <ResumePreviewDialog
+              applicationId={isPreviewOpen ? job.id : null}
+              fileName={job.resume}
+              onOpenChange={setIsPreviewOpen}
+            />
           </>
         )}
       </SheetContent>

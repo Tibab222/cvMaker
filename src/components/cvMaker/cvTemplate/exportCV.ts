@@ -1,7 +1,8 @@
 import { api } from "@/api";
 import { toast } from "sonner";
 
-export const exportToPdf = async (title: string) => {
+// applicationId links the exported file to its saved application, so the dashboard can show it
+export const exportToPdf = async (title: string, applicationId?: string | null) => {
   const element = document.getElementById("cv-content");
   if (!element) return;
 
@@ -41,6 +42,6 @@ export const exportToPdf = async (title: string) => {
     </html>
   `;
 
-  const success = await api.generatePDF(fullHTML, `Resume ${title}.pdf`);
+  const success = await api.generatePDF(fullHTML, `Resume ${title}.pdf`, applicationId || undefined);
   if (success) toast.success("CV exported successfully!");
 };

@@ -19,7 +19,7 @@ declare global {
       loadProfile: (profileId: string) => Promise<ProfilesData>;
       checkAIAvailability: () => Promise<boolean>;
       updateSection: (id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => Promise<ProfilesData[keyof ProfilesData]>;
-      generatePDF: (html: string, fileName: string) => Promise<boolean>;
+      generatePDF: (html: string, fileName: string, applicationId?: string) => Promise<boolean>;
       syncDb: (profileId: string, experiences: Experience[], projects: Project[]) => Promise<boolean>;
       analyseMandate: (rawMandate: string, language: Language, useAi: boolean) => Promise<{ success: boolean; error?: string }>;
       onAnalysisStatus: (callback: (data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => void) => () => void;
@@ -45,6 +45,8 @@ declare global {
       updateApplicationStatus: (id: string, newStatus: JobApplicationStatus) => Promise<void>;
       getApplicationWithTimeline: (applicationId: string) => Promise<ApplicationWithEvents | null>;
       getCVSession: (applicationId: string) => Promise<CVSessionDataDTO | null>;
+      openResumeFolder: (applicationId: string) => Promise<boolean>; // false when no resume file exists
+      getResumePdf: (applicationId: string) => Promise<Uint8Array | null>;
       generateCoverLetter: (options: GenerateCoverLetterDTO) => Promise<{ success: boolean; error?: string }>;
       onCoverLetterStatusUpdate: (callback: (payload: CoverLetterStatusPayload) => void) => () => void;
     };

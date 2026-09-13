@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog } from "electron";
 import * as fs from "fs";
 import path from "path";
 import { ConfigurationManager } from "../services/config/ConfigurationManager";
+import { JobApplicationManager } from "../services/jobApplications/jobApplicationManager";
 
 /**
  * Generate a unique folder path by appending a counter if the folder already exists.
@@ -21,7 +22,7 @@ const getUniqueFolderPath = (basePath: string, folderName: string): string => {
   return targetPath;
 };
 
-export const generatePdf = async (htmlContent: string, fileName: string) => {
+export const generatePdf = async (htmlContent: string, fileName: string, applicationId?: string) => {
   const printWindow = new BrowserWindow({
     show: false,
     webPreferences: { offscreen: true, nodeIntegration: false },
@@ -68,6 +69,16 @@ export const generatePdf = async (htmlContent: string, fileName: string) => {
     });
 
     fs.writeFileSync(finalFilePath, data);
+
+    if (applicationId) {
+      try {
+        JobApplicationManager.getInstance().setPdfFilePath(applicationId, finalFilePath);
+      } catch (e: unknown) {
+        // The PDF is already on disk, so failing to link it must not report the export as failed
+        console.error("Error linking PDF to application:", e);
+      }
+    }
+
     return true;
   } catch (e: unknown) {
     console.error("Error generating PDF:", e);

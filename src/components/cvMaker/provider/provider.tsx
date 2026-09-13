@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { useUiStore } from '@/store/ui';
 
 export interface CVSelectionContextType {
+  id: string | null; // application id, null until the session is saved
   title: string;
   selection: CVSelection;
   includePhoto: boolean; // resolved selection.includePhoto: shown by default when the profile has a photo
@@ -503,7 +504,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   }, [id, title, selection, jobInfos, customTexts, scores, summaryBullets]);
 
   return (
-    <CVSelectionContext.Provider value={{ 
+    <CVSelectionContext.Provider value={{
+      id,
       title,
       setTitle,
       selection, 

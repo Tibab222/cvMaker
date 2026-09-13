@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, shell } from 'electron';
 import { profilesDir } from './main.dev';
 import * as fs from 'fs';
 import { createProfile } from './functions/createProfile';
@@ -86,8 +86,8 @@ export function registerIpcHandlers() {
         return updateSection(id, section, newData);
     });
 
-    ipcMain.handle('generatePdf', async (event, htmlContent, fileName) => {
-        return await generatePdf(htmlContent, fileName);
+    ipcMain.handle('generatePdf', async (event, htmlContent, fileName, applicationId?: string) => {
+        return await generatePdf(htmlContent, fileName, applicationId);
     });
 
     ipcMain.handle('syncDb', async (event, profileId: string, experiences: Experience[], projects: Project[]) => {
@@ -164,4 +164,15 @@ export function registerIpcHandlers() {
         return JobApplicationManager.getInstance().getCVSession(applicationId);
     });
     ipcMain.handle('generate-cover-letter', async (event, options) => generateCoverLetter(event, options));
+    // Resume files are resolved from the application id, so the renderer never passes raw file paths
+    ipcMain.handle('open-resume-folder', (event, applicationId: string) => {
+        const pdfFilePath = JobApplicationManager.getInstance().getPdfFilePath(applicationId);
+        if (!pdfFilePath) return false;
+        shell.showItemInFolder(pdfFilePath);
+        return true;
+    });
+    ipcMain.handle('get-resume-pdf', async (event, applicationId: string) => {
+        const pdfFilePath = JobApplicationManager.getInstance().getPdfFilePath(applicationId);
+        return pdfFilePath ? await fs.promises.readFile(pdfFilePath) : null;
+    });
 }

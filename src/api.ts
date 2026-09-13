@@ -17,7 +17,7 @@ export const api = {
     loadProfile: async (id: string) => await window.api.loadProfile(id),
     checkAIAvailability: async () => await window.api.checkAIAvailability(),
     updateSection: async (id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => await window.api.updateSection(id, section, newData),
-    generatePDF: async (html: string, fileName: string) => await window.api.generatePDF(html, fileName),
+    generatePDF: async (html: string, fileName: string, applicationId?: string) => await window.api.generatePDF(html, fileName, applicationId),
     syncDb: async (profileId: string, experiences: Experience[], projects: Project[]) => await window.api.syncDb(profileId, experiences, projects),
     analyseMandate: async (rawMandate: string, language: Language, useAi: boolean) => await window.api.analyseMandate(rawMandate, language, useAi),
     onAnalysisStatus: (callback: (data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => void) => window.api.onAnalysisStatus(callback),
@@ -43,6 +43,8 @@ export const api = {
     updateApplicationStatus: async (id: string, newStatus: JobApplicationStatus) => { return await window.api.updateApplicationStatus(id, newStatus) },
     getApplicationWithTimeline: async (applicationId: string) => { return await window.api.getApplicationWithTimeline(applicationId) },
     getCVSession: async (applicationId: string) => { return await window.api.getCVSession(applicationId) },
+    openResumeFolder: async (applicationId: string) => { return await window.api.openResumeFolder(applicationId) },
+    getResumePdf: async (applicationId: string) => { return await window.api.getResumePdf(applicationId) },
     generateCoverLetter: async (options: GenerateCoverLetterDTO) => { return await window.api.generateCoverLetter(options) },
     onCoverLetterStatusUpdate: (callback: (payload: CoverLetterStatusPayload) => void) => window.api.onCoverLetterStatusUpdate(callback),
 }
