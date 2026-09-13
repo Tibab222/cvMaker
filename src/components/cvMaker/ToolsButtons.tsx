@@ -1,4 +1,4 @@
-import { Download, Save, SidebarClose, UserRound, UserRoundX } from "lucide-react";
+import { Download, List, ListX, Save, SidebarClose, UserRound, UserRoundX } from "lucide-react";
 import { Button } from "../ui/button";
 import { exportToPdf } from "./cvTemplate/exportCV";
 import { useState } from "react";
@@ -12,7 +12,7 @@ interface ToolsButtonsProps {
 
 export default function ToolsButtons({ openPicker, coverLetterActive = false }: ToolsButtonsProps) {
     const [isExporting, setIsExporting] = useState(false);
-    const { title, save, isSaving, includePhoto, setIncludePhoto } = useCVSelection();
+    const { title, save, isSaving, includePhoto, setIncludePhoto, showSummary, setShowSummary } = useCVSelection();
     const hasPhoto = useProfileStore((state) => Boolean(state.profile?.photo));
     const handleExport = async () => {
         setIsExporting(true);
@@ -31,6 +31,17 @@ export default function ToolsButtons({ openPicker, coverLetterActive = false }: 
                 >
                     {includePhoto ? <UserRound className="mr-2 h-4 w-4" /> : <UserRoundX className="mr-2 h-4 w-4" />}
                     Photo
+                </Button>
+            )}
+            {!coverLetterActive && (
+                <Button
+                    variant={showSummary ? "secondary" : "outline"}
+                    onClick={() => setShowSummary(!showSummary)}
+                    aria-pressed={showSummary}
+                    title={showSummary ? "Hide the summary on this resume" : "Show the summary on this resume"}
+                >
+                    {showSummary ? <List className="mr-2 h-4 w-4" /> : <ListX className="mr-2 h-4 w-4" />}
+                    Summary
                 </Button>
             )}
             <Button 

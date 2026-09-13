@@ -14,6 +14,7 @@ export interface CVSelectionContextType {
   title: string;
   selection: CVSelection;
   includePhoto: boolean; // resolved selection.includePhoto: shown by default when the profile has a photo
+  showSummary: boolean; // resolved selection.showSummary: shown by default when there are bullets
   jobInfos: JobInfos | null;
   aiState: AIAnalysisState;
   customTexts: CustomTextMap;
@@ -31,6 +32,7 @@ export interface CVSelectionContextType {
   toggleSkill: (id: string) => void;
   toggleEducation: (id: string) => void;
   setIncludePhoto: (include: boolean) => void;
+  setShowSummary: (show: boolean) => void;
   runFullAIAnalysis: (rawMandate: string) => Promise<void>;
   runLocalAnalysis: (rawMandate: string) => Promise<void>;
   removeKeyword: (keyword: string) => void;
@@ -451,6 +453,12 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     setSelection(prev => ({ ...prev, includePhoto: include }));
   }, []);
 
+  const setShowSummary = useCallback((show: boolean) => {
+    setSelection(prev => ({ ...prev, showSummary: show }));
+    // an empty summary can't be edited in place, so start it with one placeholder bullet
+    if (show) setSummaryBullets(prev => prev.length > 0 ? prev : [""]);
+  }, []);
+
   const isBulletSelected = (parentId: string, bulletId: string) => {
     return selection.selectedBullets[parentId]?.includes(bulletId) || false;
   };
@@ -476,6 +484,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
         jobInfos,
         customTexts,
         scores,
+        topResumeSummary: summaryBullets,
       };
 
       const result = await api.saveCVSession(payload);
@@ -491,7 +500,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     } finally {
       setIsSaving(false);
     }
-  }, [id, title, selection, jobInfos, customTexts, scores]);
+  }, [id, title, selection, jobInfos, customTexts, scores, summaryBullets]);
 
   return (
     <CVSelectionContext.Provider value={{ 
@@ -499,6 +508,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       setTitle,
       selection, 
       includePhoto: selection.includePhoto ?? true,
+      showSummary: (selection.showSummary ?? true) && summaryBullets.length > 0,
       getScore,
       jobInfos,
       aiState,
@@ -515,6 +525,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       toggleSkill,
       toggleEducation,
       setIncludePhoto,
+      setShowSummary,
       isBulletSelected,
       runFullAIAnalysis,
       runLocalAnalysis,
