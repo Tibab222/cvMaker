@@ -166,9 +166,11 @@ export default function LeftMenu({ selectedTab, onSelectTab, profile, onLogout }
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="flex size-9 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground"
+            className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground"
           >
-            {initials}
+            {profile?.photo
+              ? <img src={profile.photo} alt={`${firstName} ${lastName}`} className="size-full object-cover" />
+              : initials}
           </motion.div>
           <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
             <p className="truncate text-sm font-semibold text-sidebar-foreground">
