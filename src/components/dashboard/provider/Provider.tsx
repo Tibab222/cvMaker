@@ -12,6 +12,7 @@ export interface DashboardContextType {
   updateApplicationStatus: (id: string, newStatus: JobApplicationStatus) => Promise<void>;
   refetchApplications: () => Promise<void>;
   getApplicationInfos: (applicationId: string) => Promise<ApplicationWithEvents | null>;
+  deleteApplication: (id: string) => Promise<boolean>;
 }
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -85,6 +86,21 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     };
 
+    const deleteApplication = async (id: string): Promise<boolean> => {
+      try {
+        const success = await api.deleteApplication(id);
+        if (success) {
+          setApplications((prev) => prev.filter((app) => app.id !== id));
+          fetchKeyStats();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Failed to delete application:", error);
+        return false;
+      }
+    };
+
     return (
       <DashboardContext.Provider
         value={{
@@ -94,7 +110,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           isLoading,
           updateApplicationStatus,
           refetchApplications: fetchApplications,
-          getApplicationInfos
+          getApplicationInfos,
+          deleteApplication
         }}
       >
         {children}
