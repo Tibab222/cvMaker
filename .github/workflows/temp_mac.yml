@@ -50,12 +50,10 @@ jobs:
             echo "=== FINAL DYLIBS ==="
             find "$APP" -name "*.dylib" -print
 
-            echo "=== ASAR CONTENT ==="
-            npx asar list "$APP/Contents/Resources/app.asar" | grep -i onnx || true
+            BINDING="$APP/Contents/Resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v3/darwin/arm64/onnxruntime_binding.node"
 
-            echo "=== ASAR UNPACKED ==="
-            find "$APP/Contents/Resources/app.asar.unpacked" -iname "*onnx*" -print
+            echo "=== DEPENDENCIES ==="
+            otool -L "$BINDING"
 
-            find "$APP" -name "onnxruntime_binding.node" -print
-
-            find "$APP" -path "*onnxruntime-node*" -print
+            echo "=== RPATHS ==="
+            otool -l "$BINDING" | grep -A3 LC_RPATH
