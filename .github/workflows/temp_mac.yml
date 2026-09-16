@@ -1,0 +1,42 @@
+name: macOS Debug Flow
+
+on:
+  push:
+    branches:
+      - fix/test-macOS
+
+jobs:
+  debug:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Find dependencies
+        run: |
+            find node_modules -name "libonnxruntime*" -print
+
+            echo "=== TRANSFORMERS ==="
+            npm ls @xenova/transformers
+
+            echo "=== ONNX RUNTIME ==="
+            npm ls onnxruntime-node
+
+            echo "=== ONNX FILES ==="
+            find node_modules -iname "*onnx*" -print
+
+            echo "=== DYLIBS ==="
+            find node_modules -name "*.dylib" -print
+
+      - name: Run Forge Make
+        run: npm run make
