@@ -40,3 +40,22 @@ jobs:
 
       - name: Run Forge Make
         run: npm run make
+      - name: List Output
+        run: |
+            APP="out/cv-maker-darwin-arm64/cv-maker.app"
+
+            echo "=== FINAL ONNX FILES ==="
+            find "$APP" -iname "*onnx*" -print
+
+            echo "=== FINAL DYLIBS ==="
+            find "$APP" -name "*.dylib" -print
+
+            echo "=== ASAR CONTENT ==="
+            npx asar list "$APP/Contents/Resources/app.asar" | grep -i onnx || true
+
+            echo "=== ASAR UNPACKED ==="
+            find "$APP/Contents/Resources/app.asar.unpacked" -iname "*onnx*" -print
+
+            find "$APP" -name "onnxruntime_binding.node" -print
+
+            find "$APP" -path "*onnxruntime-node*" -print
