@@ -1,4 +1,4 @@
-import { type CoverLetterData, type GenerateCoverLetterDTO, COVER_LETTER_EVENTS } from "@shared/CoverLetter.types";
+import { type CoverLetterBlock, type CoverLetterData, type GenerateCoverLetterDTO, COVER_LETTER_EVENTS } from "@shared/CoverLetter.types";
 import React, { useEffect, useState, type Dispatch } from "react";
 import { CoverLetterContext } from "./Context";
 import { Language, type Profile } from "@shared/profile.interface";
@@ -13,7 +13,13 @@ export interface CoverLetterContextType {
   coverLetter: CoverLetterData;
   generateCoverLetter: () => void;
   setCoverLetter: Dispatch<React.SetStateAction<CoverLetterData>>;
+  addBlock: (position: number) => void;
+  deleteBlock: (id: string) => void;
 }
+
+// blocks are rendered in `position` order, so every mutation renumbers them 1..n to keep that order unambiguous
+const reindexBlocks = (blocks: CoverLetterBlock[]): CoverLetterBlock[] =>
+    blocks.map((block, index) => ({ ...block, position: index + 1 }));
 
 export function CoverLetterProvider({ children }: { children: React.ReactNode }) {
     const [coverLetter, setCoverLetter] = React.useState<CoverLetterData>({
@@ -99,6 +105,31 @@ export function CoverLetterProvider({ children }: { children: React.ReactNode })
         return () => unsubscribe();
     }, []);
 
+    // `position` is 1-based, so inserting at position N puts the new block before the current Nth one
+    const addBlock = (position: number) => {
+        setCoverLetter((prev) => {
+            const ordered = [...prev.blocks].sort((a, b) => a.position - b.position);
+            const index = Math.min(Math.max(position - 1, 0), ordered.length);
+            const newBlock: CoverLetterBlock = {
+                id: crypto.randomUUID(),
+                position,
+                content: "",
+                isEditable: true,
+            };
+            ordered.splice(index, 0, newBlock);
+            return { ...prev, blocks: reindexBlocks(ordered), updatedAt: new Date() };
+        });
+    };
+
+    const deleteBlock = (id: string) => {
+        setCoverLetter((prev) => {
+            const remaining = [...prev.blocks]
+                .sort((a, b) => a.position - b.position)
+                .filter((block) => block.id !== id);
+            return { ...prev, blocks: reindexBlocks(remaining), updatedAt: new Date() };
+        });
+    };
+
     const generateCoverLetter = () => {
         const selectedExps = experience.filter(exp => selection.selectedExpIds.includes(exp.id));
         const selectedProjects = projects.filter(proj => selection.selectedProjectIds.includes(proj.id));
@@ -115,11 +146,13 @@ export function CoverLetterProvider({ children }: { children: React.ReactNode })
     };
 
     return (
-        <CoverLetterContext.Provider value={{ 
-            setCoverLetter, 
-            generateCoverLetter, 
-            isGenerating, 
-            coverLetter, 
+        <CoverLetterContext.Provider value={{
+            setCoverLetter,
+            generateCoverLetter,
+            addBlock,
+            deleteBlock,
+            isGenerating,
+            coverLetter,
             profileInfo: profile }}>
             {children}
         </CoverLetterContext.Provider>

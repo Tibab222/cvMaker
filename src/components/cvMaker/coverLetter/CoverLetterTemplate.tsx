@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import useCoverLetterContext from "../CoverLetterProvider/hook";
 import { TemplateSkeleton } from "../cvTemplate/templateFields/TemplateSkeleton";
 import CoverLetterBlockItem from "./CoverBlockItem";
@@ -6,7 +6,9 @@ import CoverLetterFooter from "./CoverFooter";
 import CoverLetterHeader from "./CoverHeader";
 
 export default function CoverLetterTemplate() {
-    const { profileInfo, coverLetter, isGenerating } = useCoverLetterContext();
+    const { profileInfo, coverLetter, isGenerating, addBlock } = useCoverLetterContext();
+    // copy before sorting: sort() mutates, and blocks comes straight from the provider state
+    const sortedBlocks = [...(coverLetter?.blocks ?? [])].sort((a, b) => a.position - b.position);
     return (
         <div 
         id="cover-letter-content" 
@@ -17,11 +19,26 @@ export default function CoverLetterTemplate() {
                 <CoverLetterHeader lang={profileInfo?.language} />
                 <div className="flex flex-col gap-3 my-4">
                     {
-                        coverLetter?.blocks
-                        .sort((a, b) => a.position - b.position)
-                        .map((block) => (
-                            <CoverLetterBlockItem key={block.id} block={block} />
+                        sortedBlocks.map((block, index) => (
+                            <CoverLetterBlockItem
+                                key={block.id}
+                                block={block}
+                                isLast={index === sortedBlocks.length - 1}
+                            />
                         ))
+                    }
+                    {
+                        // with no blocks there is nothing to hover, so the first paragraph needs its own affordance
+                        !isGenerating && sortedBlocks.length === 0 && (
+                            <button
+                                type="button"
+                                onClick={() => addBlock(1)}
+                                className="hidden-print print:hidden group flex items-center justify-center gap-1.5 rounded border border-dashed border-slate-300 py-3 text-sm text-slate-400 transition-colors hover:border-slate-400 hover:text-slate-600"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                                Add a paragraph
+                            </button>
+                        )
                     }
                     {
                         isGenerating && (
