@@ -21,6 +21,7 @@ export interface CVSelectionContextType {
   aiState: AIAnalysisState;
   customTexts: CustomTextMap;
   scores: ScoreMap;
+  entityKeywords: KeywordMap;
   rewritingKeys: string[];
   isSaving: boolean;
   summaryBullets: string[];
@@ -44,6 +45,7 @@ export interface CVSelectionContextType {
   updateCustomField: (entityType: EntityType, id: string, field: string, value: string) => void;
   resetCustomField: (entityType: EntityType, id: string, field: string) => void;
   getScore: (entityType: EntityType, id: string) => number | undefined;
+  getKeywords: (entityType: EntityType, id: string) => KeywordMatch;
   runAIRewrite: () => Promise<void>;
   initJobMandate: (infos: Partial<JobInfos>) => void;
   updateJobInfos: (infos: Partial<JobInfos>) => void;
@@ -55,6 +57,10 @@ export interface CVSelectionContextType {
 
 export type CustomTextMap = Record<string, string>;
 export type ScoreMap = Record<string, number>;
+export type KeywordMatch = { matched: string[]; missing: string[] };
+export type KeywordMap = Record<string, KeywordMatch>;
+
+const EMPTY_KEYWORDS: KeywordMatch = { matched: [], missing: [] };
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
   const { education, profile, experience, projects } = useProfileStore();
@@ -83,6 +89,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   });
   const [customTexts, setCustomTexts] = useState<CustomTextMap>({});
   const [scores, setScores] = useState<ScoreMap>({});
+  const [entityKeywords, setEntityKeywords] = useState<KeywordMap>({});
   const [rewritingKeys, setRewritingKeys] = useState<string[]>([]);
   const [id, setId] = useState<string | null>(null); // can be null or undefined at the beginning!
   const [isSaving, setIsSaving] = useState(false);
@@ -309,11 +316,14 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
           const matches = data.data as { local_id: string; score: number; matchedKeywords: string[], missingKeywords: string[] }[]; // localId corresponds to experiences id
 
           const expScores: ScoreMap = {};
+          const expKeywords: KeywordMap = {};
           matches.forEach(m => {
             const key = buildScoreKey('experience', m.local_id);
             expScores[key] = m.score;
+            expKeywords[key] = { matched: m.matchedKeywords || [], missing: m.missingKeywords || [] };
           });
           setScores(prev => ({ ...prev, ...expScores }));
+          setEntityKeywords(prev => ({ ...prev, ...expKeywords }));
           setSelection(prev => ({
             ...prev,
             selectedExpIds: matches.map(m => m.local_id)
@@ -340,6 +350,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
           
           const newBulletsMap: Record<string, string[]> = {};
           const newScores: ScoreMap = {};
+          const newKeywords: KeywordMap = {};
 
           matches.bestBullets.forEach(bullet => {
             if (!newBulletsMap[bullet.local_project_id]) {
@@ -348,14 +359,18 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
             newBulletsMap[bullet.local_project_id].push(bullet.local_bullet_id);
             const bulletKey = buildScoreKey('bullet', bullet.local_bullet_id);
             newScores[bulletKey] = bullet.score;
+            // bullets only report matches: a single bullet isn't expected to cover every keyword
+            newKeywords[bulletKey] = { matched: bullet.matchedKeywords || [], missing: [] };
           });
 
           matches.suggestedProjects.forEach(proj => {
             const projKey = buildScoreKey('project', proj.id);
             newScores[projKey] = proj.score;
+            newKeywords[projKey] = { matched: proj.matchedKeywords || [], missing: proj.missingKeywords || [] };
           });
 
           setScores(prev => ({ ...prev, ...newScores }));
+          setEntityKeywords(prev => ({ ...prev, ...newKeywords }));
           const projectIds = matches.suggestedProjects.map(p => p.id);
 
           setSelection(prev => ({
@@ -460,6 +475,10 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     const key = buildScoreKey(entityType, id);
     return scores[key];
   }, [scores]);
+
+  const getKeywords = useCallback((entityType: EntityType, id: string): KeywordMatch => {
+    return entityKeywords[buildScoreKey(entityType, id)] ?? EMPTY_KEYWORDS;
+  }, [entityKeywords]);
 
   const removeKeyword = useCallback((keyword: string) => {
     setJobInfos(prev => ({
@@ -620,10 +639,12 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       includePhoto: selection.includePhoto ?? true,
       showSummary: (selection.showSummary ?? true) && summaryBullets.length > 0,
       getScore,
+      getKeywords,
       jobInfos,
       aiState,
       customTexts,
       scores,
+      entityKeywords,
       rewritingKeys,
       isSaving,
       summaryBullets,
