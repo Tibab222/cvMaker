@@ -79,8 +79,17 @@ async function refineKeywordsWithAI(candidates: string[], language: Language, jo
 
     const prompts = language === Language.FRENCH ? FRENCH_PROMPTS : ENGLISH_PROMPTS;
     const prompt = prompts.REFINE_KEYWORDS(candidates, jobTitle);
-    const rawResponse = await aiService.prompt(prompt, (error) => {
-        console.error('AI Service Error:', error);
-    }) as unknown as { keywords: string[] };
-    return rawResponse.keywords;
+    try {
+        const rawResponse = await aiService.prompt(prompt, (error) => {
+            console.error('AI Service Error:', error);
+        }) as unknown as { keywords?: unknown } | null | undefined;
+        // the model may answer with something unexpected: keep the local candidates rather than failing the analysis
+        const refined = Array.isArray(rawResponse?.keywords)
+            ? rawResponse.keywords.filter((k): k is string => typeof k === 'string' && k.trim().length > 0)
+            : [];
+        return refined.length > 0 ? refined : candidates;
+    } catch (error) {
+        console.error('Keyword refinement failed, using local candidates:', error);
+        return candidates;
+    }
 }

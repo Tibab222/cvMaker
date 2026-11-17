@@ -1,5 +1,6 @@
 import { useProfileStore } from "@/store/profile";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import PageHeader from "../general/PageHeader";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupHint } from "../ui/input-group";
 import { Facebook, Github, Globe, Instagram, Linkedin, Mail, Phone, Plus, Save, Trash2, Twitter, UserRound, Youtube } from "lucide-react";
@@ -158,13 +159,38 @@ export default function Personal() {
     if (!formData) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
     const customLinks = formData.customLinks ?? [];
+    const isDirty = JSON.stringify(formData) !== JSON.stringify(profile);
 
     return (
+    <div className="flex min-h-full w-full flex-col">
+    <PageHeader
+      icon={UserRound}
+      title="Personal information"
+      description="Name, contact details and links shown at the top of your resumes"
+      actions={
+        <AnimatePresence>
+          {isDirty && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, x: 8 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.9, x: 8 }}
+              transition={{ type: "spring", stiffness: 420, damping: 28 }}
+              className="flex items-center gap-2"
+            >
+              <span className="hidden text-xs text-muted-foreground sm:inline">Unsaved changes</span>
+              <Button size="sm" className="gap-1.5" onClick={handleSave}>
+                <Save className="size-3.5" /> Save
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      }
+    />
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full p-4"
+      className="mx-auto w-full max-w-4xl p-4 md:p-6"
     >
       <Card className="overflow-hidden border-border/60 shadow-sm">
         <CardHeader className="flex flex-col gap-5 border-b border-border/60 bg-muted/30 pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -359,7 +385,7 @@ export default function Personal() {
 
         <CardFooter className="justify-end border-t border-border/60 bg-muted/30">
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button className="h-9 gap-2" onClick={handleSave}>
+            <Button className="h-9 gap-2" onClick={handleSave} disabled={!isDirty}>
               <Save className="size-4" />
               Save
             </Button>
@@ -367,5 +393,6 @@ export default function Personal() {
         </CardFooter>
       </Card>
     </motion.div>
+    </div>
   );
 }

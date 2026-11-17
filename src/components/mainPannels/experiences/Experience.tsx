@@ -1,9 +1,10 @@
 import { useProfileStore } from "@/store/profile";
 import { useCallback, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { BriefcaseBusiness } from "lucide-react";
 import type { Experience } from "@shared/Experience.interface";
 import ExperienceCard from "./ExperienceCard";
-import { getModifierKeyLabel, useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
+import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
+import SectionPage from "../SectionPage";
 
 export default function ExperienceComponent() {
     const { experience, updateSection } = useProfileStore();
@@ -30,58 +31,26 @@ export default function ExperienceComponent() {
     }
 
     return (
-        <motion.div 
-            className="w-full h-full flex flex-col gap-4 p-4" 
-            initial={{ opacity: 0, x: -200 }} 
-            animate={{ opacity: 1, x: 0 }} 
-            exit={{ opacity: 0 }} 
-            transition={{ duration: 0.5 }}
-        >
-            { experience.length === 0 && <h2 className="text-2xl font-bold">No experience entries yet.</h2> }
-            
-            <AnimatePresence mode="popLayout">
-                {experience.map((exp) => (
-                    <motion.div
-                        key={exp.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        <ExperienceCard 
-                            experience={exp} 
-                            onSave={handleOnSave} 
-                            onDelete={handleOnDelete} 
-                        />
-                    </motion.div>
-                ))}
-                {addNew && (
-                    <motion.div
-                        key="new-experience"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        <ExperienceCard 
-                            experience={{ id: "", company: "", jobTitle: "", location: "", startDate: new Date() }} 
-                            onSave={handleNewSave} 
-                            onCancel={() => setAddNew(false)}
-                            defaultEdit={true}
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {!addNew && (
-                <button
-                    onClick={() => setAddNew(true)}
-                    className="bg-primary hover:bg-primary/70 text-white font-bold py-2 px-4 rounded transition-colors duration-200 mt-2 inline-flex items-center gap-2 w-fit"
-                >
-                    Add Experience
-                    <kbd className="text-xs font-normal bg-black/20 px-1.5 py-0.5 rounded">{getModifierKeyLabel()}+N</kbd>
-                </button>
-            )}
-        </motion.div>
+        <SectionPage
+            icon={BriefcaseBusiness}
+            title="Experience"
+            description="The jobs your resumes are built from"
+            noun="experience"
+            isAdding={addNew}
+            onAdd={() => setAddNew(true)}
+            emptyDescription="Add the positions you held. Each resume picks the most relevant ones for the offer."
+            items={experience.map((exp) => ({
+                key: exp.id,
+                node: <ExperienceCard experience={exp} onSave={handleOnSave} onDelete={handleOnDelete} />,
+            }))}
+            newItem={
+                <ExperienceCard
+                    experience={{ id: "", company: "", jobTitle: "", location: "", startDate: new Date() }}
+                    onSave={handleNewSave}
+                    onCancel={() => setAddNew(false)}
+                    defaultEdit={true}
+                />
+            }
+        />
     )
 }

@@ -4,8 +4,13 @@ import { SystemRecommendations } from '../shared/SystemRecommendation';
 import { OnProgressCallback } from '../shared/OllamaDownloadStatus';
 import { RewriteResumeOptions } from '../shared/RewriteResume.type';
 import { KeywordStat } from '../shared/Keywords.types';
-import { Application, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats } from '../shared/jobApplications.type';
+import { Application, ApplicationDetailsDto, ApplicationEvent, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats, NewApplicationEventDto, Reminder } from '../shared/jobApplications.type';
 import { JobOfferPayload } from '../shared/Extension.types';
+import { Language } from '../shared/profile.interface';
+import { Experience } from '../shared/Experience.interface';
+import { Project } from '../shared/projects.interface';
+import { AIAnalysisStatus } from '../shared/AIAnalysisStatus';
+import { CoverLetterStatusPayload, GenerateCoverLetterDTO } from '../shared/CoverLetter.types';
 
 export {};
 
@@ -25,7 +30,7 @@ declare global {
       syncDb: (profileId: string, experiences: Experience[], projects: Project[]) => Promise<boolean>;
       analyseMandate: (rawMandate: string, language: Language, useAi: boolean, jobTitle?: string) => Promise<{ success: boolean; error?: string }>;
       onAnalysisStatus: (callback: (data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => void) => () => void;
-      reduceKeywordCount: (keyword: string, amount?: number) => void;
+      reduceKeywordCount: (keyword: string, amount?: number) => Promise<void>;
       getOllamaInfos: () => Promise<NonNullable<UserConfig['ollama']> | null>;
       detectOllama: (uri: string) => Promise<boolean>;
       getAvailableOllamaModels: () => Promise<{modelName: string, preferred: boolean}[]>;
@@ -52,6 +57,10 @@ declare global {
       generateCoverLetter: (options: GenerateCoverLetterDTO) => Promise<{ success: boolean; error?: string }>;
       onCoverLetterStatusUpdate: (callback: (payload: CoverLetterStatusPayload) => void) => () => void;
       deleteApplication: (applicationId: string) => Promise<boolean>;
+      addApplicationEvent: (applicationId: string, dto: NewApplicationEventDto) => Promise<ApplicationEvent>;
+      deleteApplicationEvent: (eventId: number) => Promise<boolean>;
+      updateApplicationDetails: (applicationId: string, details: ApplicationDetailsDto) => Promise<boolean>;
+      getReminders: (limit?: number) => Promise<Reminder[]>;
       onJobReceived: (callback: (jobData: JobOfferPayload) => void) => () => void;
     };
   }

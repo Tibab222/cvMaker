@@ -43,6 +43,27 @@ const cleanFolderName = (fileName: string): string => {
   return rawName.replace(/^(Resume CV|Cover Letter)\s*-\s*/i, "").trim();
 };
 
+/**
+ * Waits until fonts and images of the page are ready (capped), instead of a fixed delay that is too short
+ * on slow machines (missing photo / fallback fonts in the PDF) and wasted time on fast ones.
+ */
+const waitForRender = async (window: BrowserWindow, timeoutMs = 5000): Promise<void> => {
+  const script = `
+    Promise.all([
+      document.fonts ? document.fonts.ready : Promise.resolve(),
+      ...Array.from(document.images)
+        .filter((img) => !img.complete)
+        .map((img) => new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; })),
+    ]).then(() => new Promise((resolve) => setTimeout(resolve, 50)))
+  `;
+  const timeout = new Promise<void>((resolve) => setTimeout(resolve, timeoutMs));
+  try {
+    await Promise.race([window.webContents.executeJavaScript(script, true), timeout]);
+  } catch (error) {
+    console.warn("[generatePdf] Could not wait for page resources, printing anyway:", error);
+  }
+};
+
 export const generatePdf = async (htmlContent: string, fileName: string, applicationId?: string) => {
   const printWindow = new BrowserWindow({
     show: false,
@@ -54,7 +75,7 @@ export const generatePdf = async (htmlContent: string, fileName: string, applica
       `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await waitForRender(printWindow);
 
     const configManager = ConfigurationManager.getInstance();
     const defaultExportPath = configManager.getExportPath();

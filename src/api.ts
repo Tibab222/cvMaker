@@ -2,7 +2,7 @@ import type { AIAnalysisStatus } from "@shared/AIAnalysisStatus";
 import type { CoverLetterStatusPayload, GenerateCoverLetterDTO } from "@shared/CoverLetter.types";
 import type { Experience } from "@shared/Experience.interface";
 import type { JobOfferPayload } from "@shared/Extension.types";
-import type { CVSessionDataDTO, JobApplicationStatus } from "@shared/jobApplications.type";
+import type { ApplicationDetailsDto, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto } from "@shared/jobApplications.type";
 import type { OnProgressCallback } from "@shared/OllamaDownloadStatus";
 import type { Language } from "@shared/profile.interface";
 import type { ProfilesData } from "@shared/profilesData.interface";
@@ -50,5 +50,9 @@ export const api = {
     generateCoverLetter: async (options: GenerateCoverLetterDTO) => { return await window.api.generateCoverLetter(options) },
     onCoverLetterStatusUpdate: (callback: (payload: CoverLetterStatusPayload) => void) => window.api.onCoverLetterStatusUpdate(callback),
     deleteApplication: async (applicationId: string) => { return await window.api.deleteApplication(applicationId) },
+    addApplicationEvent: async (applicationId: string, dto: NewApplicationEventDto) => { return await window.api.addApplicationEvent(applicationId, dto) },
+    deleteApplicationEvent: async (eventId: number) => { return await window.api.deleteApplicationEvent(eventId) },
+    updateApplicationDetails: async (applicationId: string, details: ApplicationDetailsDto) => { return await window.api.updateApplicationDetails(applicationId, details) },
+    getReminders: async (limit?: number) => { return await window.api.getReminders(limit) },
     onJobReceived: (callback: (jobData: JobOfferPayload) => void) => window.api.onJobReceived(callback),
 }

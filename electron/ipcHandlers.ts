@@ -19,7 +19,7 @@ import { selectExportFolder, setDefaultExportPath } from './functions/exportPath
 import { ProfileService } from './services/ProfileService';
 import { rewriteResume } from './functions/rewriteResume';
 import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
-import { CVSessionDataDTO, JobApplicationStatus } from '../shared/jobApplications.type';
+import { ApplicationDetailsDto, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto } from '../shared/jobApplications.type';
 import { generateCoverLetter } from './functions/generateCoverLetter';
 
 export const vectorDb = VectorDatabase.getInstance();
@@ -52,6 +52,13 @@ export function registerIpcHandlers() {
         if (!folderPath) return false;
 
         try {
+            // Only folders are opened: for a file, reveal it instead of launching it with its default program.
+            const stats = await fs.promises.stat(folderPath).catch(() => null);
+            if (!stats) return false;
+            if (!stats.isDirectory()) {
+                shell.showItemInFolder(folderPath);
+                return true;
+            }
             const errorMessage = await shell.openPath(folderPath);
             if (errorMessage) {
                 console.error("Error opening folder:", errorMessage);
@@ -193,5 +200,17 @@ export function registerIpcHandlers() {
     });
     ipcMain.handle('delete-application', (event, applicationId: string) => {
         return JobApplicationManager.getInstance().deleteApplication(applicationId);
+    });
+    ipcMain.handle('add-application-event', (event, applicationId: string, dto: NewApplicationEventDto) => {
+        return JobApplicationManager.getInstance().addEvent(applicationId, dto);
+    });
+    ipcMain.handle('delete-application-event', (event, eventId: number) => {
+        return JobApplicationManager.getInstance().deleteEvent(eventId);
+    });
+    ipcMain.handle('update-application-details', (event, applicationId: string, details: ApplicationDetailsDto) => {
+        return JobApplicationManager.getInstance().updateDetails(applicationId, details);
+    });
+    ipcMain.handle('get-reminders', (event, limit?: number) => {
+        return JobApplicationManager.getInstance().getReminders(limit);
     });
 }

@@ -46,6 +46,7 @@ interface MenuItem {
   value: Tabs;
   icon: ComponentType<{ className?: string }>;
   badge?: string;
+  trailing?: ComponentType<{ className?: string }>;
 }
 
 const PROFILE_ITEMS: MenuItem[] = [
@@ -54,6 +55,15 @@ const PROFILE_ITEMS: MenuItem[] = [
   { label: "Experience", value: Tabs.EXPERIENCE, icon: BriefcaseBusiness },
   { label: "Projects", value: Tabs.PROJECTS, icon: FolderKanban },
   { label: "Skills", value: Tabs.SKILLS, icon: Sparkles },
+];
+
+const GENERAL_ITEMS: MenuItem[] = [
+  { label: "Dashboard", value: Tabs.DASHBOARD, icon: IconLayoutBoard },
+];
+
+const DOCUMENT_ITEMS: MenuItem[] = [
+  { label: "Create your CV", value: Tabs.CVMAKER, icon: FileText, trailing: WandSparkles },
+  { label: "Resume library", value: Tabs.RESUME_LIBRARY, icon: Library },
 ];
 
 const QUOTES = [
@@ -113,6 +123,7 @@ function MenuEntry({ item, selectedTab, onSelectTab }: {
   onSelectTab: (tab: Tabs) => void;
 }) {
   const Icon = item.icon;
+  const Trailing = item.trailing;
   const active = selectedTab === item.value;
 
   return (
@@ -122,7 +133,7 @@ function MenuEntry({ item, selectedTab, onSelectTab }: {
         isActive={active}
         tooltip={item.label}
         onClick={() => onSelectTab(item.value)}
-        className="relative h-11 rounded-md px-3 text-sidebar-foreground/70 transition-colors duration-200 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-2.5"
+        className="relative h-11 rounded-md px-3 text-sidebar-foreground/70 transition-[color,background-color,transform] duration-200 hover:translate-x-0.5 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-2.5"
       >
         {active && (
           <motion.span
@@ -133,6 +144,7 @@ function MenuEntry({ item, selectedTab, onSelectTab }: {
         )}
         <Icon className="size-4.5 group-data-[collapsible=icon]:mx-auto" />
         <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+        {Trailing && <Trailing className="ml-auto size-3.5 opacity-60 group-data-[collapsible=icon]:hidden" />}
       </SidebarMenuButton>
       {item.badge && (
         <SidebarMenuBadge className="bg-sidebar-accent text-sidebar-accent-foreground group-data-[collapsible=icon]:hidden">
@@ -197,18 +209,9 @@ export default function LeftMenu({ selectedTab, onSelectTab, profile, onLogout }
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  size="lg"
-                  isActive={selectedTab === Tabs.DASHBOARD}
-                  tooltip="Dashboard"
-                  onClick={() => onSelectTab(Tabs.DASHBOARD)}
-                  className="h-11 relative z-100 rounded-md px-3 text-sidebar-foreground/70 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-2.5"
-                >
-                  <IconLayoutBoard className="size-4.5 group-data-[collapsible=icon]:mx-auto" />
-                  <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {GENERAL_ITEMS.map((item) => (
+                <MenuEntry key={item.value} item={item} selectedTab={selectedTab} onSelectTab={onSelectTab} />
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -238,35 +241,10 @@ export default function LeftMenu({ selectedTab, onSelectTab, profile, onLogout }
             Your document
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  size="lg"
-                  isActive={selectedTab === Tabs.CVMAKER}
-                  tooltip="Create your CV"
-                  onClick={() => onSelectTab(Tabs.CVMAKER)}
-                  className="h-11 rounded-md px-3 text-sidebar-foreground/70 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-2.5"
-                >
-                  <FileText className="size-4.5 group-data-[collapsible=icon]:mx-auto" />
-                  <span className="group-data-[collapsible=icon]:hidden">Create your CV</span>
-                  <WandSparkles className="ml-auto size-3.5 opacity-60 group-data-[collapsible=icon]:hidden" />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  size="lg"
-                  isActive={selectedTab === Tabs.RESUME_LIBRARY}
-                  tooltip="View your resume library"
-                  onClick={() => onSelectTab(Tabs.RESUME_LIBRARY)}
-                  className="h-11 rounded-md px-3 text-sidebar-foreground/70 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-9 group-data-[collapsible=icon]:p-2.5"
-                >
-                  <Library className="size-4.5 group-data-[collapsible=icon]:mx-auto" />
-                  <span className="group-data-[collapsible=icon]:hidden">Resume library</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+            <SidebarMenu className="gap-1">
+              {DOCUMENT_ITEMS.map((item) => (
+                <MenuEntry key={item.value} item={item} selectedTab={selectedTab} onSelectTab={onSelectTab} />
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

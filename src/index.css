@@ -381,6 +381,10 @@
   --color-success: oklch(0.76 0.18 155);
   --color-warning: oklch(0.82 0.16 80);
   --color-surface: oklch(0.985 0.003 250);
+  /* raised panels inside a surface (drawer tiles, composer): used by the dashboard but was never defined */
+  --color-surface-elevated: oklch(1 0 0);
+  /* app canvas behind the panels */
+  --color-canvas: oklch(0.965 0.006 264);
 }
 
 .titlebar {

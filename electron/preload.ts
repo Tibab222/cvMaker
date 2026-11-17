@@ -1,7 +1,7 @@
 import { CoverLetterStatusPayload, GenerateCoverLetterDTO } from "../shared/CoverLetter.types";
 import { Experience } from "../shared/Experience.interface";
 import { JobOfferPayload } from "../shared/Extension.types";
-import { Application, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats } from "../shared/jobApplications.type";
+import { Application, ApplicationDetailsDto, ApplicationEvent, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats, NewApplicationEventDto, Reminder } from "../shared/jobApplications.type";
 import { OnProgressCallback, SetupProgressStatus } from "../shared/OllamaDownloadStatus";
 import { Language } from "../shared/profile.interface";
 import { ProfilesData } from "../shared/profilesData.interface";
@@ -23,13 +23,14 @@ contextBridge.exposeInMainWorld('api', {
   updateSection: (id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => ipcRenderer.invoke('updateSection', id, section, newData),
   generatePDF: (html: string, fileName: string, applicationId?: string) => ipcRenderer.invoke('generatePdf', html, fileName, applicationId),
   syncDb: (profileId: string, experiences: Experience[], projects: Project[]) => ipcRenderer.invoke('syncDb', profileId, experiences, projects),
-  analyseMandate: (rawMandate: string, language: Language, useAi: boolean) => ipcRenderer.invoke('analyseMandate', { rawMandate, language, useAi }),
+  analyseMandate: (rawMandate: string, language: Language, useAi: boolean, jobTitle?: string) => ipcRenderer.invoke('analyseMandate', { rawMandate, language, useAi, jobTitle }),
   onAnalysisStatus: (callback: (status: unknown) => void) => {
     const listener = (_event: unknown, value: unknown) => callback(value);
     ipcRenderer.on('analysis-status', listener);
     return () => ipcRenderer.removeListener('analysis-status', listener);
   },
-  reduceKeywordCount: (keyword: string, amount?: number) => ipcRenderer.send('reduceKeywordCount', keyword, amount),
+  // must be invoke(): the main process registers it with ipcMain.handle, which never sees send()
+  reduceKeywordCount: (keyword: string, amount?: number) => ipcRenderer.invoke('reduceKeywordCount', keyword, amount),
   getOllamaInfos: () => ipcRenderer.invoke('getOllamaInfos'),
   detectOllama: (uri: string) => ipcRenderer.invoke('detectOllama', uri),
   getAvailableOllamaModels: () => ipcRenderer.invoke('getAvailableOllamaModels'),
@@ -74,6 +75,10 @@ contextBridge.exposeInMainWorld('api', {
         };
     },
   deleteApplication: (applicationId: string) => ipcRenderer.invoke('delete-application', applicationId) as Promise<boolean>,
+  addApplicationEvent: (applicationId: string, dto: NewApplicationEventDto) => ipcRenderer.invoke('add-application-event', applicationId, dto) as Promise<ApplicationEvent>,
+  deleteApplicationEvent: (eventId: number) => ipcRenderer.invoke('delete-application-event', eventId) as Promise<boolean>,
+  updateApplicationDetails: (applicationId: string, details: ApplicationDetailsDto) => ipcRenderer.invoke('update-application-details', applicationId, details) as Promise<boolean>,
+  getReminders: (limit?: number) => ipcRenderer.invoke('get-reminders', limit) as Promise<Reminder[]>,
   onJobReceived: (callback: (jobData: JobOfferPayload) => void) => {
     const subscription = (_event: Electron.IpcRendererEvent, value: JobOfferPayload) => callback(value);
     ipcRenderer.on('JOB_RECEIVED_FROM_EXTENSION', subscription);

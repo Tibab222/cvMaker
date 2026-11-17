@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'node:path';
+import { runMigrations } from './db/migrations';
 
 export class VectorDatabase {
   private static instance: VectorDatabase | null = null;
@@ -30,8 +31,9 @@ export class VectorDatabase {
     this.db = new Database(dbPath);
     this.currentProfilePath = profilePath;
 
+    // the index is rebuilt from the profile on every sync, so only a baseline is versioned for now
+    runMigrations(this.db, [{ version: 1, name: 'baseline vector index', up: () => this.initSchema() }], 'vector_index');
     this.db.pragma('foreign_keys = ON');
-    this.initSchema();
   }
 
   public clearAll(): void {

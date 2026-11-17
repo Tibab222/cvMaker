@@ -13,10 +13,27 @@ export enum JobApplicationStatus {
 }
 
 export enum ApplicationEventType {
-    STATUS_CHANGE = 'STATUS_CHANGE',       // Status change event
-    INTERVIEW_SCHEDULED = 'INTERVIEW_SCHEDULED', // Interview scheduled event
-    NOTE_ADDED = 'NOTE_ADDED',             // Note added event
+    STATUS_CHANGE = 'STATUS_CHANGE',             // Status change event (to_status holds the new status)
+    INTERVIEW_SCHEDULED = 'INTERVIEW_SCHEDULED', // Interview scheduled (scheduled_at holds the interview date)
+    NOTE_ADDED = 'NOTE_ADDED',                   // Free-form log entry
+    FOLLOW_UP = 'FOLLOW_UP',                     // The user followed up with the company
+    DOCUMENT_EXPORTED = 'DOCUMENT_EXPORTED',     // A resume or cover letter PDF was exported for this application
 }
+
+/** Statuses that mean the application is still in progress on the company side. */
+export const ACTIVE_STATUSES: JobApplicationStatus[] = [
+    JobApplicationStatus.APPLIED,
+    JobApplicationStatus.INTERVIEW,
+    JobApplicationStatus.OFFER,
+];
+
+/** Statuses that close an application. */
+export const CLOSED_STATUSES: JobApplicationStatus[] = [
+    JobApplicationStatus.ACCEPTED,
+    JobApplicationStatus.REJECTED,
+    JobApplicationStatus.WITHDRAWN,
+    JobApplicationStatus.ARCHIVED,
+];
 
 export type CreateApplicationDto = Omit<CVSessionDataDTO, "id">;
 
@@ -88,6 +105,9 @@ export interface Application {
     url?: string | null;             // NULLABLE
     json_file_path?: string | null;  // NULLABLE
     pdf_file_path?: string | null;   // NULLABLE
+    motivation_letter_file_path?: string | null; // NULLABLE, exported cover letter
+    notes?: string | null;           // Free-form "Notes & Prep"
+    recruiter_contact?: string | null; // Free-form recruiter name / email / phone
     applied_at?: string | null;      // DATETIME (Format ISO/string en JS)
     created_at: string;              // DATETIME DEFAULT CURRENT_TIMESTAMP
     updated_at: string;              // DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -98,7 +118,35 @@ export interface ApplicationEvent {
   application_id: string;          // FOREIGN KEY -> applications(id)
   event_type: ApplicationEventType; // CHECK (event_type IN (...))
   description?: string | null;     // TEXT
-  event_date: string;              // DATETIME DEFAULT CURRENT_TIMESTAMP
+  to_status?: JobApplicationStatus | null; // new status, for STATUS_CHANGE events
+  scheduled_at?: string | null;    // ISO date of the interview / follow-up, when relevant
+  event_date: string;              // DATETIME DEFAULT CURRENT_TIMESTAMP (UTC, "YYYY-MM-DD HH:MM:SS")
+}
+
+/** Payload to log an event from the UI. */
+export interface NewApplicationEventDto {
+  event_type: ApplicationEventType.NOTE_ADDED | ApplicationEventType.INTERVIEW_SCHEDULED | ApplicationEventType.FOLLOW_UP;
+  description?: string;
+  scheduled_at?: string | null; // ISO string
+}
+
+/** Editable fields of an application that are not part of the resume session. */
+export interface ApplicationDetailsDto {
+  notes?: string | null;
+  recruiter_contact?: string | null;
+}
+
+export type ReminderKind = 'follow_up' | 'interview' | 'stale_draft';
+
+export interface Reminder {
+  id: string;
+  kind: ReminderKind;
+  application_id: string;
+  job_title: string;
+  company_name: string;
+  date: string;     // ISO date the reminder is about (application date, interview date, last update)
+  days: number;     // days since (follow_up, stale_draft) or until (interview) that date
+  detail?: string | null;
 }
 
 export interface ApplicationWithEvents extends Application {

@@ -1,4 +1,8 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { Compass, LayoutDashboard } from "lucide-react";
+import { pageVariants } from "@/lib/motion";
+import EmptyState from "./EmptyState";
+import { Button } from "../ui/button";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "../ui/sidebar";
 import { Tabs, useUiStore } from "@/store/ui";
 import Personal from "../mainPannels/Personnal";
@@ -46,9 +50,18 @@ export default function MainWindow() {
                 return <ResumeLibrary />;
             default:
                 return (
-                    <div className="w-full h-full flex flex-col items-center justify-center">
-                        <h2 className="text-2xl font-bold mb-4">Welcome to CV Maker!</h2>
-                        <p className="text-gray-600">Select a pannel from the left menu to get started.</p>
+                    <div className="flex h-full min-h-[60vh] w-full items-center justify-center p-6">
+                        <EmptyState
+                            icon={Compass}
+                            title={`Welcome${profile?.firstName ? `, ${profile.firstName}` : ""}`}
+                            description="Pick a section in the left menu, or open your dashboard to see where your applications stand."
+                            action={
+                                <Button size="sm" onClick={() => setSelectedTab(Tabs.DASHBOARD)} className="gap-1.5">
+                                    <LayoutDashboard className="size-4" /> Open the dashboard
+                                </Button>
+                            }
+                            className="max-w-md border-solid bg-surface/80 backdrop-blur"
+                        />
                     </div>
                 )
         }
@@ -64,10 +77,22 @@ export default function MainWindow() {
                         </SidebarTrigger>
                         <span className="ml-3 text-sm font-semibold">CV Maker</span>
                     </header>
-                    <ScrollArea className="h-full w-full flex-1 bg-zinc-200/50">
-                        <div className="w-full min-w-0" id="render-tab">
-                            {renderTab()}
-                        </div>
+                    <ScrollArea className="h-full w-full flex-1 bg-canvas">
+                        {/* soft brand glow behind the content, purely decorative */}
+                        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(60%_100%_at_50%_0%,var(--color-brand-muted),transparent)] opacity-60" />
+                        <AnimatePresence mode="wait" initial={false}>
+                            <motion.div
+                                key={selectedTab}
+                                variants={pageVariants}
+                                initial="initial"
+                                animate="animate"
+                                exit="exit"
+                                className="relative min-h-full w-full min-w-0"
+                                id="render-tab"
+                            >
+                                {renderTab()}
+                            </motion.div>
+                        </AnimatePresence>
                     </ScrollArea>
                 </SidebarInset>
             </SidebarProvider>
