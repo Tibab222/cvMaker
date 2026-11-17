@@ -4,10 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Check, FolderKanban, Circle, CheckCircle2, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import KeywordChips from "./KeywordChips";
 
 export default function ProjectPicker() {
   const { projects } = useProfileStore();
-  const { toggleProject, selection, toggleBullet, getScore, getCustomField } = useCVSelection();
+  const { toggleProject, selection, toggleBullet, getScore, getKeywords, getCustomField } = useCVSelection();
 
   const selectBullet = (event: React.MouseEvent<HTMLDivElement>, projectId: string, bulletId: string) => {
     event.stopPropagation();
@@ -22,6 +23,7 @@ export default function ProjectPicker() {
 
           const projectScore = getScore('project', project.id);
           const formattedProjectScore = projectScore !== undefined ? Math.round(projectScore * 100) : null;
+          const projectKeywords = getKeywords('project', project.id);
 
           const projectTitle = getCustomField('project', project.id, 'title', project.title);
           const projectSubtitle = getCustomField('project', project.id, 'subtitle', project.subtitle);
@@ -63,6 +65,8 @@ export default function ProjectPicker() {
                   <p className="text-xs text-muted-foreground line-clamp-1 italic">
                     {projectSubtitle}
                   </p>
+
+                  <KeywordChips matched={projectKeywords.matched} missing={projectKeywords.missing} className="mt-2" />
                 </div>
 
                 <div className="absolute top-2 right-4 flex items-center gap-2">
@@ -105,6 +109,7 @@ export default function ProjectPicker() {
                       const isBulletSelected = selection.selectedBullets[project.id]?.includes(bullet.id) || false;
                       const bulletScore = getScore('bullet', bullet.id);
                       const formattedBulletScore = bulletScore !== undefined ? Math.round(bulletScore * 100) : null;
+                      const bulletKeywords = getKeywords('bullet', bullet.id);
 
                       const bulletText = getCustomField('bullet', bullet.id, 'text', bullet.text);
 
@@ -127,12 +132,15 @@ export default function ProjectPicker() {
                                 : <Circle size={14} className="text-muted-foreground/50" />
                               }
                             </div>
-                            <span className={cn(
-                              "text-[13px] leading-snug",
-                              isBulletSelected ? "text-foreground font-medium" : "text-muted-foreground"
-                            )}>
-                              {bulletText}
-                            </span>
+                            <div className="flex-1 min-w-0">
+                              <span className={cn(
+                                "text-[13px] leading-snug",
+                                isBulletSelected ? "text-foreground font-medium" : "text-muted-foreground"
+                              )}>
+                                {bulletText}
+                              </span>
+                              <KeywordChips matched={bulletKeywords.matched} size="xs" limit={4} />
+                            </div>
                           </div>
 
                           {formattedBulletScore !== null && (
