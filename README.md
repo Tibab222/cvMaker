@@ -112,6 +112,21 @@ npm run dev
 
 ---
 
+### 📝 Note on MacOS
+On MacOS, Gatekeeper can raise issues like: <br>
+**“cv-maker” is damaged and can’t be opened. You should move it to the Trash.**
+
+To bypass this, run the following commands:
+
+```
+xattr -d com.apple.quarantine /Applications/cv-maker.app
+
+codesign --force --deep --sign - /Applications/cv-maker.app
+                                                
+open /Applications/cv-maker.app
+```
+---
+
 ### 📝 Note on LLM
 The application manages AI integration out of the box with zero complex manual setup:
 
