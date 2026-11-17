@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Job Scraper Navigator",
+  "version": "1.0.0",
+  "description": "Browser extension for extracting job offers.",
+  "permissions": ["activeTab", "scripting", "sidePanel"],
+  "background": {
+    "service_worker": "background/index.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/index.js"]
+    }
+  ],
+  "side_panel": {
+    "default_path": "sidebar/sidebar.html"
+  }
+}

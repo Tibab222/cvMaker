@@ -1,0 +1,14 @@
+.cvmaker-highlight-title {
+  outline: 3px solid #3b82f6 !important; /* Blue */
+  outline-offset: 2px !important;
+}
+
+.cvmaker-highlight-company {
+  outline: 3px solid #10b981 !important; /* Green */
+  outline-offset: 2px !important;
+}
+
+.cvmaker-highlight-mandate {
+  outline: 3px solid #8b5cf6 !important; /* Violet */
+  outline-offset: 2px !important;
+}

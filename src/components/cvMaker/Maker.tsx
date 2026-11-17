@@ -38,7 +38,6 @@ export default function Maker() {
                     </div>
                     <div className="flex-1 overflow-y-auto p-12 flex justify-center">
                         <div className="shadow-2xl">
-                            {/* TODO: conditionally render the cover letter or the CV template */}
                             {coverLetterActive ? <CoverLetterTemplate /> : <CVTemplate />}
                         </div>
                     </div>

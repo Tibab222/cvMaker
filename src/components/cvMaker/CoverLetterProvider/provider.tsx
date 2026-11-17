@@ -32,8 +32,22 @@ export function CoverLetterProvider({ children }: { children: React.ReactNode })
         updatedAt: new Date(),
     });
     const { profile, experience, projects, education } = useProfileStore();
-    const { selection, jobInfos } = useCVSelection();
+    const { selection, jobInfos, registerSaveContributor, registerLoadHandler } = useCVSelection();
     const [isGenerating, setIsGenerating] = useState(false);
+
+    useEffect(() => {
+        const unregister = registerSaveContributor("coverLetter", () => coverLetter);
+        return unregister;
+    }, [coverLetter, registerSaveContributor]);
+
+    useEffect(() => {
+        const unregister = registerLoadHandler((sessionData) => {
+            if (sessionData.coverLetter) {
+                setCoverLetter(sessionData.coverLetter);
+            }
+        });
+        return unregister;
+    }, [registerLoadHandler]);
 
     useEffect(() => {
         const updateCoverLetter = () => {

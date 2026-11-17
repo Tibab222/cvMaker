@@ -35,6 +35,7 @@ No cloud dependencies, no privacy leaks, zero subscription fees. It's time to bu
 ## Key Features
 
 * **Application Dashboard & Kanban:** Track your application pipeline stage-by-stage (Wishlist, Applied, Interviewing, Offered, Rejected) with an interactive Kanban board.
+* **Browser Extension Extractor:** Extract job offers directly from job boards (LinkedIn, Indeed, etc.) in one click using the companion browser extension. Learn more in the [Browser Extension Documentation](./navigator_extension/readme.md).
 * **Analytics & Keyword Insights:** Real-time stats on your job hunt, status breakdowns, and key tech stack/keyword frequency extraction.
 * **Hybrid Matching Engine:** 
   * **Lightweight Local NLP/RAKE:** Instant keyword matching and technology extraction against local rule-sets.

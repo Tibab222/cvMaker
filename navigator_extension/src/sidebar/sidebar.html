@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; padding: 15px; background: #f9fafb; margin: 0; }
+    h2 { font-size: 1.1rem; color: #111827; margin-top: 0; margin-bottom: 16px; }
+    .field { margin-bottom: 12px; }
+    label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
+    input[type="text"], input[type="url"], textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background: #fff;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 0.875rem;
+      color: #1f2937;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+    textarea { resize: vertical; min-height: 100px; }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    button:hover { background: #1d4ed8; }
+    #send-btn { background: #059669; }
+    #send-btn:hover { background: #047857; }
+  </style>
+</head>
+<body>
+  <h2>Generate CV</h2>
+  
+  <div class="field">
+    <label style="color:#3b82f6;">Job Title</label>
+    <input type="text" id="job-title" placeholder="Waiting for scan..." />
+  </div>
+
+  <div class="field">
+    <label style="color:#10b981;">Company</label>
+    <input type="text" id="job-company" placeholder="Waiting for scan..." />
+  </div>
+
+  <div class="field">
+    <label style="color:#f59e0b;">Job URL</label>
+    <input type="url" id="job-url" placeholder="Waiting for scan..." />
+  </div>
+
+  <div class="field">
+    <label style="color:#ec4899;">Salary</label>
+    <input type="text" id="job-salary" placeholder="Not specified" />
+  </div>
+
+  <div class="field">
+    <label style="color:#8b5cf6;">Mandate / Description</label>
+    <textarea id="job-mandate" placeholder="Waiting for scan..."></textarea>
+  </div>
+
+  <button id="scan-btn">Scan Page</button>
+  <button id="send-btn" style="display:none;">Send to CVMaker</button>
+
+  <script src="sidebar.js" type="module"></script>
+</body>
+</html>

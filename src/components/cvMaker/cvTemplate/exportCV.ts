@@ -1,8 +1,19 @@
 import { api } from "@/api";
 import { toast } from "sonner";
 
-// applicationId links the exported file to its saved application, so the dashboard can show it
-export const exportToPdf = async (title: string, applicationId?: string | null) => {
+/** Strip the characters that are not allowed in a file name. */
+const sanitizeFileNamePart = (value: string) =>
+  value.replace(/[/:*?"<>|]/g, "").replace(/\s+/g, " ").trim();
+
+const buildFileName = (companyName?: string, roleName?: string) => {
+  const parts = ["Resume CV", companyName, roleName]
+    .map((part) => (part ? sanitizeFileNamePart(part) : ""))
+    .filter(Boolean);
+
+  return `${parts.join(" - ")}.pdf`;
+};
+
+export const exportToPdf = async (companyName?: string, roleName?: string, applicationId?: string) => {
   const element = document.getElementById("cv-content");
   if (!element) return;
 
@@ -42,6 +53,19 @@ export const exportToPdf = async (title: string, applicationId?: string | null) 
     </html>
   `;
 
-  const success = await api.generatePDF(fullHTML, `Resume ${title}.pdf`, applicationId || undefined);
-  if (success) toast.success("CV exported successfully!");
+  const success = await api.generatePDF(fullHTML, buildFileName(companyName, roleName), applicationId);
+  if (success) {
+    const fileName = success.split(/[/\\]/).pop() || "PDF";
+    toast.success("Cover letter exported successfully!", {
+      description: `The cover letter has been exported to ${fileName}.`,
+      action: {
+        label: "Open folder",
+        onClick: () => {
+          const folderPath = success.substring(0, Math.max(success.lastIndexOf("/"), success.lastIndexOf("\\")));
+          api.openFolder(folderPath);
+        }
+      }
+    });
+  }
+  else toast.error("Cover letter export cancelled or failed.");
 };

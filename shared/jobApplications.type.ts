@@ -1,3 +1,5 @@
+import type { CoverLetterData } from "./CoverLetter.types";
+
 export enum JobApplicationStatus {
     DRAFT = 'DRAFT',         // First draft
     REVIEW = 'REVIEW',       // AI generation done, need a human review
@@ -19,6 +21,7 @@ export enum ApplicationEventType {
 export type CreateApplicationDto = Omit<CVSessionDataDTO, "id">;
 
 export interface CVSelection {
+  headerInfos: selectedHeaderInfos;
   selectedExpIds: string[];
   selectedProjectIds: string[];
   selectedBullets: Record<string, string[]>;
@@ -26,6 +29,21 @@ export interface CVSelection {
   selectedEducationIds: string[];
   includePhoto?: boolean; // show the profile photo on this resume; undefined means "yes if the profile has one"
   showSummary?: boolean; // show the summary section on this resume; undefined means "yes if it has bullets"
+}
+
+export interface selectedHeaderInfos {
+  title?: string; // title under the name on the resume
+  mail?: boolean; // show the mail on the resume
+  phone?: boolean; // show the phone on the resume
+  portfolio?: boolean; // show the portfolio on the resume
+  linkedin?: boolean; // show the linkedin on the resume
+  github?: boolean; // show the github on the resume
+  twitter?: boolean; // show the twitter on the resume
+  instagram?: boolean; // show the instagram on the resume
+  tiktok?: boolean; // show the tiktok on the resume
+  youtube?: boolean; // show the youtube on the resume
+  facebook?: boolean; // show the facebook on the resume
+  customLinks: Record<string, boolean>; // show/hide each custom link on the resume (key is label, value is true/false)
 }
 
 export interface CVSessionDataDTO {
@@ -36,6 +54,8 @@ export interface CVSessionDataDTO {
   jobInfos: JobInfos | null;
   customTexts?: Record<string, string>;
   scores?: Record<string, number>;
+  coverLetter?: CoverLetterData;
+  status?: JobApplicationStatus;
 }
 
 export interface JobInfos {

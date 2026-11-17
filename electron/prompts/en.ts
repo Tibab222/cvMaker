@@ -89,27 +89,30 @@ Respond EXCLUSIVELY with a valid JSON object matching this schema. No markdown f
   ]
 }`,
   GENERATE_TOP_RESUME: (context: string) => `
-You are an expert ATS resume writer and career coach.
-Generate an impactful professional summary to be placed at the top of the resume, tailored to the target job.
+You are an expert in ATS optimization.
+Your mission is to generate 3 professional summary bullet points for the top of a resume, entirely based on the provided context.
 
-RESUME & JOB DATA:
+RESUME AND JOB DATA:
 ${context}
 
-INSTRUCTIONS:
-1. Write 3 to 4 impactful bullet points (1 concise sentence per bullet).
-2. STRICT FOCUS ON TARGET JOB:
-   - Completely ignore unrelated or non-tech experiences (e.g., retail, cashier, food service) unless directly relevant to the role.
-   - Highlight only core technical skills, software achievements, leadership, and relevant background.
-   - ACCURACY CHECK: Ensure technical terms are used correctly. Do not mix framework capabilities.
-   - AVOID REPETITION: Do not copy-paste lines directly from the experience/projects section; synthesize them into higher-level achievements.
-3. Align naturally with the provided Target Keywords and Job Title.
-4. Do NOT generate a job title, only the array of bullets under "summary_bullets".
-5. Respond STRICTLY in JSON, no markdown or commentary, using this exact structure:
+NARRATIVE DIRECTIVES PER BULLET (Write 100% natural and varied sentences):
+- Bullet 1 (Positioning & Core Skills): Write a smooth opening sentence that connects the candidate's overall profile to the most relevant key technologies requested by the job offer.
+- Bullet 2 (Achievements & Expertise): Write a narrative sentence highlighting a concrete technical achievement or project from the candidate, naturally explaining the solution provided.
+- Bullet 3 (Impact & Best Practices): Write a sentence focused on operational added value (automation, reliability, observability, teamwork) and mastered methodologies.
+
+QUALITY AND STYLE REQUIREMENTS:
+1. NARRATIVE SYNTAX: Use varied and natural sentence structures with causal relationships (e.g., "...by leveraging...", "...to ensure...", "...enabling...").
+2. FLUIDITY: Do NOT create raw lists of keywords. Seamlessly integrate technologies and projects within complete grammatical sentences.
+3. NO HEADERS: Never start a bullet point with a keyword followed by a colon (e.g., NO "Projects:", "Lucidflow:", "Impact:"). Write the sentence text directly.
+4. FORMAT: Return strictly a valid JSON object with no Markdown tags or comments.
+5. NO FABRICATION: Do not invent experiences or skills. Naturally integrate target keywords only if they are relevant to the provided context.
+
+EXPECTED JSON FORMAT:
 {
   "summary_bullets": [
-    "First impactful bullet point...",
-    "Second bullet highlighting key skills...",
-    "Third bullet focused on value delivered..."
+    "<written_sentence_1>",
+    "<written_sentence_2>",
+    "<written_sentence_3>"
   ]
 }`,
 // COVER LETTER PROMPTS
@@ -167,5 +170,40 @@ INSTRUCTIONS:
 {
   "paragraph": "Your generated paragraph text here..."
 }
+`,
+  REFINE_KEYWORDS: (candidates: string[], jobTitle?: string) => `
+  You are a domain-agnostic ATS keyword normalization engine.
+  Your task is to refine a list of candidate keywords extracted from a job posting${jobTitle ? ` for the position of "${jobTitle}"` : ''}.
+
+  FILTERING RULES:
+  
+1. TARGET SIZE:
+  - Extract and return ONLY the TOP 20 to 30 most critical keywords, sort them from most important to least important ${jobTitle ? `for the role of "${jobTitle}"` : ''}.
+
+2. KEEP ONLY (Technical & Industry Terms):
+  - Core tools, platforms, technologies, and software
+  - Domain concepts & methodologies
+  - Essential technical practices
+  - Names and abbreviations of programming languages, frameworks, libraries, and tools
+
+3. STRICTLY ELIMINATE (Noise & Legal/HR Text):
+  - HR boilerplate, disclaimers, salary info, or privacy notices
+  - Education degree requirements or general qualifiers
+  - Generic verbs, filler words, and subjective traits
+  - Duplicate or overlapping terms
+  - remove words standing alone that make no sense in isolation (e.g., "experience", "knowledge", "skills", "ability", "team", "work", "role", "responsibilities", "tasks", "projects", "duties")
+
+4. CONSOLIDATE:
+  - Clean up fragmented phrases into standard industry terms
+
+  ${candidates.length > 0 ? `INPUT CANDIDATES: 
+    ${candidates.join(', ')}` : 'No input candidates provided.'}
+
+  OUTPUT FORMAT:
+  Return STRICTLY a valid JSON object with no Markdown tags, no quotes wrapper, and no introductory or concluding text.
+
+  {
+    "keywords": ["Keyword 1", "Keyword 2", ...]
+  }
 `
 }

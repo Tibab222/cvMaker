@@ -1,6 +1,7 @@
 import type { AIAnalysisStatus } from "@shared/AIAnalysisStatus";
 import type { CoverLetterStatusPayload, GenerateCoverLetterDTO } from "@shared/CoverLetter.types";
 import type { Experience } from "@shared/Experience.interface";
+import type { JobOfferPayload } from "@shared/Extension.types";
 import type { CVSessionDataDTO, JobApplicationStatus } from "@shared/jobApplications.type";
 import type { OnProgressCallback } from "@shared/OllamaDownloadStatus";
 import type { Language } from "@shared/profile.interface";
@@ -12,6 +13,7 @@ export const api = {
     minimize: () => window.api.minimize(),
     maximize: () => window.api.maximize(),
     close: () => window.api.close(),
+    openFolder: async (folderPath: string) => await window.api.openFolder(folderPath),
     getProfilesList: async () => await window.api.getProfilesList(),
     addProfile: async (firstname: string, lastname: string, language: Language) => await window.api.addProfile(firstname, lastname, language),
     loadProfile: async (id: string) => await window.api.loadProfile(id),
@@ -19,7 +21,7 @@ export const api = {
     updateSection: async (id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => await window.api.updateSection(id, section, newData),
     generatePDF: async (html: string, fileName: string, applicationId?: string) => await window.api.generatePDF(html, fileName, applicationId),
     syncDb: async (profileId: string, experiences: Experience[], projects: Project[]) => await window.api.syncDb(profileId, experiences, projects),
-    analyseMandate: async (rawMandate: string, language: Language, useAi: boolean) => await window.api.analyseMandate(rawMandate, language, useAi),
+    analyseMandate: async (rawMandate: string, language: Language, useAi: boolean, jobTitle?: string) => await window.api.analyseMandate(rawMandate, language, useAi, jobTitle),
     onAnalysisStatus: (callback: (data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => void) => window.api.onAnalysisStatus(callback),
     reduceKeywordCount: (keyword: string, amount?: number) => window.api.reduceKeywordCount(keyword, amount),
     getOllamaInfos: async () => await window.api.getOllamaInfos(),
@@ -47,4 +49,6 @@ export const api = {
     getResumePdf: async (applicationId: string) => { return await window.api.getResumePdf(applicationId) },
     generateCoverLetter: async (options: GenerateCoverLetterDTO) => { return await window.api.generateCoverLetter(options) },
     onCoverLetterStatusUpdate: (callback: (payload: CoverLetterStatusPayload) => void) => window.api.onCoverLetterStatusUpdate(callback),
+    deleteApplication: async (applicationId: string) => { return await window.api.deleteApplication(applicationId) },
+    onJobReceived: (callback: (jobData: JobOfferPayload) => void) => window.api.onJobReceived(callback),
 }

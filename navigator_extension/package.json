@@ -1,0 +1,25 @@
+{
+  "name": "navigator-extension",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npm run build:firefox -- --watch",
+    "build:chrome": "vite build --mode chrome-sidebar && vite build --mode chrome-content && vite build --mode chrome-background",
+    "build:firefox": "vite build --mode firefox-sidebar && vite build --mode firefox-content && vite build --mode firefox-background",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "webextension-polyfill": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/webextension-polyfill": "^0.12.6",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  }
+}

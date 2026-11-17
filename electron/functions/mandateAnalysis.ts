@@ -6,18 +6,20 @@ import { ENGLISH_PROMPTS } from "../prompts/en";
 import { aiService, vectorService } from "../ipcHandlers";
 import { LocalkeywordsExtractor } from "../services/KeywordsExtractor/localKeywordsExtract";
 import { KeywordsAffinityDatabase } from "../services/KeywordsExtractor/KeywordsAffinityDatabase";
+// import { KeywordSemanticEnhancer } from "../services/KeywordsExtractor/KeywordSemanticEnhancer";
 
 export interface AnalyseMandateProps {
     event: IpcMainInvokeEvent;
     options: {
         rawMandate: string;
         language: Language;
+        jobTitle?: string;
         useAi: boolean;
     }
 }
 
 export async function analyzeMandate({ event, options }: AnalyseMandateProps): Promise<{ success?: boolean; error?: string }> {
-    const { rawMandate, language, useAi } = options;
+    const { rawMandate, language, useAi, jobTitle } = options;
 
     let keywords: string[] = [];
     if (useAi) {
@@ -47,9 +49,18 @@ export async function analyzeMandate({ event, options }: AnalyseMandateProps): P
             return { error: 'Analysis failed' };
         }
     } else {
-        keywords = LocalkeywordsExtractor.extractKeywords(rawMandate, language, );
-        const dbAffinity = KeywordsAffinityDatabase.getInstance();
-        dbAffinity.incrementKeywords(keywords.map((k) => k.toLowerCase()));
+        const candidates = LocalkeywordsExtractor.extractCandidates(rawMandate, language);
+        console.log('Local keyword extraction candidates:', candidates.sort((a, b) => b.count - a.count));
+        // keywords = await KeywordSemanticEnhancer.cluster(
+        //     candidates,
+        //     (text) => vectorService.generateEmbedding(text)
+        // );
+        keywords = candidates.sort((a, b) => b.count - a.count).map((candidate) => candidate.original);
+        console.log('Local keyword extraction result:', keywords);
+        keywords = await refineKeywordsWithAI(keywords.slice(0, Math.min(30, keywords.length)), language, jobTitle);
+
+        // const dbAffinity = KeywordsAffinityDatabase.getInstance();
+        // dbAffinity.incrementKeywords(keywords.map((k) => k.toLowerCase()));
         event.sender.send('analysis-status', { status: AIAnalysisStatus.Local_Analyze_Result, data: { keywords } });
     }
 
@@ -61,3 +72,15 @@ export async function analyzeMandate({ event, options }: AnalyseMandateProps): P
     event.sender.send('analysis-status', { status: AIAnalysisStatus.Success, message: 'Analysis completed' });
     return { success: true };
 };
+
+async function refineKeywordsWithAI(candidates: string[], language: Language, jobTitle?: string): Promise<string[]> {
+    const isAvailable = aiService.getAvailability();
+    if (!isAvailable) return candidates;
+
+    const prompts = language === Language.FRENCH ? FRENCH_PROMPTS : ENGLISH_PROMPTS;
+    const prompt = prompts.REFINE_KEYWORDS(candidates, jobTitle);
+    const rawResponse = await aiService.prompt(prompt, (error) => {
+        console.error('AI Service Error:', error);
+    }) as unknown as { keywords: string[] };
+    return rawResponse.keywords;
+}

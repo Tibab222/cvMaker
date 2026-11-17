@@ -1,5 +1,6 @@
 import { CoverLetterStatusPayload, GenerateCoverLetterDTO } from "../shared/CoverLetter.types";
 import { Experience } from "../shared/Experience.interface";
+import { JobOfferPayload } from "../shared/Extension.types";
 import { Application, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats } from "../shared/jobApplications.type";
 import { OnProgressCallback, SetupProgressStatus } from "../shared/OllamaDownloadStatus";
 import { Language } from "../shared/profile.interface";
@@ -14,6 +15,7 @@ contextBridge.exposeInMainWorld('api', {
   minimize: () => ipcRenderer.send('minimize'),
   maximize: () => ipcRenderer.send('maximize'),
   close: () => ipcRenderer.send('close'),
+  openFolder: (folderPath: string) => ipcRenderer.invoke('open-folder', folderPath),
   getProfilesList: () => ipcRenderer.invoke('getProfilesList'),
   addProfile: (firstname: string, lastname: string, language: Language) => ipcRenderer.invoke('addProfile', firstname, lastname, language),
   loadProfile: (profileId: string) => ipcRenderer.invoke('loadProfile', profileId),
@@ -70,5 +72,13 @@ contextBridge.exposeInMainWorld('api', {
         return () => {
             ipcRenderer.removeListener('cover-status', subscription);
         };
-    }
+    },
+  deleteApplication: (applicationId: string) => ipcRenderer.invoke('delete-application', applicationId) as Promise<boolean>,
+  onJobReceived: (callback: (jobData: JobOfferPayload) => void) => {
+    const subscription = (_event: Electron.IpcRendererEvent, value: JobOfferPayload) => callback(value);
+    ipcRenderer.on('JOB_RECEIVED_FROM_EXTENSION', subscription);
+    return () => {
+      ipcRenderer.removeListener('JOB_RECEIVED_FROM_EXTENSION', subscription);
+    };
+  }
 });

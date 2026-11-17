@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "CVMaker Extractor",
+  "version": "1.0.0",
+  "description": "Extract information from job offers for CVMaker Engine",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "sidebar_action": {
+    "default_title": "CVMaker Engine",
+    "default_panel": "sidebar/sidebar.html"
+  },
+  "commands": {
+    "_execute_sidebar_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Open the CVMaker panel"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/index.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

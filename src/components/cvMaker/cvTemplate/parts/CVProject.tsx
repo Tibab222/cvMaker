@@ -73,7 +73,6 @@ export default function CVProject({ projects, lang = 'en' }: { projects: Project
                 </>)}
               </div>
 
-              {/* Liste des points d'impact */}
               <ul className="mt-1.5 flex flex-col gap-1.5">
                 {selectedBullets.map((bullet) => (
                   <li key={bullet.id} className="group flex flex-col gap-1">

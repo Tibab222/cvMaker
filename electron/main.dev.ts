@@ -3,9 +3,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { registerIpcHandlers } from './ipcHandlers';
 import { existsSync, mkdirSync } from 'fs';
+import { HttpServerService } from './services/HttpServer/HttpServerService';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+let win: BrowserWindow | null = null;
 
 export const downloadFolder = path.join(app.getPath('userData'), 'downloads');
 export const profilesDir = path.join(app.getPath("userData"), "profiles")
@@ -43,7 +45,7 @@ function createWindow() {
     ? path.join(process.resourcesPath, 'assets/logo.png')
     : path.join(__dirname, '../assets/logo.png');
 
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 800,
     height: 600,
     frame: false,
@@ -75,6 +77,7 @@ function createWindow() {
 app.whenReady().then(() => {
   registerIpcHandlers();
   createWindow();
+  HttpServerService.getInstance().init(() => win);
 });
 
 app.on('window-all-closed', () => {

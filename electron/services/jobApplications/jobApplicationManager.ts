@@ -70,10 +70,9 @@ export class JobApplicationManager {
         return { ...application, events };
     }
 
-    public createApplication(dto: CreateApplicationDto, status: JobApplicationStatus = JobApplicationStatus.DRAFT): string {
+    public createApplication(dto: CreateApplicationDto): string {
         if (!this.sessionsDir) throw new Error("Sessions path not set. Call connect() first.");
         const id = `app_${crypto.randomUUID()}`; // I hope it's unique enough for our use case. If not, we can add like jobTitle + companyName + timestamp or something like that.
-        const initialStatus = status || JobApplicationStatus.DRAFT;
 
         const rawDb = this.getDb();
 
@@ -88,7 +87,10 @@ export class JobApplicationManager {
             id
         };
 
-        fs.writeFileSync(fullJsonPath, JSON.stringify(fullSessionData, null, 2), "utf-8");
+        const { status: statusFromSession, ...sessionDataWithoutStatus } = fullSessionData;
+        const status = statusFromSession || JobApplicationStatus.DRAFT;
+
+        fs.writeFileSync(fullJsonPath, JSON.stringify(sessionDataWithoutStatus, null, 2), "utf-8");
 
         const keywords = dto.jobInfos?.keywords || [];
         const url = dto.jobInfos?.url || "";
@@ -106,8 +108,8 @@ export class JobApplicationManager {
 
         try {
             const transaction = rawDb.transaction(() => {
-                stmt.run(id, jobTitle, companyName, initialStatus, keywords.join(','), salary, url, relativeJsonPath);
-                eventStmt.run(id, ApplicationEventType.STATUS_CHANGE, `Created with status ${initialStatus}`);
+                stmt.run(id, jobTitle, companyName, status, keywords.join(','), salary, url, relativeJsonPath);
+                eventStmt.run(id, ApplicationEventType.STATUS_CHANGE, `Created with status ${status}`);
             });
             transaction();
             return id;
@@ -124,7 +126,7 @@ export class JobApplicationManager {
         if (!this.sessionsDir) throw new Error("Sessions path not set. Call connect() first.");
 
         const rawDb = this.getDb();
-        const row = rawDb.prepare(`SELECT json_file_path FROM applications WHERE id = ?`).get(id) as { json_file_path: string | null } | undefined;
+        const row = rawDb.prepare(`SELECT json_file_path, status FROM applications WHERE id = ?`).get(id) as { json_file_path: string | null; status: string } | undefined;
 
         if (!row || !row.json_file_path) {
             return null;
@@ -139,7 +141,7 @@ export class JobApplicationManager {
 
         console.log(`[JobApplicationManager] Reading JSON file: ${fullPath}`);
         const content = fs.readFileSync(fullPath, "utf-8");
-        return JSON.parse(content) as CVSessionDataDTO;
+        return { ...JSON.parse(content), status: row.status as JobApplicationStatus } as CVSessionDataDTO;
     }
 
     public updateStatus(id: string, newStatus: JobApplicationStatus, note?: string) {
@@ -166,15 +168,17 @@ export class JobApplicationManager {
         });
 
         transaction();
+
+        return newStatus;
     }
 
-    public saveOrUpdateApplication(data: Partial<CVSessionDataDTO>, status?: JobApplicationStatus): { id: string; success: boolean; error?: string } {
+    public saveOrUpdateApplication(data: Partial<CVSessionDataDTO>): { id: string; success: boolean; error?: string } {
         if (data.id && this.applicationExists(data.id)) {
-            this.saveCVSession(data as CVSessionDataDTO, status);
+            this.saveCVSession(data as CVSessionDataDTO);
             return { id: data.id, success: true };
         }
         
-        return { id: this.createApplication(data as CreateApplicationDto, status), success: true };
+        return { id: this.createApplication(data as CreateApplicationDto), success: true };
     }
 
     public setPdfFilePath(id: string, pdfFilePath: string): void {
@@ -193,6 +197,34 @@ export class JobApplicationManager {
             return null;
         }
         return row.pdf_file_path;
+    }
+    
+    /**
+     * Deletes an application, events and its associated JSON file if it exists.
+     * @param id The ID of the application to delete.
+     * @returns True if the application was found and deleted, false if the application was not found.
+     */
+    public deleteApplication(id: string): boolean {
+        if (!this.sessionsDir) throw new Error("Sessions path not set. Call connect() first.");
+        const rawDb = this.getDb();
+        const row = rawDb.prepare(`SELECT * FROM applications WHERE id = ?`).get(id) as Application | undefined;
+
+        if (!row) {
+            console.warn(`[JobApplicationManager] Application not found: ${id}`);
+            return false;
+        }
+
+        rawDb.prepare(`DELETE FROM application_events WHERE application_id = ?`).run(id);
+        if (row.json_file_path) {
+            const fullPath = path.join(this.sessionsDir, row.json_file_path);
+            if (fs.existsSync(fullPath)) {
+                fs.unlinkSync(fullPath);
+                console.log(`[JobApplicationManager] Deleted JSON file: ${fullPath}`);
+            }
+        }
+
+        rawDb.prepare(`DELETE FROM applications WHERE id = ?`).run(id);
+        return true;
     }
 
     public getKeyStats(): KeyStats {
@@ -213,6 +245,38 @@ export class JobApplicationManager {
             ghostingRate,
             offerRate
         };
+    }
+
+    public updateExportedDocuments(
+        applicationId: string, 
+        paths: { pdfFilePath?: string; coverFilePath?: string }
+    ): void {
+        const rawDb = this.getDb();
+        const updates: string[] = [];
+        const params: unknown[] = [];
+
+        if (paths.pdfFilePath !== undefined) {
+            updates.push("pdf_file_path = ?");
+            params.push(paths.pdfFilePath);
+        }
+
+        if (paths.coverFilePath !== undefined) {
+            updates.push("motivation_letter_file_path = ?");
+            params.push(paths.coverFilePath);
+        }
+
+        if (updates.length === 0) return;
+
+        updates.push("updated_at = CURRENT_TIMESTAMP");
+        params.push(applicationId);
+
+        const query = `
+            UPDATE applications
+            SET ${updates.join(", ")}
+            WHERE id = ?
+        `;
+
+        rawDb.prepare(query).run(...params);
     }
 
     /**
@@ -355,7 +419,7 @@ export class JobApplicationManager {
         return Boolean(row);
     }
 
-    private saveCVSession(sessionData: CVSessionDataDTO, status: JobApplicationStatus = JobApplicationStatus.DRAFT): void {
+    private saveCVSession(sessionData: CVSessionDataDTO): void {
         if (!this.sessionsDir) throw new Error("Sessions path not set. Call connect() first.");
 
         const rawDb = this.getDb();
@@ -367,13 +431,17 @@ export class JobApplicationManager {
 
         const fullPath = path.join(this.sessionsDir, row.json_file_path);
 
-        fs.writeFileSync(fullPath, JSON.stringify(sessionData, null, 2), "utf-8");
+        // remove status from sessionData before saving to JSON file, as it's stored in the database
+        const { status: statusFromSession, ...sessionDataWithoutStatus } = sessionData;
+
+        fs.writeFileSync(fullPath, JSON.stringify(sessionDataWithoutStatus, null, 2), "utf-8");
 
         const jobTitle = sessionData.jobInfos?.title || sessionData.title || "Unknown";
         const companyName = sessionData.jobInfos?.company || "Unknown";
         const keywords = sessionData.jobInfos?.keywords || [];
         const url = sessionData.jobInfos?.url || "";
         const salary = parseSalary(sessionData.jobInfos?.salary);
+        const status = statusFromSession || JobApplicationStatus.DRAFT;
 
         const updateStmt = rawDb.prepare(`
             UPDATE applications

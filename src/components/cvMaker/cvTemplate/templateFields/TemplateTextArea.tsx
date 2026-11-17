@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { useCVSelection } from "../../provider/hook";
 import { Sparkles } from "lucide-react";
 import { TemplateSkeleton } from "./TemplateSkeleton";
 import type { EntityType } from "@shared/utils";
+import { toggleBold } from "../utils/toggleBold";
+import { renderFormattedText } from "../utils/renderFormattedText";
 
 interface FieldProps {
   entityType: EntityType;
@@ -45,6 +52,39 @@ export function TemplateTextArea({
     updateCustomField(entityType, id, field, tempValue);
   };
 
+  const handleKeyDown = (
+    event: KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.key.toLowerCase() === "b"
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const selectionStart =
+        event.currentTarget.selectionStart ?? 0;
+      const selectionEnd =
+        event.currentTarget.selectionEnd ?? selectionStart;
+
+      const result = toggleBold(
+        tempValue,
+        selectionStart,
+        selectionEnd,
+      );
+
+      setTempValue(result.value);
+
+      requestAnimationFrame(() => {
+        textareaRef.current?.focus();
+        textareaRef.current?.setSelectionRange(
+          result.selectionStart,
+          result.selectionEnd,
+        );
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 py-0.5">
@@ -61,7 +101,8 @@ export function TemplateTextArea({
         value={tempValue}
         onChange={(e) => setTempValue(e.target.value)}
         onBlur={handleBlur}
-        rows={Math.max(2, tempValue.split('\n').length)}
+        onKeyDown={handleKeyDown}
+        rows={Math.max(2, tempValue.split("\n").length)}
         className={`w-full bg-amber-50/80 border border-amber-400 rounded p-1 outline-none text-justify resize-none animate-in fade-in duration-100 print:hidden ${className}`}
       />
     );
@@ -73,7 +114,10 @@ export function TemplateTextArea({
       title="Cliquer pour modifier"
       className={`cursor-pointer hover:bg-slate-100 rounded px-0.5 transition-colors whitespace-pre-line text-justify print:hover:bg-transparent ${className}`}
     >
-      {value || <span className="italic opacity-40">{placeholder}</span>}
+      {value
+        ? renderFormattedText(value)
+        : <span className="italic opacity-40">{placeholder}</span>
+      }
     </p>
   );
 }

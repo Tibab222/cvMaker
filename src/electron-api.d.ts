@@ -5,6 +5,7 @@ import { OnProgressCallback } from '../shared/OllamaDownloadStatus';
 import { RewriteResumeOptions } from '../shared/RewriteResume.type';
 import { KeywordStat } from '../shared/Keywords.types';
 import { Application, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats } from '../shared/jobApplications.type';
+import { JobOfferPayload } from '../shared/Extension.types';
 
 export {};
 
@@ -14,14 +15,15 @@ declare global {
       minimize: () => void;
       maximize: () => void;
       close: () => void;
+      openFolder: (folderPath: string) => Promise<boolean>;
       getProfilesList: () => Promise<string[]>;
       addProfile: (firstname: string, lastname: string, language: Language) => Promise<{ success: boolean; error?: string }>;
       loadProfile: (profileId: string) => Promise<ProfilesData>;
       checkAIAvailability: () => Promise<boolean>;
       updateSection: (id: string, section: keyof ProfilesData, newData: ProfilesData[keyof ProfilesData]) => Promise<ProfilesData[keyof ProfilesData]>;
-      generatePDF: (html: string, fileName: string, applicationId?: string) => Promise<boolean>;
+      generatePDF: (html: string, fileName: string, applicationId?: string) => Promise<string | null>;
       syncDb: (profileId: string, experiences: Experience[], projects: Project[]) => Promise<boolean>;
-      analyseMandate: (rawMandate: string, language: Language, useAi: boolean) => Promise<{ success: boolean; error?: string }>;
+      analyseMandate: (rawMandate: string, language: Language, useAi: boolean, jobTitle?: string) => Promise<{ success: boolean; error?: string }>;
       onAnalysisStatus: (callback: (data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => void) => () => void;
       reduceKeywordCount: (keyword: string, amount?: number) => void;
       getOllamaInfos: () => Promise<NonNullable<UserConfig['ollama']> | null>;
@@ -42,13 +44,15 @@ declare global {
       saveCVSession: (data: Partial<CVSessionDataDTO>) => Promise<{ success: boolean; id?: string; error?: string }>;
       getKeyStats: () => Promise<KeyStats>;
       getApplications: () => Promise<Application[]>;
-      updateApplicationStatus: (id: string, newStatus: JobApplicationStatus) => Promise<void>;
+      updateApplicationStatus: (id: string, newStatus: JobApplicationStatus) => Promise<JobApplicationStatus | null>;
       getApplicationWithTimeline: (applicationId: string) => Promise<ApplicationWithEvents | null>;
       getCVSession: (applicationId: string) => Promise<CVSessionDataDTO | null>;
       openResumeFolder: (applicationId: string) => Promise<boolean>; // false when no resume file exists
       getResumePdf: (applicationId: string) => Promise<Uint8Array | null>;
       generateCoverLetter: (options: GenerateCoverLetterDTO) => Promise<{ success: boolean; error?: string }>;
       onCoverLetterStatusUpdate: (callback: (payload: CoverLetterStatusPayload) => void) => () => void;
+      deleteApplication: (applicationId: string) => Promise<boolean>;
+      onJobReceived: (callback: (jobData: JobOfferPayload) => void) => () => void;
     };
   }
 }

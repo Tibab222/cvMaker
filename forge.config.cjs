@@ -1,9 +1,11 @@
 const path = require('path');
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
+const { version } = require('./package.json');
 
 module.exports = {
   packagerConfig: {
+    appBundleId: 'com.electron.cv-maker',
     icon: path.resolve(__dirname, 'assets/logo'),
     extraResource: [
       path.resolve(__dirname, 'assets')
@@ -13,10 +15,16 @@ module.exports = {
         '**/better-sqlite3/**/*',
         '**/@xenova/transformers/**/*',
         '**/sharp/**/*',
+        '**/onnxruntime-node/**/*'
       ],
     },
     ignore: [
       /^\/binding\.gyp/,
+      ...(process.platform === 'darwin'
+      ? [
+          /node_modules\/onnxruntime-node\/bin\/napi-v3\/(linux|win32)/
+        ]
+      : []),
     ],
   },
   rebuildConfig: {},
@@ -34,6 +42,14 @@ module.exports = {
     {
       name: '@electron-forge/maker-zip',
       platforms: ['darwin'],
+    },
+    {
+      name: '@electron-forge/maker-dmg',
+      platforms: ['darwin'],
+      config: (arch) => ({
+        format: 'ULFO',
+        name: `cv-maker-${arch}-${version}`,
+      }),
     },
     {
       name: '@electron-forge/maker-deb',

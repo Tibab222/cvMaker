@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
-import { LucideSmile, PersonStanding } from "lucide-react";
+import { ArrowLeft, LucideSmile, PersonStanding } from "lucide-react";
 import { useProfileStore } from "@/store/profile";
 import { Tabs, useUiStore } from "@/store/ui";
 import { Language } from "@shared/profile.interface";
@@ -110,6 +110,13 @@ const NewProfileForm = ({ setNewProfileMode }: { setNewProfileMode: (mode: boole
     return (
         <Card className="w-1/3 mx-auto">
             <CardHeader>
+                <button
+                    onClick={() => setNewProfileMode(false)}
+                    className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+                    Back
+                </button>
                 <CardTitle>Create a New Profile</CardTitle>
                 <CardDescription>Fill in the details to create a new profile.</CardDescription>
             </CardHeader>

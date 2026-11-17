@@ -128,6 +128,19 @@ function InputGroupInput({
   )
 }
 
+function InputGroupHint({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="input-group-hint"
+      className={cn(
+        "ml-auto select-none pr-3 text-xs text-muted-foreground/70",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 function InputGroupTextarea({
   className,
   ...props
@@ -150,5 +163,6 @@ export {
   InputGroupButton,
   InputGroupText,
   InputGroupInput,
+  InputGroupHint,
   InputGroupTextarea,
 }

@@ -1,8 +1,9 @@
-import { Plus, Trash2, Tag, X } from "lucide-react";
+import { Plus, Trash2, Tag, X, HelpCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { ProjectBullet } from "@shared/projects.interface";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
   bullets: ProjectBullet[];
@@ -33,11 +34,37 @@ export function BulletListEditor({ bullets, onChange }: Props) {
   return (
     <div className="flex flex-col gap-3 mt-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Points d'impact (CV Bullets)
-        </h4>
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Impact Bullet Points
+          </h4>
+
+          <TooltipProvider>
+            <Tooltip delayDuration={200}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-help inline-flex items-center"
+                  aria-label="XYZ formula info"
+                >
+                  <HelpCircle size={15} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs p-3 flex flex-col">
+                <p className="font-semibold mb-1">The XYZ Formula:</p>
+                <p>
+                  Structure as: <strong>Accomplished [X]</strong>, measured by{" "}
+                  <strong>[Y]</strong>, by doing <strong>[Z]</strong>.
+                </p>
+                <p className="mt-1.5 italic text-muted-foreground border-t pt-1.5">
+                  Ex: "Increased sales (X) by 20% (Y) through a new customer follow-up process (Z)."
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <Button type="button" variant="outline" size="sm" onClick={addBullet} className="h-8">
-          <Plus size={14} className="mr-1" /> Ajouter
+          <Plus size={14} className="mr-1" /> Add Bullet
         </Button>
       </div>
 
@@ -45,7 +72,7 @@ export function BulletListEditor({ bullets, onChange }: Props) {
         <div key={bullet.id} className="flex flex-col gap-2 p-3 border rounded-lg bg-slate-50/50">
           <div className="flex gap-2">
             <Input
-              placeholder="Décrivez un impact ou une tâche..."
+              placeholder="Describe an impact or a task..."
               value={bullet.text}
               onChange={(e) => updateBullet(bullet.id, "text", e.target.value)}
               className="bg-white"

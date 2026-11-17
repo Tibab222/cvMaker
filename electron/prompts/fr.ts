@@ -90,80 +90,98 @@ Répondez EXCLUSIVEMENT avec un objet JSON valide correspondant à ce schéma. P
   ]
 }`,
   GENERATE_TOP_RESUME: (context: string) => `
-Tu es un expert en rédaction de CV et en recrutement ATS.
-Génère un résumé professionnel ("Summary" / "Profil") percutant à placer en haut du CV pour valoriser le candidat par rapport au poste visé.
+Tu es un expert en optimisation ATS.
+Ta mission est de générer 3 puces (bullet points) de résumé professionnel ("Summary") pour le haut d'un CV, entièrement basées sur le contexte fourni.
 
 DONNÉES DU CV ET DU POSTE :
 ${context}
 
-CONSIGNES :
-1. Rédige entre 3 et 4 puces (bullet points) percutantes (1 phrase par puce).
-2. FOCUS STRICT SUR LE POSTE VISÉ (Target Job) :
-   - Ignore totalement les expériences secondaires ou non technologiques (ex: restauration, vente, caisse) sauf si elles apportent une compétence directement demandée.
-   - Synthétise uniquement les compétences techniques, réalisations et le leadership pertinent.
-3. Reste cohérent avec les mots-clés cibles (Target Keywords) transmis.
-4. Ne génère PAS de titre, uniquement le tableau sous "summary_bullets".
-5. Reponds uniquement avec un objet JSON valide, sans formatage markdown ni commentaires.
-FORMAT DE RÉPONSE :
+DIRECTIVES NARRATIVES PAR PUCE (Rédige des phrases 100% naturelles et variées) :
+- Puce 1 (Positionnement & Compétences clés) : Rédige une phrase d'accroche fluide qui associe le profil global du candidat aux technologies clés les plus pertinentes demandées par l'offre.
+- Puce 2 (Réalisation & Savoir-faire) : Rédige une phrase narrative qui met en valeur une réalisation technique ou un projet concret du candidat, en expliquant naturellement la solution apportée.
+- Puce 3 (Impact & Pratiques) : Rédige une phrase axée sur la valeur ajoutée opérationnelle (automatisation, fiabilité, observabilité, travail d'équipe) et les méthodologies maîtrisées.
+
+EXIGENCES QUALITÉ ET STYLE :
+1. SYNTAXE NARRATIVE : Utilise des structures de phrases variées et naturelles avec des liens de causalité (ex: "...en exploitant...", "...afin de garantir...", "...permettant de...").
+2. FLUIDITÉ : Ne fais AUCUNE liste brute de mots-clés. Intègre les technologies et les projets au cœur de phrases grammaticales complètes.
+3. AUCUN EN-TÊTE : Ne commence jamais une puce par un mot-clé suivi de deux-points (ex: PAS de "Projets :", "Lucidflow :", "Impact :"). Rédige directement le texte de la puce.
+4. FORMAT : Renvoie uniquement un objet JSON valide sans balises Markdown ni commentaires.
+5. N'invente pas d'experiences ou de competences, integre naturellement les mots cles uniquement si ils sont pertinents pour le contexte fourni.
+
+FORMAT JSON ATTENDU :
 {
   "summary_bullets": [
-    "Première puce percutante...",
-    "Deuxième puce axée sur les compétences...",
-    "Troisième puce orientée valeur ajoutée..."
+    "<phrase_1_redigee>",
+    "<phrase_2_redigee>",
+    "<phrase_3_redigee>"
   ]
 }`,
 // COVER LETTER PROMPTS
 // TODO: translate those prompts to french
   EXPERIENCE_PARAGRAPH: (workExperiences: string, education: string, targetRole: string, companyName: string, targetKeywords: string) => `
-You are an expert ATS career coach and professional technical writer.
-Write a single, cohesive paragraph for a cover letter highlighting the candidate's professional background and core technical skills relevant to the target job.
+Tu es un Senior Tech Recruiter et un expert en rédaction de candidatures techniques (ATS-friendly).
+Rédige un unique paragraphe narratif et percutant (style lettre de motivation ou accroche d'expérience phare) valorisant le parcours du candidat pour le poste visé.
 
-CANDIDATE WORK EXPERIENCES:
-${workExperiences}
+DONNÉES DU CANDIDAT ET DU POSTE :
+- Expériences : ${workExperiences}
+- Formation : ${education}
+- Poste visé : ${targetRole}
+- Entreprise cible : ${companyName}
+- Mots-clés cibles (ATS) : ${targetKeywords}
 
-CANDIDATE EDUCATION:
-${education}
+STRUCTURE STRICTE DU PARAGRAPHE (3 à 4 phrases) :
+- Phrase 1 (Ancrage & Stack) : Présente l'expérience/parcours clé en intégrant directement le titre du poste (${targetRole}) et les technologies cibles principales.
+- Phrase 2 (Réalisation & Défi technique) : Illustre une réalisation concrète, une architecture ou un projet complexe résolu en utilisant les mots-clés transmis.
+- Phrase 3 (Impact & Résultats) : Met en valeur l'impact mesurable (performance, fiabilité, automatisation, valeur métier) de cette réalisation.
+- Phrase 4 (Alignement Entreprise - Optionnel) : Lie cette expertise aux objectifs ou à la mission de ${companyName}.
 
-TARGET JOB: ${targetRole}
-TARGET COMPANY: ${companyName}
-TARGET KEYWORDS: ${targetKeywords}
+CONSIGNES STRICTES DE RÉDACTION :
+1. Langue : Rédige le paragraphe STRICTEMENT EN ANGLAIS.
+2. Style : Direct, confiant et technique. Évite le remplissage ("passionate", "hard-working", "seasoned professional").
+3. Filtrage : Ignore totalement les expériences non pertinentes ou secondaires.
+4. Format : Réponds uniquement avec un objet JSON valide, sans balises Markdown ni texte explicatif.
 
-LANGUAGE: Write the response strictly in english.
-
-INSTRUCTIONS:
-1. Focus ON RELEVANT EXPERIENCE:
-   - Highlight core technical achievements, software engineering experience, and key skills aligned with the target role.
-   - Synthesize experience without list-like repetition; make it flow as a professional narrative.
-2. Maintain a confident, professional, and authentic tone.
-3. Keep the paragraph concise (3 to 5 well-structured sentences max).
-4. Respond STRICTLY in JSON with no markdown formatting or commentary:
+FORMAT JSON ATTENDU :
 {
   "paragraph": "Your generated paragraph text here..."
 }
 `,
   PROJECT_FITTING_PARAGRAPH: (projects: string, targetRole: string, companyName: string, targetKeywords: string) => `
-You are an expert ATS career coach and professional technical writer.
-Write a single, cohesive paragraph for a cover letter connecting the candidate's key personal and open-source projects to the target company and role.
+Tu es un recruteur Senior et un expert en rédaction de candidatures techniques (ATS-friendly).
+Rédige un unique paragraphe narratif et percutant (style lettre de motivation ou accroche d'expérience phare) connectant les projets clés du candidat à l'entreprise et au poste visé.
 
-CANDIDATE PROJECTS:
+PROJET DU CANDIDAT ET DU POSTE :
 ${projects}
 
-TARGET JOB: ${targetRole}
-TARGET COMPANY: ${companyName}
-TARGET KEYWORDS: ${targetKeywords}
+JOB CIBLE: ${targetRole}
+ENTREPRISE CIBLE: ${companyName}
+MOTS-CLÉS CIBLES: ${targetKeywords}
 
-LANGUAGE: Write the response strictly in english.
+LANGUAGE: Ecris la réponse STRICTEMENT en français.
 
 INSTRUCTIONS:
-1. FOCUS ON PROJECTS & IMPACT:
-   - Select 1 or 2 relevant projects from the candidate's background.
-   - Explain how building these projects demonstrates practical problem-solving and technical expertise directly beneficial to ${companyName}.
-2. ALIGN WITH TARGET KEYWORDS:
-   - Naturally incorporate relevant target keywords where applicable.
-3. Keep the paragraph concise (3 to 5 well-structured sentences max).
-4. Respond STRICTLY in JSON with no markdown formatting or commentary:
+1. FOCUS SUR LES PROJETS & L'IMPACT :
+   - Sélectionne 1 ou 2 projets pertinents du parcours du candidat.
+   - Explique comment la réalisation de ces projets démontre une résolution pratique de problèmes et une expertise technique directement bénéfique à ${companyName}.
+2. ALIGNEMENT SUR LES MOTS-CLÉS :
+   - Intègre naturellement les mots-clés cibles lorsque cela est pertinent.
+3. Rédige le paragraphe de manière concise (3 à 5 phrases bien structurées maximum).
+4. Respects STRICTEMENT le format JSON attendu, sans balises Markdown ni commentaires.
+FORMAT JSON ATTENDU :
 {
-  "paragraph": "Your generated paragraph text here..."
+  "paragraph": "Ton paragraphe généré ici..."
 }
+`, REFINE_KEYWORDS: (candidates: string[]) => `
+  Voici une liste de mots-cles extraits d'une offre d'emploi : 
+  
+  ${JSON.stringify(candidates)}
+
+  Retire les termes qui sont trop génériques ou irrélevant pour un CV, fusionne les synonymes proches ou les duplicatas,
+  et retourne UNIQUEMENT un tableau JSON de chaînes de caractères, sans texte environnant et sans formatage Markdown.
+
+  JSON OUTPUT FORMAT:
+  {
+    "keywords": ["mot-cle1", "mot-cle2", "mot-cle3", ...]
+  }
 `
 }

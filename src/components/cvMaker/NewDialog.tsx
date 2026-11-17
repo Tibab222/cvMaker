@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Building2, FileText, Link2, Plus, Type, Wallet } from "lucide-react";
 import { parseSalary } from "@shared/utils";
@@ -49,8 +49,17 @@ function Field({
   );
 }
 
+const convertToNumber = (value: string | number): number | null => {
+  if (typeof value === "number") {
+    return value;
+  }
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? null : parsed;
+};
+
 export default function NewDialog({ defaultOpen = false }: Props) {
-    const { setSelectedTab, activeCvSessionId } = useUiStore();
+  const processingJobRef = useRef<string | null>(null);
+  const { setSelectedTab, activeCvSessionId, incomingJob, setIncomingJob, loadCvSession } = useUiStore();
   const { initJobMandate } = useCVSelection();
   const [open, setOpen] = useState(defaultOpen && !activeCvSessionId);
   const [title, setTitle] = useState("");
@@ -61,6 +70,25 @@ export default function NewDialog({ defaultOpen = false }: Props) {
   const [errors, setErrors] = useState<{ title?: string; company?: string; salary?: string }>({});
 
   const isSubmittingRef = useRef(false);
+
+  useEffect(() => {
+    if (incomingJob && incomingJob.id !== processingJobRef.current) {
+      processingJobRef.current = incomingJob.id;
+      const jobMandate = {...incomingJob};
+      setIncomingJob(null);
+      console.log("Incoming job mandate detected:", jobMandate);
+      loadCvSession("");
+      initJobMandate({
+        title: jobMandate.title || "",
+        company: jobMandate.company || "",
+        url: jobMandate.url || "",
+        description: jobMandate.mandate || "",
+        salary: jobMandate.salary ? convertToNumber(jobMandate.salary) : null,
+      });
+      // close the dialog if it was open
+      (() => setOpen(false))();
+    }
+  }, [incomingJob, initJobMandate, loadCvSession, setIncomingJob]);
 
   const reset = () => {
     setTitle("");
@@ -116,7 +144,7 @@ export default function NewDialog({ defaultOpen = false }: Props) {
         }
       }}
     >
-      <DialogContent className="bg-surface text-foreground sm:max-w-lg">
+      <DialogContent className="bg-surface text-foreground sm:max-w-lg max-h-full">
         <DialogHeader>
           <DialogTitle>Create a Resume</DialogTitle>
           <DialogDescription>
@@ -129,7 +157,7 @@ export default function NewDialog({ defaultOpen = false }: Props) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
           onSubmit={submit}
-          className="space-y-4"
+          className="space-y-4 overflow-y-hidden overflow-x-hidden max-h-full"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id="job-title" label="Job title" icon={Type} required error={errors.title}>
@@ -191,7 +219,7 @@ export default function NewDialog({ defaultOpen = false }: Props) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Paste the role description, requirements, stack…"
-              className="min-h-36 bg-surface-elevated/60"
+              className="min-h-32 max-h-60 overflow-y-auto bg-surface-elevated/60"
             />
           </Field>
 

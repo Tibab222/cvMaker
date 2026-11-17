@@ -9,6 +9,7 @@ import {
   FileX,
   FolderOpen,
   Loader2,
+  Trash2,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -32,9 +33,10 @@ interface Props {
 }
 
 export default function JobDrawer({ rawJob, onOpenChange }: Props) {
-  const { getApplicationInfos } = useDashboard();
+  const { getApplicationInfos, deleteApplication } = useDashboard();
   const [jobDetails, setJobDetails] = useState<ApplicationWithEvents | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const handleOpenFolder = async (applicationId: string) => {
@@ -73,6 +75,21 @@ export default function JobDrawer({ rawJob, onOpenChange }: Props) {
 
   const isOpen = !!rawJob;
   const job = jobDetails ? mapApplicationWithEventsToJobCard(jobDetails) : null;
+
+  const handleDelete = async () => {
+    if (!rawJob) return;
+    if (window.confirm("Are you sure you want to delete this job application?")) {
+      setIsDeleting(true);
+      try {
+        const success = await deleteApplication(rawJob.id);
+        if (success) {
+          onOpenChange(false);
+        }
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
   
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -117,12 +134,32 @@ export default function JobDrawer({ rawJob, onOpenChange }: Props) {
                 </div>
               </div>
 
-              { job.url &&
-                <Button asChild variant="outline" size="sm" className="w-fit">
-                <a href={job.url} target="_blank" rel="noreferrer">
-                  <ExternalLink className="size-3.5" /> Open job posting
-                </a>
-              </Button>}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {job.url ? (
+                  <Button asChild variant="outline" size="sm" className="w-fit">
+                    <a href={job.url} target="_blank" rel="noreferrer">
+                      <ExternalLink className="size-3.5" /> Open job posting
+                    </a>
+                  </Button>
+                ) : (
+                  <div />
+                )}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-fit"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  aria-label="Delete application"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="size-3.5" />
+                  )}
+                  Delete application
+                </Button>
+              </div>
             </SheetHeader>
 
             <Tabs defaultValue="timeline" className="flex min-h-0 flex-1 flex-col">

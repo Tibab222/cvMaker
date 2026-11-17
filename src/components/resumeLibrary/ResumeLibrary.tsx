@@ -141,7 +141,11 @@ function ResumeCard({ resume, onDelete, onRename, onLoadResume }: ResumeCardProp
 
           <div className="mt-auto flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock3 className="size-3.5" />
-            {resume.updated}
+            {new Date(resume.updated).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
           </div>
         </CardContent>
 
@@ -210,7 +214,7 @@ export default function ResumeLibrary() {
         if (sort === "match") return (b.match ?? 0) - (a.match ?? 0);
         const aUpdated = new Date(a.updated).getTime();
         const bUpdated = new Date(b.updated).getTime();
-        return aUpdated - bUpdated;
+        return bUpdated - aUpdated;
       });
   }, [resumes, search, sort]);
 

@@ -9,6 +9,7 @@ import type { Experience } from "@shared/Experience.interface";
 import { Building, ChevronDown, MapPin, Calendar as LucideCalendar, Edit2, Trash2, X, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import LocationInput from "@/components/ui/LocationInput";
 
 export default function ExperienceCard({
     experience,
@@ -177,14 +178,14 @@ export default function ExperienceCard({
 
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-muted-foreground">Location</label>
-                                <InputGroup>
-                                    <InputGroupInput 
-                                        placeholder="Location (e.g. San Francisco, CA or Remote)" 
-                                        value={formData.location} 
-                                        onChange={(e) => setFormData({...formData, location: e.target.value})} 
-                                    />
-                                    <InputGroupAddon><MapPin className="h-4 w-4" /></InputGroupAddon>
-                                </InputGroup>
+                                <LocationInput 
+                                    placeholder="Location (e.g. San Francisco, CA or Remote)" 
+                                    value={formData.location} 
+                                    onChange={(next) => {
+                                        setFormData({...formData, location: next});
+                                    }
+                                    } 
+                                />
                             </div>
 
                             <div className="space-y-2 mt-1">

@@ -1,14 +1,15 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CVSelectionContext } from './context';
-import { type AIAnalysisState } from './types';
+import { INITIAL_HEADER, type AIAnalysisState } from './types';
 import { api } from '@/api';
 import { AIAnalysisStatus } from '@shared/AIAnalysisStatus';
 import { useProfileStore } from '@/store/profile';
 import { Language } from '@shared/profile.interface';
 import { type EntityType, buildCustomKey, buildScoreKey } from '@shared/utils';
-import { type CVSelection, type CVSessionDataDTO, type JobInfos } from '@shared/jobApplications.type';
+import { JobApplicationStatus, type CVSelection, type CVSessionDataDTO, type JobInfos } from '@shared/jobApplications.type';
 import { toast } from 'sonner';
 import { useUiStore } from '@/store/ui';
+import { useKeyboardShortcut } from '@/hooks/use-keyboard-shortcut';
 
 export interface CVSelectionContextType {
   id: string | null; // application id, null until the session is saved
@@ -24,6 +25,7 @@ export interface CVSelectionContextType {
   rewritingKeys: string[];
   isSaving: boolean;
   summaryBullets: string[];
+  applicationStatus: JobApplicationStatus;
   save: () => Promise<string | null>;
   isItemRewriting: (entityType: EntityType, id: string) => boolean;
   setTitle: (title: string) => void;
@@ -33,6 +35,7 @@ export interface CVSelectionContextType {
   isBulletSelected: (parentId: string, bulletId: string) => boolean;
   toggleSkill: (id: string) => void;
   toggleEducation: (id: string) => void;
+  setHeaderInfo: (field: keyof CVSelection['headerInfos'], value: boolean | string, customLinkLabel?: string) => void;
   setIncludePhoto: (include: boolean) => void;
   setShowSummary: (show: boolean) => void;
   runFullAIAnalysis: (rawMandate: string) => Promise<void>;
@@ -47,6 +50,9 @@ export interface CVSelectionContextType {
   initJobMandate: (infos: Partial<JobInfos>) => void;
   updateJobInfos: (infos: Partial<JobInfos>) => void;
   setSummaryBullets: (bullets: string[]) => void;
+  registerSaveContributor: (key: string, getData: () => unknown) => () => void;
+  registerLoadHandler: (handler: (sessionData: CVSessionDataDTO) => void) => () => void;
+  updateApplicationStatus: (newStatus: JobApplicationStatus) => void;
 }
 
 export type CustomTextMap = Record<string, string>;
@@ -58,9 +64,11 @@ const EMPTY_KEYWORDS: KeywordMatch = { matched: [], missing: [] };
 
 export function CVSelectionProvider({ children }: { children: React.ReactNode }) {
   const { education, profile, experience, projects } = useProfileStore();
-  const { activeCvSessionId } = useUiStore();
+  const { activeCvSessionId, loadCvSession } = useUiStore();
+  const [applicationStatus, setApplicationStatus] = useState<JobApplicationStatus>(JobApplicationStatus.DRAFT);
   const [title, setTitle] = useState<string>(() => "Resume - " + (profile?.firstName || "Draft") + " - " + Date.now());
   const [selection, setSelection] = useState<CVSelection>({
+    headerInfos: INITIAL_HEADER,
     selectedExpIds: [],
     selectedProjectIds: [],
     selectedBullets: {},
@@ -86,19 +94,70 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   const [id, setId] = useState<string | null>(null); // can be null or undefined at the beginning!
   const [isSaving, setIsSaving] = useState(false);
   const [summaryBullets, setSummaryBullets] = useState<string[]>([]);
+  const saveContributorsRef = useRef<Map<string, () => unknown>>(new Map());
+  const loadHandlersRef = useRef<Set<(sessionData: CVSessionDataDTO) => void>>(new Set());
+
+  const registerSaveContributor = useCallback((key: string, getData: () => unknown) => {
+    saveContributorsRef.current.set(key, getData);
+    return () => { saveContributorsRef.current.delete(key); };
+  }, []);
+
+  const registerLoadHandler = useCallback((handler: (sessionData: CVSessionDataDTO) => void) => {
+    loadHandlersRef.current.add(handler);
+    return () => { loadHandlersRef.current.delete(handler); };
+  }, []);
 
   const runFullAIAnalysis = useCallback(async (rawMandate: string) => {
     setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Loading, isCurrentJob: true }));
     setJobInfos(prev => ({ ...prev, description: rawMandate }));
 
-    const analysisResult = await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, true);
+    const analysisResult = await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, true, jobInfos.title || undefined);
     if ('error' in analysisResult) {
       console.error('AI Analysis Error:', analysisResult.error);
       setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Error }));
     }
-  }, [profile?.language]);
+  }, [jobInfos.title, profile?.language]);
+
+  const runLocalAnalysis = useCallback(async (rawMandate: string) => {
+    setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Loading, isCurrentJob: false }));
+    setJobInfos(prev => ({ ...prev, description: rawMandate }));
+    await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, false, jobInfos.title || undefined);
+  }, [jobInfos.title, profile?.language]);
+
+  const cleanUpProvider = useCallback(() => {
+    console.log("Cleaning up CVSelectionProvider state...");
+    setId(null);
+    setTitle("Resume - " + (profile?.firstName || "Draft") + " - " + Date.now());
+    setSelection({
+      headerInfos: INITIAL_HEADER,
+      selectedExpIds: [],
+      selectedProjectIds: [],
+      selectedBullets: {},
+      selectedSkillsIds: [],
+      selectedEducationIds: []
+    });
+    setAiState({
+      status: AIAnalysisStatus.Idle,
+      isCurrentJob: false
+    });
+    setJobInfos({
+      title: "",
+      company: "",
+      url: "",
+      description: "",
+      focus: "",
+      keywords: [],
+    });
+    setCustomTexts({});
+    setScores({});
+    setRewritingKeys([]);
+    setIsSaving(false);
+    setSummaryBullets([]);
+    setApplicationStatus(JobApplicationStatus.DRAFT);
+  }, [profile?.firstName]);
 
   const initJobMandate = useCallback((infos: Partial<JobInfos>) => {
+    cleanUpProvider();
     setJobInfos(prev => ({
       ...prev,
       ...infos,
@@ -111,15 +170,9 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     }
 
     if (infos.description?.trim()) {
-      runFullAIAnalysis(infos.description.trim());
+      runLocalAnalysis(infos.description.trim());
     }
-  }, [runFullAIAnalysis]);
-
-  const runLocalAnalysis = useCallback(async (rawMandate: string) => {
-    setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Loading, isCurrentJob: false }));
-    setJobInfos(prev => ({ ...prev, description: rawMandate }));
-    await api.analyseMandate(rawMandate, profile?.language || Language.ENGLISH, false);
-  }, [profile?.language]);
+  }, [cleanUpProvider, runLocalAnalysis]);
 
   const runAIRewrite = useCallback(async () => {
     setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Rewriting }));
@@ -193,16 +246,34 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const loadSession = useCallback((sessionData: CVSessionDataDTO) => {
+    if (!sessionData) return;
     setId(sessionData.id);
     setTitle(sessionData.title);
+    if(!sessionData.selection.headerInfos) sessionData.selection.headerInfos = INITIAL_HEADER;
     setSelection(sessionData.selection);
     if (sessionData.jobInfos) {
       setJobInfos(sessionData.jobInfos);
     }
+    setApplicationStatus(sessionData.status ?? JobApplicationStatus.DRAFT);
     setCustomTexts(sessionData.customTexts || {});
     setScores(sessionData.scores || {});
     setSummaryBullets(sessionData.topResumeSummary || []);
 
+    loadHandlersRef.current.forEach(handler => handler(sessionData));
+
+  }, []);
+
+  const setHeaderInfo = useCallback((field: keyof CVSelection['headerInfos'], value: boolean | string, customLinkLabel?: string) => {
+    setSelection(prev => {
+      const newHeaderInfos = {
+        ...prev.headerInfos,
+        ...(field !== 'customLinks' ? { [field]: value } : {}),
+      };
+      if (customLinkLabel && field === 'customLinks' && typeof value === 'boolean') {
+        newHeaderInfos.customLinks[customLinkLabel] = value;
+      }
+      return { ...prev, headerInfos: newHeaderInfos };
+    });
   }, []);
 
   useEffect(() => {
@@ -312,6 +383,11 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
         }
 
         case AIAnalysisStatus.Success:{
+          const item = data.data as { id: string };
+          if (item?.id) {
+            setId(item.id);
+            loadCvSession(item.id);
+          }
           setAiState(prev => ({ ...prev, status: AIAnalysisStatus.Success, isCurrentJob: false }));
           setSelection(prev => ({
             ...prev,
@@ -358,6 +434,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
           const item = data.data as { topResumeSummary: string[] };
           setSummaryBullets(item.topResumeSummary);
           setAiState(prev => ({ ...prev, status: AIAnalysisStatus.TOP_RESUME }));
+          setApplicationStatus(JobApplicationStatus.REVIEW);
           break;
         }
 
@@ -377,6 +454,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       removeStatus();
       setRewritingKeys([]);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.language, education, updateCustomField]);
 
   const getCustomField = useCallback((entityType: EntityType, id: string, field: string, defaultValue: string = '') => {
@@ -497,6 +575,10 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   const save = useCallback(async (): Promise<string | null> => {
     setIsSaving(true);
     try {
+      const extraData: Record<string, unknown> = {};
+      saveContributorsRef.current.forEach((getData, key) => {
+        extraData[key] = getData();
+      });
       const payload: Omit<CVSessionDataDTO, 'id'> & { id?: string } = {
         id: id || undefined,
         title,
@@ -505,6 +587,8 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
         customTexts,
         scores,
         topResumeSummary: summaryBullets,
+        status: applicationStatus,
+        ...extraData
       };
 
       const result = await api.saveCVSession(payload);
@@ -520,7 +604,31 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     } finally {
       setIsSaving(false);
     }
-  }, [id, title, selection, jobInfos, customTexts, scores, summaryBullets]);
+  }, [id, title, selection, jobInfos, customTexts, scores, summaryBullets, applicationStatus]);
+
+  useKeyboardShortcut('s', () => {
+    if (!isSaving) {
+      void save();
+    }
+  });
+
+  const updateApplicationStatus = useCallback((newStatus: JobApplicationStatus) => {
+    if (!id) {
+      setApplicationStatus(newStatus);
+      toast.info(`Status set to ${newStatus} (will be saved with your CV)`);
+      return;
+    }
+    api.updateApplicationStatus(id, newStatus).then((updatedStatus) => {
+      if (updatedStatus) {
+        setApplicationStatus(updatedStatus);
+        toast.success(`Application status updated to ${updatedStatus}`);
+      } else {
+        toast.error("Failed to update application status");
+      }
+    }).catch(() => {
+      toast.error("Failed to update application status");
+    });
+  }, [id]);
 
   return (
     <CVSelectionContext.Provider value={{
@@ -540,6 +648,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       rewritingKeys,
       isSaving,
       summaryBullets,
+      applicationStatus,
       save,
       isItemRewriting,
       toggleExperience, 
@@ -547,6 +656,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       toggleBullet,
       toggleSkill,
       toggleEducation,
+      setHeaderInfo,
       setIncludePhoto,
       setShowSummary,
       isBulletSelected,
@@ -559,7 +669,10 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       runAIRewrite,
       initJobMandate,
       updateJobInfos,
-      setSummaryBullets
+      setSummaryBullets,
+      registerSaveContributor,
+      registerLoadHandler,
+      updateApplicationStatus
     }}>
       {children}
     </CVSelectionContext.Provider>

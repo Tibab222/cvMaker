@@ -157,8 +157,8 @@ export async function rewriteResume({ event, options }: RewriteResumeProps): Pro
     const profileContext = `
       Target Job: ${targetJob}
       Target Keywords: ${targetKeywords.join(', ')}
-      Experience History: ${experiencesHistory}
-      Project History: ${projectsHistory}
+      Candidate Experience History: ${experiencesHistory}
+      Candidate Project History: ${projectsHistory}
     `.trim();
     const topResume = await generateTopResume({ profileContext, targetJob, language });
 

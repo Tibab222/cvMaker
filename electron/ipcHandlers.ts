@@ -48,6 +48,22 @@ export function registerIpcHandlers() {
         BrowserWindow.fromWebContents(event.sender)?.close();
     });
 
+    ipcMain.handle("open-folder", async (_event, folderPath: string) => {
+        if (!folderPath) return false;
+
+        try {
+            const errorMessage = await shell.openPath(folderPath);
+            if (errorMessage) {
+                console.error("Error opening folder:", errorMessage);
+                return false;
+            }
+            return true;
+        } catch (error) {
+            console.error("Error opening folder:", error);
+            return false;
+        }
+    });
+
     ipcMain.handle('getProfilesList', async () => {
         const profiles = [];
         try {
@@ -174,5 +190,8 @@ export function registerIpcHandlers() {
     ipcMain.handle('get-resume-pdf', async (event, applicationId: string) => {
         const pdfFilePath = JobApplicationManager.getInstance().getPdfFilePath(applicationId);
         return pdfFilePath ? await fs.promises.readFile(pdfFilePath) : null;
+    });
+    ipcMain.handle('delete-application', (event, applicationId: string) => {
+        return JobApplicationManager.getInstance().deleteApplication(applicationId);
     });
 }
