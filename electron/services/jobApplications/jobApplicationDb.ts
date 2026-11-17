@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import path from "node:path";
 import fs from "node:fs";
 import { ApplicationEventType, JobApplicationStatus } from "../../../shared/jobApplications.type";
+import { DiscoveredJobStatus, JobSourceKind } from "../../../shared/discovery.types";
 import { addColumnIfMissing, Migration, runMigrations } from "../db/migrations";
 
 const statusList = (statuses: string[]) => statuses.map((status) => `'${status}'`).join(", ");
@@ -105,6 +106,79 @@ const MIGRATIONS: Migration[] = [
             `);
         },
     },
+    {
+        version: 3,
+        name: "job discovery (sources, discovered offers, settings)",
+        up: (db) => {
+            db.exec(`
+                CREATE TABLE job_sources (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    kind TEXT NOT NULL CHECK (kind IN (${statusList(Object.values(JobSourceKind))})),
+                    token TEXT NOT NULL,
+                    label TEXT NOT NULL,
+                    enabled INTEGER NOT NULL DEFAULT 1,
+                    last_run_at DATETIME,
+                    last_error TEXT,
+                    last_found INTEGER NOT NULL DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (kind, token)
+                );
+
+                CREATE TABLE discovered_jobs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    source_id INTEGER REFERENCES job_sources(id) ON DELETE SET NULL,
+                    origin TEXT NOT NULL DEFAULT 'board' CHECK (origin IN ('board', 'extension')),
+                    external_key TEXT NOT NULL UNIQUE, -- dedup key: same offer seen twice is stored once
+                    company TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    location TEXT,
+                    remote INTEGER NOT NULL DEFAULT 0,
+                    url TEXT,
+                    description TEXT NOT NULL DEFAULT '',
+                    salary TEXT,
+                    posted_at DATETIME,
+                    discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    score REAL,
+                    matched_keywords TEXT,
+                    missing_keywords TEXT,
+                    status TEXT NOT NULL DEFAULT 'NEW' CHECK (status IN (${statusList(Object.values(DiscoveredJobStatus))}))
+                );
+                CREATE INDEX idx_discovered_jobs_status ON discovered_jobs(status, score);
+
+                CREATE TABLE app_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
+            `);
+        },
+    },
+    {
+        version: 4,
+        name: "keyword searches as job sources (adzuna)",
+        up: (db) => {
+            // SQLite cannot alter a CHECK constraint: job_sources is rebuilt with the new kind list.
+            // Foreign keys are off during migrations, so discovered_jobs.source_id keeps pointing at the same ids.
+            db.exec(`
+                CREATE TABLE job_sources_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    kind TEXT NOT NULL CHECK (kind IN (${statusList(Object.values(JobSourceKind))})),
+                    token TEXT NOT NULL,
+                    label TEXT NOT NULL,
+                    enabled INTEGER NOT NULL DEFAULT 1,
+                    last_run_at DATETIME,
+                    last_error TEXT,
+                    last_found INTEGER NOT NULL DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (kind, token)
+                );
+                INSERT INTO job_sources_new (id, kind, token, label, enabled, last_run_at, last_error, last_found, created_at)
+                SELECT id, kind, token, label, enabled, last_run_at, last_error, last_found, created_at FROM job_sources;
+                DROP TABLE job_sources;
+                ALTER TABLE job_sources_new RENAME TO job_sources;
+                CREATE INDEX IF NOT EXISTS idx_discovered_jobs_company_title ON discovered_jobs(company COLLATE NOCASE, title COLLATE NOCASE);
+            `);
+        },
+    },
 ];
 
 export class JobApplicationDb {
@@ -141,7 +215,7 @@ export class JobApplicationDb {
         this.db = new Database(dbPath);
 
         runMigrations(this.db, MIGRATIONS, "job_applications");
-        // enabled after migrations: the pragma is a no-op inside a transaction, and table rebuilds are easier without it
+        // runMigrations turns enforcement off while it rebuilds tables; it is on for everything else
         this.db.pragma("foreign_keys = ON");
     }
 }

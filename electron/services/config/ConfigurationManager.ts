@@ -47,6 +47,11 @@ export class ConfigurationManager {
         });
     }
 
+    /** Removes a key (electron-store refuses undefined values). */
+    public remove<K extends keyof UserConfig>(key: K): void {
+        this.store.delete(key);
+    }
+
     public getExportPath(): string {
         return this.store.get('exportPath', '');
     }

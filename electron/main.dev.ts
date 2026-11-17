@@ -4,6 +4,10 @@ import { fileURLToPath } from 'url';
 import { registerIpcHandlers } from './ipcHandlers';
 import { existsSync, mkdirSync } from 'fs';
 import { HttpServerService } from './services/HttpServer/HttpServerService';
+import { getDiscoveryManager } from './services/discovery';
+import { ProfileService } from './services/ProfileService';
+import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
+import { buildAutofillProfile } from './functions/autofillProfile';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,7 +81,27 @@ function createWindow() {
 app.whenReady().then(() => {
   registerIpcHandlers();
   createWindow();
-  HttpServerService.getInstance().init(() => win);
+  HttpServerService.getInstance().init(() => win, {
+    getStatus: () => {
+      const profilePath = ProfileService.getInstance().getCurrentProfilePath();
+      return {
+        app: 'cvmaker',
+        profileLoaded: JobApplicationManager.getInstance().isConnected(),
+        profileName: profilePath ? path.basename(profilePath) : null,
+      };
+    },
+    getAutofillProfile: async () => {
+      const data = await ProfileService.getInstance().getCurrentProfile();
+      return data ? buildAutofillProfile(data) : null;
+    },
+    queueJob: (payload) => getDiscoveryManager().addFromExtension(payload),
+  });
+  // daily job search; it only runs while the app is open (a missed run happens at the next launch)
+  getDiscoveryManager().startScheduler();
+});
+
+app.on('before-quit', () => {
+  getDiscoveryManager().stopScheduler();
 });
 
 app.on('window-all-closed', () => {

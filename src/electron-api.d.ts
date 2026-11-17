@@ -11,6 +11,7 @@ import { Experience } from '../shared/Experience.interface';
 import { Project } from '../shared/projects.interface';
 import { AIAnalysisStatus } from '../shared/AIAnalysisStatus';
 import { CoverLetterStatusPayload, GenerateCoverLetterDTO } from '../shared/CoverLetter.types';
+import { AddSourceResult, AdzunaConnectResult, AdzunaQuery, AdzunaStatus, DiscoveredJob, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings, JobSource, ProfileFilterSuggestion } from '../shared/discovery.types';
 
 export {};
 
@@ -62,6 +63,27 @@ declare global {
       updateApplicationDetails: (applicationId: string, details: ApplicationDetailsDto) => Promise<boolean>;
       getReminders: (limit?: number) => Promise<Reminder[]>;
       onJobReceived: (callback: (jobData: JobOfferPayload) => void) => () => void;
+      discovery: {
+        listSources: () => Promise<JobSource[]>;
+        addSource: (input: string) => Promise<AddSourceResult>;
+        removeSource: (id: number) => Promise<boolean>;
+        setSourceEnabled: (id: number, enabled: boolean) => Promise<boolean>;
+        getSettings: () => Promise<DiscoverySettings>;
+        saveSettings: (settings: DiscoverySettings) => Promise<DiscoverySettings>;
+        suggestFilters: () => Promise<ProfileFilterSuggestion | null>;
+        addSearch: (query: AdzunaQuery) => Promise<AddSourceResult>;
+        adzunaStatus: () => Promise<AdzunaStatus>;
+        connectAdzuna: (appId: string, appKey: string) => Promise<AdzunaConnectResult>;
+        disconnectAdzuna: () => Promise<AdzunaStatus>;
+        listJobs: () => Promise<DiscoveredJob[]>;
+        setJobStatus: (id: number, status: DiscoveredJobStatus) => Promise<boolean>;
+        prepareJob: (id: number) => Promise<JobOfferPayload | null>;
+        start: () => Promise<DiscoveryRunStatus>;
+        cancel: () => Promise<void>;
+        getStatus: () => Promise<DiscoveryRunStatus>;
+        onStatus: (callback: (status: DiscoveryRunStatus) => void) => () => void;
+        onJobsChanged: (callback: () => void) => () => void;
+      };
     };
   }
 }

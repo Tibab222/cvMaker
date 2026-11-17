@@ -1,15 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "CVMaker Extractor",
-  "version": "1.0.0",
-  "description": "Extract information from job offers for CVMaker Engine",
+  "name": "CVMaker",
+  "version": "1.1.0",
+  "description": "Save job offers to CVMaker and prefill application forms from your profile. Nothing is ever submitted for you.",
   "permissions": [
     "activeTab",
     "scripting"
   ],
+  "icons": {
+    "128": "icons/logo.png"
+  },
   "sidebar_action": {
-    "default_title": "CVMaker Engine",
-    "default_panel": "sidebar/sidebar.html"
+    "default_title": "CVMaker",
+    "default_panel": "sidebar/sidebar.html",
+    "default_icon": "icons/logo.png"
   },
   "commands": {
     "_execute_sidebar_action": {
@@ -24,6 +28,7 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content/index.js"],
+      "all_frames": true,
       "run_at": "document_idle"
     }
   ]

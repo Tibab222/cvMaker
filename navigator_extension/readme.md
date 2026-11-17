@@ -88,8 +88,29 @@ interface JobOfferPayload {
   url: string;
   mandate: string;
   extractedAt: string;
+  mode?: 'open' | 'queue'; // queue = keep it in the Opportunities page instead of opening the editor
 }
 ```
+
+---
+
+## Panel: Offer and Apply tabs
+
+- **Offer** reads the posting on the current tab. *Tailor my CV* opens it in the resume editor; *Save for later* adds it to the **Opportunities** queue of the desktop app (shortlisted, scored against the profile).
+- **Apply** prefills an application form from the profile (`GET /api/profile`): name, email, phone, links, location, current title and company. It runs in every frame (`all_frames`), because many forms (Greenhouse, Workday...) are embedded in an iframe.
+  - Filled fields are outlined in green, fields left to the user in amber.
+  - Never filled: file uploads, free-text questions, choices, and anything sensitive (salary, work authorization, visa, birth date, gender, EEO questions, consents). Existing values are never overwritten.
+  - The extension never submits a form.
+
+### Local server routes
+
+| Route | Who can call it | Purpose |
+|-------|-----------------|---------|
+| `GET /api/status` | extension, local tools | Is the app running, is a profile open |
+| `GET /api/profile` | extension only (Origin required) | Autofill subset of the profile |
+| `POST /api/job` | extension, local tools | Open an offer in the editor, or queue it (`mode: 'queue'`) |
+
+Requests from regular websites are rejected (403): only `chrome-extension://`, `moz-extension://` and `safari-web-extension://` origins are accepted.
 
 ---
 ## Scraper Architecture & Adapters

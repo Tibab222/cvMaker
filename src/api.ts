@@ -8,6 +8,7 @@ import type { Language } from "@shared/profile.interface";
 import type { ProfilesData } from "@shared/profilesData.interface";
 import type { Project } from "@shared/projects.interface";
 import type { RewriteResumeOptions } from "@shared/RewriteResume.type";
+import type { AdzunaQuery, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings } from "@shared/discovery.types";
 
 export const api = {
     minimize: () => window.api.minimize(),
@@ -55,4 +56,25 @@ export const api = {
     updateApplicationDetails: async (applicationId: string, details: ApplicationDetailsDto) => { return await window.api.updateApplicationDetails(applicationId, details) },
     getReminders: async (limit?: number) => { return await window.api.getReminders(limit) },
     onJobReceived: (callback: (jobData: JobOfferPayload) => void) => window.api.onJobReceived(callback),
+    discovery: {
+        listSources: () => window.api.discovery.listSources(),
+        addSource: (input: string) => window.api.discovery.addSource(input),
+        removeSource: (id: number) => window.api.discovery.removeSource(id),
+        setSourceEnabled: (id: number, enabled: boolean) => window.api.discovery.setSourceEnabled(id, enabled),
+        getSettings: () => window.api.discovery.getSettings(),
+        saveSettings: (settings: DiscoverySettings) => window.api.discovery.saveSettings(settings),
+        suggestFilters: () => window.api.discovery.suggestFilters(),
+        addSearch: (query: AdzunaQuery) => window.api.discovery.addSearch(query),
+        adzunaStatus: () => window.api.discovery.adzunaStatus(),
+        connectAdzuna: (appId: string, appKey: string) => window.api.discovery.connectAdzuna(appId, appKey),
+        disconnectAdzuna: () => window.api.discovery.disconnectAdzuna(),
+        listJobs: () => window.api.discovery.listJobs(),
+        setJobStatus: (id: number, status: DiscoveredJobStatus) => window.api.discovery.setJobStatus(id, status),
+        prepareJob: (id: number) => window.api.discovery.prepareJob(id),
+        start: () => window.api.discovery.start(),
+        cancel: () => window.api.discovery.cancel(),
+        getStatus: () => window.api.discovery.getStatus(),
+        onStatus: (callback: (status: DiscoveryRunStatus) => void) => window.api.discovery.onStatus(callback),
+        onJobsChanged: (callback: () => void) => window.api.discovery.onJobsChanged(callback),
+    },
 }

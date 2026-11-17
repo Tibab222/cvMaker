@@ -1,16 +1,35 @@
 import http, { Server, IncomingMessage, ServerResponse } from 'http';
 import { BrowserWindow } from 'electron';
 import { JobOfferPayload } from '../../../shared/Extension.types';
+import { AutofillProfile, LocalServerStatus } from '../../../shared/discovery.types';
+
+/** What the server can do besides opening an offer in the editor. Injected, so this file stays free of app logic. */
+export interface LocalServerHandlers {
+  getStatus: () => LocalServerStatus;
+  getAutofillProfile: () => Promise<AutofillProfile | null>;
+  queueJob: (payload: JobOfferPayload) => Promise<{ id: number; score: number | null; duplicate: boolean }>;
+}
 
 /** Origins of browser-extension pages (Chrome/Edge/Brave and Firefox). Regular websites never match. */
 const EXTENSION_ORIGIN = /^(chrome-extension|moz-extension|safari-web-extension):\/\/[a-z0-9-]+$/i;
 const MAX_BODY_BYTES = 2 * 1024 * 1024; // a job posting is a few KB; this only guards against abuse
+
+/** Reads the optional delivery mode without failing on bad JSON (parsing errors are reported elsewhere). */
+function parsedMode(body: string): string | null {
+  try {
+    const mode = (JSON.parse(body) as { mode?: unknown }).mode;
+    return typeof mode === 'string' ? mode : null;
+  } catch {
+    return null;
+  }
+}
 
 export class HttpServerService {
   private static instance: HttpServerService;
   private server: Server | null = null;
   private readonly PORT = 9123;
   private readonly HOST = '127.0.0.1';
+  private handlers: LocalServerHandlers | null = null;
 
   private constructor() {}
 
@@ -21,7 +40,8 @@ export class HttpServerService {
     return HttpServerService.instance;
   }
 
-  public init(mainWindowGetter: () => BrowserWindow | null): void {
+  public init(mainWindowGetter: () => BrowserWindow | null, handlers?: LocalServerHandlers): void {
+    this.handlers = handlers ?? null;
     if (this.server) {
       console.warn('[HttpServerService] Server is already initialized.');
       return;
@@ -44,7 +64,17 @@ export class HttpServerService {
         return;
       }
 
-      if (req.method === 'POST' && req.url === '/api/job') {
+      const route = (req.url ?? '').split('?')[0];
+      if (req.method === 'GET' && route === '/api/status') {
+        this.sendJson(res, 200, { status: 'success', ...(this.handlers?.getStatus() ?? { app: 'cvmaker', profileLoaded: false, profileName: null }) });
+      } else if (req.method === 'GET' && route === '/api/profile') {
+        // personal data: only for the extension itself, never for local tools without an Origin
+        if (!origin) {
+          this.sendJson(res, 403, { status: 'error', message: 'Only the browser extension can read the profile' });
+          return;
+        }
+        this.handleProfileEndpoint(res);
+      } else if (req.method === 'POST' && route === '/api/job') {
         this.handleJobEndpoint(req, res, mainWindowGetter);
       } else {
         this.sendJson(res, 404, { status: 'error', message: 'Route not found' });
@@ -69,7 +99,7 @@ export class HttpServerService {
   private handleCors(res: ServerResponse, origin: string): void {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   }
 
@@ -130,6 +160,12 @@ export class HttpServerService {
       }
 
       console.log(`[HttpServerService] Offer received: ${jobData.title} @ ${jobData.company}`);
+
+      // 'queue': keep it for the morning review instead of opening the editor now
+      if ((parsedMode(body)) === 'queue') {
+        this.queueJob(res, jobData);
+        return;
+      }
       const mainWindow = mainWindowGetter();
       if (!mainWindow || mainWindow.isDestroyed()) {
         this.sendJson(res, 503, { status: 'error', message: 'CV Maker window is not open' });
@@ -141,6 +177,34 @@ export class HttpServerService {
 
       this.sendJson(res, 200, { status: 'success', message: 'Offer received successfully' });
     });
+  }
+
+  private async handleProfileEndpoint(res: ServerResponse): Promise<void> {
+    try {
+      const profile = await this.handlers?.getAutofillProfile();
+      if (!profile) {
+        this.sendJson(res, 409, { status: 'error', message: 'Open a profile in CV Maker first' });
+        return;
+      }
+      this.sendJson(res, 200, { status: 'success', profile });
+    } catch (error) {
+      console.error('[HttpServerService] Profile read failed:', error);
+      this.sendJson(res, 500, { status: 'error', message: 'Could not read the profile' });
+    }
+  }
+
+  private async queueJob(res: ServerResponse, jobData: JobOfferPayload): Promise<void> {
+    if (!this.handlers) {
+      this.sendJson(res, 503, { status: 'error', message: 'Queue not available' });
+      return;
+    }
+    try {
+      const result = await this.handlers.queueJob(jobData);
+      this.sendJson(res, 200, { status: 'success', message: result.duplicate ? 'Already in your queue' : 'Added to your queue', ...result });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not queue the offer';
+      this.sendJson(res, 409, { status: 'error', message });
+    }
   }
 
   public stop(): void {

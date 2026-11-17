@@ -1,6 +1,7 @@
 import { api } from "@/api";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
@@ -53,11 +54,15 @@ const ExistingProfilesCard = ({setNewProfileMode}: {setNewProfileMode: (mode: bo
         checkAI();
     }, [setAiAvailable]);
 
-    const handleProfileSelect = (profileId: string) => {
+    const handleProfileSelect = async (profileId: string) => {
         const selectedProfile = profiles.find(profile => profile.id === profileId);
-        if (selectedProfile) {
-            loadProfile(selectedProfile.id);
+        if (!selectedProfile) return;
+        try {
+            // wait for the profile databases to be connected: every page reads them as soon as it mounts
+            await loadProfile(selectedProfile.id);
             setSelectedTab(Tabs.DASHBOARD);
+        } catch (error) {
+            toast.error(`Could not open this profile: ${(error as Error).message}`);
         }
     }
 

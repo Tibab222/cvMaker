@@ -21,4 +21,9 @@ export interface UserConfig {
         apiKey: string;
         preferredModel: string;
     },
+    /** Job search API key (app-wide: every profile can use it). */
+    adzuna?: {
+        appId: string;
+        appKey: string;
+    },
 }

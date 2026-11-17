@@ -605,10 +605,15 @@ export class JobApplicationManager {
         );
     }
 
-    private getDb() {
+    /** The profile database, shared with job discovery (same file, so offers can be joined with applications). */
+    public getDb() {
         if (!this.jobApplicationDb) {
             throw new Error("Database not connected. Call connect() first.");
         }
         return this.jobApplicationDb.getDbInstance();
+    }
+
+    public isConnected(): boolean {
+        return this.sessionsDir !== null;
     }
 }

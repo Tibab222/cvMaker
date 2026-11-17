@@ -56,5 +56,12 @@ export default defineConfig({
       '@': '/src',
       '@shared': '/shared',
     },
-  }
+  },
+  server: {
+    watch: {
+      // The browser extension is a separate build: on Windows, a watched folder cannot be deleted, so watching
+      // navigator_extension/dist made every `npm run build:*` of the extension fail with EPERM while `npm run dev` ran.
+      ignored: ['**/navigator_extension/**', '**/out/**'],
+    },
+  },
 })

@@ -32,15 +32,30 @@ export function runMigrations(db: Database.Database, migrations: Migration[], la
         return;
     }
 
-    for (const migration of sorted) {
-        if (migration.version <= currentVersion) continue;
+    if (currentVersion === latestVersion) return;
 
-        const apply = db.transaction(() => {
-            migration.up(db);
-            db.pragma(`user_version = ${migration.version}`);
-        });
-        apply();
-        console.log(`[${label}] Applied migration ${migration.version}: ${migration.name}`);
+    // Table rebuilds (the only way to change a CHECK constraint) drop the old table: with foreign keys enforced,
+    // that silently runs the ON DELETE actions of every child row. better-sqlite3 enforces them by default, and the
+    // pragma is a no-op inside a transaction, so it is turned off around the migrations and checked before each commit.
+    const foreignKeysWereOn = db.pragma("foreign_keys", { simple: true }) === 1;
+    if (foreignKeysWereOn) db.pragma("foreign_keys = OFF");
+    try {
+        for (const migration of sorted) {
+            if (migration.version <= currentVersion) continue;
+
+            const apply = db.transaction(() => {
+                migration.up(db);
+                const broken = db.pragma("foreign_key_check") as unknown[];
+                if (broken.length > 0) {
+                    throw new Error(`[${label}] Migration ${migration.version} left ${broken.length} broken foreign key(s): rolled back.`);
+                }
+                db.pragma(`user_version = ${migration.version}`);
+            });
+            apply();
+            console.log(`[${label}] Applied migration ${migration.version}: ${migration.name}`);
+        }
+    } finally {
+        if (foreignKeysWereOn) db.pragma("foreign_keys = ON");
     }
 }
 

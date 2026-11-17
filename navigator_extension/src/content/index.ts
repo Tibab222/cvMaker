@@ -1,48 +1,81 @@
 import browser from 'webextension-polyfill';
 import { extractJobFromCurrentPageWhenReady } from '../scrapers';
-import { ExtractRequestMessage, ExtractResponseMessage } from '../core/messages';
+import type { AutofillReportMessage, ContentMessage, ExtractResponseMessage } from '../core/messages';
+import { autofillDocument, clearAutofillHighlights } from '../autofill/fill';
 import './styles.css';
 
-console.log('[CVMaker Extractor] Content script active on page.');
+/**
+ * Runs in every frame: application forms are often embedded in an iframe (Greenhouse, Workday...).
+ * Offer extraction only answers from the top frame; autofill runs in each frame and reports back to the panel.
+ */
+const isTopFrame = window === window.top;
+
+const HIGHLIGHT_CLASSES = ['cvmaker-highlight-title', 'cvmaker-highlight-company', 'cvmaker-highlight-mandate'];
 
 function applyHighlight(element: Element | null | undefined, className: string): void {
-  if (!element) return;
-  element.classList.add(className);
+  element?.classList.add(className);
 }
 
 function clearHighlights(): void {
-  const classes = ['cvmaker-highlight-title', 'cvmaker-highlight-company', 'cvmaker-highlight-mandate'];
-  classes.forEach((cls) => {
+  HIGHLIGHT_CLASSES.forEach((cls) => {
     document.querySelectorAll('.' + cls).forEach((el) => el.classList.remove(cls));
   });
 }
 
-browser.runtime.onMessage.addListener(
-  (request: unknown, _sender, sendResponse: (response: ExtractResponseMessage) => void) => {
-    const msg = request as ExtractRequestMessage;
+type MessageListener = Parameters<typeof browser.runtime.onMessage.addListener>[0];
 
-    if (msg.action === 'EXTRACT_AND_HIGHLIGHT') {
+// Answers only some messages (and only from the top frame): returning undefined lets other frames stay silent,
+// which the polyfill typings do not model, hence the cast.
+const onMessage = (request: unknown, _sender: unknown, sendResponse: (response: unknown) => void): true | undefined => {
+  const message = request as ContentMessage;
+
+  switch (message.action) {
+    case 'EXTRACT_AND_HIGHLIGHT': {
+      if (!isTopFrame) return undefined;
       clearHighlights();
-
       extractJobFromCurrentPageWhenReady({ timeoutMs: 3000, minMandateLength: 100 }).then((extracted) => {
-        if (extracted.titleElement) applyHighlight(extracted.titleElement, 'cvmaker-highlight-title');
-        if (extracted.companyElement) applyHighlight(extracted.companyElement, 'cvmaker-highlight-company');
-        if (extracted.mandateElement) applyHighlight(extracted.mandateElement, 'cvmaker-highlight-mandate');
+        applyHighlight(extracted.titleElement, 'cvmaker-highlight-title');
+        applyHighlight(extracted.companyElement, 'cvmaker-highlight-company');
+        applyHighlight(extracted.mandateElement, 'cvmaker-highlight-mandate');
+        extracted.titleElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-        if (extracted.titleElement) {
-          extracted.titleElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-
-        sendResponse({
-          title: extracted.titleText || 'Not found',
-          company: extracted.companyText || 'Not found',
-          salary: extracted.salary || 'Not found',
-          mandate: extracted.mandateText || 'Not found',
+        const response: ExtractResponseMessage = {
+          title: extracted.titleText || '',
+          company: extracted.companyText || '',
+          salary: extracted.salary || '',
+          mandate: extracted.mandateText || '',
           url: extracted.uri,
-        });
+        };
+        sendResponse(response);
       });
+      return true; // async response
     }
 
-    return true;
+    case 'AUTOFILL': {
+      clearAutofillHighlights(document);
+      const report = autofillDocument(document, message.profile);
+      const hasFields = report.filled.length > 0 || report.attention.length > 0 || report.alreadyFilled > 0;
+      if (hasFields || isTopFrame) {
+        const reportMessage: AutofillReportMessage = {
+          action: 'AUTOFILL_REPORT',
+          runId: message.runId,
+          frame: isTopFrame ? 'page' : location.hostname,
+          report,
+        };
+        // the panel may already be closed: nothing to do then
+        browser.runtime.sendMessage(reportMessage).catch(() => undefined);
+      }
+      // the top frame acknowledges, so the panel knows the page can be filled at all
+      if (isTopFrame) sendResponse({ ok: true });
+      return undefined;
+    }
+
+    case 'CLEAR_AUTOFILL':
+      clearAutofillHighlights(document);
+      if (isTopFrame) clearHighlights();
+      return undefined;
   }
-);
+  return undefined;
+};
+
+browser.runtime.onMessage.addListener(onMessage as MessageListener);

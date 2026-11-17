@@ -11,6 +11,7 @@ import {
   PanelLeftOpen,
   Settings,
   Sparkles,
+  Telescope,
   UserRound,
   WandSparkles,
 } from "lucide-react";
@@ -59,6 +60,7 @@ const PROFILE_ITEMS: MenuItem[] = [
 
 const GENERAL_ITEMS: MenuItem[] = [
   { label: "Dashboard", value: Tabs.DASHBOARD, icon: IconLayoutBoard },
+  { label: "Opportunities", value: Tabs.OPPORTUNITIES, icon: Telescope },
 ];
 
 const DOCUMENT_ITEMS: MenuItem[] = [

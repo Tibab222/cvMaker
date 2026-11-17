@@ -250,7 +250,7 @@ export class LocalkeywordsExtractor {
      * KeywordSemanticEnhancer.cluster() on extractCandidates() when an embedder
      * is available — it catches paraphrase-level duplicates this can't.
      */
-    public static extractKeywords(text: string, language: Language = Language.ENGLISH): string[] {
+    public static extractKeywords(text: string, language: Language = Language.ENGLISH, { recordAffinity = true }: { recordAffinity?: boolean } = {}): string[] {
         const dbAffinity = KeywordsAffinityDatabase.getInstance();
         const finalCandidates = this.extractCandidates(text, language);
 
@@ -272,8 +272,11 @@ export class LocalkeywordsExtractor {
             .map(item => item.original)
             .slice(0, 25);
 
-        dbAffinity.incrementKeywords(result);
-        dbAffinity.runEvictionPolicy();
+        // offers found by the background search are not the user's choice: they must not skew market stats
+        if (recordAffinity) {
+            dbAffinity.incrementKeywords(result);
+            dbAffinity.runEvictionPolicy();
+        }
         return result;
     }
 

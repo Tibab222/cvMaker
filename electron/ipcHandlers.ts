@@ -21,6 +21,15 @@ import { rewriteResume } from './functions/rewriteResume';
 import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
 import { ApplicationDetailsDto, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto } from '../shared/jobApplications.type';
 import { generateCoverLetter } from './functions/generateCoverLetter';
+import { getDiscoveryManager } from './services/discovery';
+import { AddSourceResult, AdzunaConnectResult, AdzunaQuery, DiscoveredJobStatus, DiscoverySettings } from '../shared/discovery.types';
+
+/** Pushes an event to every open window (the discovery runs in the background, not for one request). */
+const broadcast = (channel: string, payload?: unknown) => {
+    BrowserWindow.getAllWindows().forEach((window) => {
+        if (!window.isDestroyed()) window.webContents.send(channel, payload);
+    });
+};
 
 export const vectorDb = VectorDatabase.getInstance();
 export const vectorService = VectorService.getInstance();
@@ -213,4 +222,45 @@ export function registerIpcHandlers() {
     ipcMain.handle('get-reminders', (event, limit?: number) => {
         return JobApplicationManager.getInstance().getReminders(limit);
     });
+
+    // Job discovery (morning queue)
+    const discovery = getDiscoveryManager();
+    discovery.onStatus((status) => broadcast('discovery:status', status));
+    discovery.onJobsChanged(() => broadcast('discovery:jobs-changed'));
+    ipcMain.handle('discovery:list-sources', () => discovery.listSources());
+    // a typo in a company name is not an app error: answer with a result instead of throwing (and logging) in the handler
+    ipcMain.handle('discovery:add-source', async (event, input: string): Promise<AddSourceResult> => {
+        try {
+            return { ok: true, source: await discovery.addSource(input) };
+        } catch (error) {
+            return { ok: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+    ipcMain.handle('discovery:suggest-filters', () => discovery.suggestFilters());
+    ipcMain.handle('discovery:add-search', async (event, query: AdzunaQuery): Promise<AddSourceResult> => {
+        try {
+            return { ok: true, source: discovery.addSearch(query) };
+        } catch (error) {
+            return { ok: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+    ipcMain.handle('discovery:adzuna-status', () => discovery.getAdzunaStatus());
+    ipcMain.handle('discovery:adzuna-connect', async (event, appId: string, appKey: string): Promise<AdzunaConnectResult> => {
+        try {
+            return { ok: true, status: await discovery.connectAdzuna(appId, appKey) };
+        } catch (error) {
+            return { ok: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+    ipcMain.handle('discovery:adzuna-disconnect', () => discovery.disconnectAdzuna());
+    ipcMain.handle('discovery:remove-source', (event, id: number) => discovery.removeSource(id));
+    ipcMain.handle('discovery:set-source-enabled', (event, id: number, enabled: boolean) => discovery.setSourceEnabled(id, enabled));
+    ipcMain.handle('discovery:get-settings', () => discovery.getSettings());
+    ipcMain.handle('discovery:save-settings', (event, settings: DiscoverySettings) => discovery.saveSettings(settings));
+    ipcMain.handle('discovery:list-jobs', () => discovery.listJobs());
+    ipcMain.handle('discovery:set-job-status', (event, id: number, status: DiscoveredJobStatus) => discovery.setJobStatus(id, status));
+    ipcMain.handle('discovery:prepare-job', (event, id: number) => discovery.prepareJob(id));
+    ipcMain.handle('discovery:start', () => discovery.start('manual'));
+    ipcMain.handle('discovery:cancel', () => discovery.cancel());
+    ipcMain.handle('discovery:get-status', () => discovery.getStatus());
 }

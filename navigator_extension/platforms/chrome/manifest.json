@@ -1,19 +1,39 @@
 {
   "manifest_version": 3,
-  "name": "Job Scraper Navigator",
-  "version": "1.0.0",
-  "description": "Browser extension for extracting job offers.",
+  "name": "CVMaker",
+  "version": "1.1.0",
+  "description": "Save job offers to CVMaker and prefill application forms from your profile. Nothing is ever submitted for you.",
   "permissions": ["activeTab", "scripting", "sidePanel"],
+  "icons": {
+    "128": "icons/logo.png"
+  },
+  "action": {
+    "default_title": "Open CVMaker",
+    "default_icon": {
+      "128": "icons/logo.png"
+    }
+  },
   "background": {
     "service_worker": "background/index.js"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content/index.js"]
+      "js": ["content/index.js"],
+      "all_frames": true,
+      "run_at": "document_idle"
     }
   ],
   "side_panel": {
     "default_path": "sidebar/sidebar.html"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Open the CVMaker panel"
+    }
   }
 }

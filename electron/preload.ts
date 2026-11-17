@@ -7,6 +7,7 @@ import { Language } from "../shared/profile.interface";
 import { ProfilesData } from "../shared/profilesData.interface";
 import { Project } from "../shared/projects.interface";
 import { RewriteResumeOptions } from "../shared/RewriteResume.type";
+import { AdzunaQuery, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings } from "../shared/discovery.types";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { contextBridge, ipcRenderer } = require('electron');
@@ -79,6 +80,35 @@ contextBridge.exposeInMainWorld('api', {
   deleteApplicationEvent: (eventId: number) => ipcRenderer.invoke('delete-application-event', eventId) as Promise<boolean>,
   updateApplicationDetails: (applicationId: string, details: ApplicationDetailsDto) => ipcRenderer.invoke('update-application-details', applicationId, details) as Promise<boolean>,
   getReminders: (limit?: number) => ipcRenderer.invoke('get-reminders', limit) as Promise<Reminder[]>,
+  discovery: {
+    listSources: () => ipcRenderer.invoke('discovery:list-sources'),
+    addSource: (input: string) => ipcRenderer.invoke('discovery:add-source', input),
+    removeSource: (id: number) => ipcRenderer.invoke('discovery:remove-source', id),
+    setSourceEnabled: (id: number, enabled: boolean) => ipcRenderer.invoke('discovery:set-source-enabled', id, enabled),
+    getSettings: () => ipcRenderer.invoke('discovery:get-settings'),
+    saveSettings: (settings: DiscoverySettings) => ipcRenderer.invoke('discovery:save-settings', settings),
+    suggestFilters: () => ipcRenderer.invoke('discovery:suggest-filters'),
+    addSearch: (query: AdzunaQuery) => ipcRenderer.invoke('discovery:add-search', query),
+    adzunaStatus: () => ipcRenderer.invoke('discovery:adzuna-status'),
+    connectAdzuna: (appId: string, appKey: string) => ipcRenderer.invoke('discovery:adzuna-connect', appId, appKey),
+    disconnectAdzuna: () => ipcRenderer.invoke('discovery:adzuna-disconnect'),
+    listJobs: () => ipcRenderer.invoke('discovery:list-jobs'),
+    setJobStatus: (id: number, status: DiscoveredJobStatus) => ipcRenderer.invoke('discovery:set-job-status', id, status),
+    prepareJob: (id: number) => ipcRenderer.invoke('discovery:prepare-job', id),
+    start: () => ipcRenderer.invoke('discovery:start'),
+    cancel: () => ipcRenderer.invoke('discovery:cancel'),
+    getStatus: () => ipcRenderer.invoke('discovery:get-status'),
+    onStatus: (callback: (status: DiscoveryRunStatus) => void) => {
+      const subscription = (_event: Electron.IpcRendererEvent, status: DiscoveryRunStatus) => callback(status);
+      ipcRenderer.on('discovery:status', subscription);
+      return () => ipcRenderer.removeListener('discovery:status', subscription);
+    },
+    onJobsChanged: (callback: () => void) => {
+      const subscription = () => callback();
+      ipcRenderer.on('discovery:jobs-changed', subscription);
+      return () => ipcRenderer.removeListener('discovery:jobs-changed', subscription);
+    },
+  },
   onJobReceived: (callback: (jobData: JobOfferPayload) => void) => {
     const subscription = (_event: Electron.IpcRendererEvent, value: JobOfferPayload) => callback(value);
     ipcRenderer.on('JOB_RECEIVED_FROM_EXTENSION', subscription);
