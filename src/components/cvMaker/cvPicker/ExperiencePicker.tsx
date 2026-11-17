@@ -4,10 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Check, Calendar, Building2, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import KeywordChips from "./KeywordChips";
 
 export default function ExperiencePicker() {
   const { experience } = useProfileStore();
-  const { toggleExperience, selection, getScore, getCustomField } = useCVSelection();
+  const { toggleExperience, selection, getScore, getKeywords, getCustomField } = useCVSelection();
 
   return (
     <div className="space-y-3 p-1">
@@ -17,6 +18,7 @@ export default function ExperiencePicker() {
 
           const score = getScore('experience', exp.id);
           const formattedScore = score !== undefined ? Math.round(score * 100) : null;
+          const keywords = getKeywords('experience', exp.id);
 
           const jobTitle = getCustomField('experience', exp.id, 'jobTitle', exp.jobTitle);
           
@@ -99,6 +101,8 @@ export default function ExperiencePicker() {
                     </motion.div>
                   )}
                 </div>
+
+                <KeywordChips matched={keywords.matched} missing={keywords.missing} className="mt-2" />
               </div>
 
               {/* Overlay subtil au hover pour renforcer le feedback */}
