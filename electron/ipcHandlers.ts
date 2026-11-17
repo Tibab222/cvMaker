@@ -22,6 +22,8 @@ import { JobApplicationManager } from './services/jobApplications/jobApplication
 import { ApplicationDetailsDto, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto } from '../shared/jobApplications.type';
 import { generateCoverLetter } from './functions/generateCoverLetter';
 import { getDiscoveryManager } from './services/discovery';
+import { getVaultManager } from './services/vault';
+import type { VaultImportPayload, VaultImportResult, VaultOffer } from '../shared/vault.types';
 import { AddSourceResult, AdzunaConnectResult, AdzunaQuery, DiscoveredJobStatus, DiscoverySettings } from '../shared/discovery.types';
 
 /** Pushes an event to every open window (the discovery runs in the background, not for one request). */
@@ -253,6 +255,30 @@ export function registerIpcHandlers() {
         }
     });
     ipcMain.handle('discovery:adzuna-disconnect', () => discovery.disconnectAdzuna());
+
+    // Resume vault (finished PDF resumes, ranked against offers)
+    const vault = getVaultManager();
+    ipcMain.handle('vault:list', () => vault.list());
+    // an unreadable or duplicate file is not an app error: answer with a result instead of throwing in the handler
+    ipcMain.handle('vault:import', async (event, payload: VaultImportPayload): Promise<VaultImportResult> => {
+        try {
+            return { ok: true, resume: await vault.import(payload) };
+        } catch (error) {
+            return { ok: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+    ipcMain.handle('vault:rename', (event, id: string, name: string) => vault.rename(id, name));
+    ipcMain.handle('vault:remove', (event, id: string) => vault.remove(id));
+    ipcMain.handle('vault:open', async (event, id: string) => {
+        const error = await shell.openPath(vault.filePath(id));
+        if (error) throw new Error(error);
+        return true;
+    });
+    ipcMain.handle('vault:reveal', (event, id: string) => {
+        shell.showItemInFolder(vault.filePath(id));
+        return true;
+    });
+    ipcMain.handle('vault:match', (event, offer: VaultOffer, limit?: number) => vault.match(offer, Math.min(Math.max(Number(limit) || 10, 1), 50)));
     ipcMain.handle('discovery:remove-source', (event, id: number) => discovery.removeSource(id));
     ipcMain.handle('discovery:set-source-enabled', (event, id: number, enabled: boolean) => discovery.setSourceEnabled(id, enabled));
     ipcMain.handle('discovery:get-settings', () => discovery.getSettings());

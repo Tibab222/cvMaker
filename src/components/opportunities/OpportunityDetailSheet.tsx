@@ -7,6 +7,7 @@ import { DiscoveredJobStatus, type DiscoveredJob } from "@shared/discovery.types
 import { parseDbDate } from "@shared/utils";
 import AdzunaAttribution from "./AdzunaAttribution";
 import ScoreRing from "./ScoreRing";
+import VaultSuggestion from "../resumeLibrary/vault/VaultSuggestion";
 
 interface Props {
   job: DiscoveredJob | null;
@@ -69,6 +70,8 @@ export default function OpportunityDetailSheet({ job, onClose, onStatus, onPrepa
                   </div>
                 </div>
               )}
+
+              <VaultSuggestion key={job.id} offer={{ title: job.title, description: job.description ?? "" }} />
 
               <div>
                 <p className="mb-1.5 text-xs font-medium text-muted-foreground">Offer</p>

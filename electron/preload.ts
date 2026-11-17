@@ -7,6 +7,7 @@ import { Language } from "../shared/profile.interface";
 import { ProfilesData } from "../shared/profilesData.interface";
 import { Project } from "../shared/projects.interface";
 import { RewriteResumeOptions } from "../shared/RewriteResume.type";
+import type { VaultImportPayload, VaultOffer } from "../shared/vault.types";
 import { AdzunaQuery, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings } from "../shared/discovery.types";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -80,6 +81,15 @@ contextBridge.exposeInMainWorld('api', {
   deleteApplicationEvent: (eventId: number) => ipcRenderer.invoke('delete-application-event', eventId) as Promise<boolean>,
   updateApplicationDetails: (applicationId: string, details: ApplicationDetailsDto) => ipcRenderer.invoke('update-application-details', applicationId, details) as Promise<boolean>,
   getReminders: (limit?: number) => ipcRenderer.invoke('get-reminders', limit) as Promise<Reminder[]>,
+  vault: {
+    list: () => ipcRenderer.invoke('vault:list'),
+    import: (payload: VaultImportPayload) => ipcRenderer.invoke('vault:import', payload),
+    rename: (id: string, name: string) => ipcRenderer.invoke('vault:rename', id, name),
+    remove: (id: string) => ipcRenderer.invoke('vault:remove', id),
+    open: (id: string) => ipcRenderer.invoke('vault:open', id),
+    reveal: (id: string) => ipcRenderer.invoke('vault:reveal', id),
+    match: (offer: VaultOffer, limit?: number) => ipcRenderer.invoke('vault:match', offer, limit),
+  },
   discovery: {
     listSources: () => ipcRenderer.invoke('discovery:list-sources'),
     addSource: (input: string) => ipcRenderer.invoke('discovery:add-source', input),

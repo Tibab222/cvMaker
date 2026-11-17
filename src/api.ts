@@ -8,6 +8,7 @@ import type { Language } from "@shared/profile.interface";
 import type { ProfilesData } from "@shared/profilesData.interface";
 import type { Project } from "@shared/projects.interface";
 import type { RewriteResumeOptions } from "@shared/RewriteResume.type";
+import type { VaultImportPayload, VaultOffer } from "@shared/vault.types";
 import type { AdzunaQuery, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings } from "@shared/discovery.types";
 
 export const api = {
@@ -56,6 +57,15 @@ export const api = {
     updateApplicationDetails: async (applicationId: string, details: ApplicationDetailsDto) => { return await window.api.updateApplicationDetails(applicationId, details) },
     getReminders: async (limit?: number) => { return await window.api.getReminders(limit) },
     onJobReceived: (callback: (jobData: JobOfferPayload) => void) => window.api.onJobReceived(callback),
+    vault: {
+        list: () => window.api.vault.list(),
+        import: (payload: VaultImportPayload) => window.api.vault.import(payload),
+        rename: (id: string, name: string) => window.api.vault.rename(id, name),
+        remove: (id: string) => window.api.vault.remove(id),
+        open: (id: string) => window.api.vault.open(id),
+        reveal: (id: string) => window.api.vault.reveal(id),
+        match: (offer: VaultOffer, limit?: number) => window.api.vault.match(offer, limit),
+    },
     discovery: {
         listSources: () => window.api.discovery.listSources(),
         addSource: (input: string) => window.api.discovery.addSource(input),

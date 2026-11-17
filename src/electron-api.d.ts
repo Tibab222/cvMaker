@@ -11,6 +11,7 @@ import { Experience } from '../shared/Experience.interface';
 import { Project } from '../shared/projects.interface';
 import { AIAnalysisStatus } from '../shared/AIAnalysisStatus';
 import { CoverLetterStatusPayload, GenerateCoverLetterDTO } from '../shared/CoverLetter.types';
+import type { VaultImportPayload, VaultImportResult, VaultMatch, VaultOffer, VaultResume } from '../shared/vault.types';
 import { AddSourceResult, AdzunaConnectResult, AdzunaQuery, AdzunaStatus, DiscoveredJob, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings, JobSource, ProfileFilterSuggestion } from '../shared/discovery.types';
 
 export {};
@@ -63,6 +64,15 @@ declare global {
       updateApplicationDetails: (applicationId: string, details: ApplicationDetailsDto) => Promise<boolean>;
       getReminders: (limit?: number) => Promise<Reminder[]>;
       onJobReceived: (callback: (jobData: JobOfferPayload) => void) => () => void;
+      vault: {
+        list: () => Promise<VaultResume[]>;
+        import: (payload: VaultImportPayload) => Promise<VaultImportResult>;
+        rename: (id: string, name: string) => Promise<VaultResume>;
+        remove: (id: string) => Promise<boolean>;
+        open: (id: string) => Promise<boolean>;
+        reveal: (id: string) => Promise<boolean>;
+        match: (offer: VaultOffer, limit?: number) => Promise<VaultMatch[]>;
+      };
       discovery: {
         listSources: () => Promise<JobSource[]>;
         addSource: (input: string) => Promise<AddSourceResult>;

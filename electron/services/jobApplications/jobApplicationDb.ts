@@ -179,6 +179,31 @@ const MIGRATIONS: Migration[] = [
             `);
         },
     },
+    {
+        version: 5,
+        name: "resume vault",
+        up: (db) => {
+            // the PDF itself lives in <profile>/vault/; the row keeps what is needed to match it without reopening it
+            db.exec(`
+                CREATE TABLE vault_resumes (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    file_name TEXT NOT NULL,
+                    stored_file TEXT NOT NULL,
+                    sha256 TEXT NOT NULL UNIQUE, -- same file imported twice is stored once
+                    size INTEGER NOT NULL,
+                    pages INTEGER NOT NULL DEFAULT 0,
+                    language TEXT NOT NULL,
+                    text TEXT NOT NULL DEFAULT '',
+                    keywords TEXT NOT NULL DEFAULT '[]',
+                    thumbnail TEXT,
+                    embedding BLOB, -- local MiniLM vector of the text, null when the model is unavailable
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+        },
+    },
 ];
 
 export class JobApplicationDb {

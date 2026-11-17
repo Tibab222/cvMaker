@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { format, formatDistanceToNowStrict } from "date-fns";
-import { ArrowRight, BriefcaseBusiness, Clock3, FileText, FolderOpen, Library, Loader2, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, Clock3, FileText, FolderOpen, Library, Loader2, Plus, Search, Sparkles, Trash2, Vault } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,11 @@ import PageHeader from "../general/PageHeader";
 import EmptyState from "../general/EmptyState";
 import StatusPill from "../dashboard/StatusPill";
 import { STATUS_META } from "../dashboard/mapApplicationToJabCard";
+import ResumeVault from "./vault/ResumeVault";
+import { useVault } from "./vault/useVault";
+import { cn } from "@/lib/utils";
 
+type LibraryView = "tailored" | "vault";
 const cardMotion = {
   initial: { opacity: 0, y: 16, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 },
@@ -167,6 +171,9 @@ export default function ResumeLibrary() {
   const { setSelectedTab, loadCvSession } = useUiStore();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("modified");
+  const [view, setView] = useState<LibraryView>("tailored");
+  const vault = useVault();
+  const vaultCount = vault.resumes?.length ?? 0;
 
   useEffect(() => {
     api.getApplications()
@@ -215,7 +222,11 @@ export default function ResumeLibrary() {
       <PageHeader
         icon={Library}
         title="Resume library"
-        description={resumes.length ? `${resumes.length} tailored resume${resumes.length > 1 ? "s" : ""}` : "Every resume you tailored for an offer"}
+        description={
+          view === "vault"
+            ? "Your finished PDF resumes, ranked against each offer"
+            : resumes.length ? `${resumes.length} tailored resume${resumes.length > 1 ? "s" : ""}` : "Every resume you tailored for an offer"
+        }
         actions={
           <Button size="sm" onClick={createResume} className="gap-1.5 shadow-sm shadow-brand/20">
             <Plus className="size-4" /> New resume
@@ -225,17 +236,40 @@ export default function ResumeLibrary() {
 
       <div className="mx-auto w-full max-w-7xl p-4 md:p-6">
         <section aria-label="Resume filters" className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div role="tablist" aria-label="Library view" className="flex shrink-0 rounded-lg bg-muted p-1">
+            {([
+              { id: "tailored", label: "Tailored", icon: Sparkles, count: resumes.length },
+              { id: "vault", label: "Vault", icon: Vault, count: vaultCount },
+            ] as const).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={view === tab.id}
+                onClick={() => setView(tab.id)}
+                className={cn(
+                  "relative flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors",
+                  view === tab.id ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {view === tab.id && <motion.span layoutId="library-view" className="absolute inset-0 rounded-md bg-background shadow-sm" transition={{ duration: 0.22, ease: EASE_OUT }} />}
+                <tab.icon className="relative size-3.5" />
+                <span className="relative">{tab.label}</span>
+                {tab.count > 0 && <span className="relative text-xs tabular-nums text-muted-foreground">{tab.count}</span>}
+              </button>
+            ))}
+          </div>
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by company, role or keyword…"
+              placeholder={view === "vault" ? "Search by name or keyword…" : "Search by company, role or keyword…"}
               aria-label="Search resumes"
               className="h-10 bg-surface-elevated pl-9"
             />
           </div>
-          <Select value={sort} onValueChange={setSort}>
+          {view === "tailored" && <Select value={sort} onValueChange={setSort}>
             <SelectTrigger className="h-10 w-full bg-surface-elevated sm:w-48" aria-label="Sort resumes">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
@@ -243,10 +277,12 @@ export default function ResumeLibrary() {
               <SelectItem value="modified">Last modified</SelectItem>
               <SelectItem value="title">Company</SelectItem>
             </SelectContent>
-          </Select>
+          </Select>}
         </section>
 
-        {loading ? (
+        {view === "vault" ? (
+          <ResumeVault vault={vault} search={search} />
+        ) : loading ? (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {[0, 1, 2].map((i) => <div key={i} className="h-96 animate-pulse rounded-xl bg-muted" />)}
           </div>
