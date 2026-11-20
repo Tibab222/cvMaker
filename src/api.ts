@@ -2,7 +2,7 @@ import type { AIAnalysisStatus } from "@shared/AIAnalysisStatus";
 import type { CoverLetterStatusPayload, GenerateCoverLetterDTO } from "@shared/CoverLetter.types";
 import type { Experience } from "@shared/Experience.interface";
 import type { JobOfferPayload } from "@shared/Extension.types";
-import type { ApplicationDetailsDto, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto } from "@shared/jobApplications.type";
+import type { ApplicationDetailsDto, ApplicationsChangedEvent, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto, PastApplicationDto } from "@shared/jobApplications.type";
 import type { OnProgressCallback } from "@shared/OllamaDownloadStatus";
 import type { Language } from "@shared/profile.interface";
 import type { ProfilesData } from "@shared/profilesData.interface";
@@ -44,6 +44,7 @@ export const api = {
     saveCVSession: async (data: Partial<CVSessionDataDTO>) => { return await window.api.saveCVSession(data) },
     getKeyStats: async () => { return await window.api.getKeyStats() },
     getApplications: async () => { return await window.api.getApplications() },
+    addPastApplication: (dto: PastApplicationDto) => window.api.addPastApplication(dto),
     updateApplicationStatus: async (id: string, newStatus: JobApplicationStatus) => { return await window.api.updateApplicationStatus(id, newStatus) },
     getApplicationWithTimeline: async (applicationId: string) => { return await window.api.getApplicationWithTimeline(applicationId) },
     getCVSession: async (applicationId: string) => { return await window.api.getCVSession(applicationId) },
@@ -56,7 +57,11 @@ export const api = {
     deleteApplicationEvent: async (eventId: number) => { return await window.api.deleteApplicationEvent(eventId) },
     updateApplicationDetails: async (applicationId: string, details: ApplicationDetailsDto) => { return await window.api.updateApplicationDetails(applicationId, details) },
     getReminders: async (limit?: number) => { return await window.api.getReminders(limit) },
+    getSilentApplications: async () => { return await window.api.getSilentApplications() },
+    markNoResponse: async (ids: string[]) => { return await window.api.markNoResponse(ids) },
+    undoNoResponse: async (ids: string[]) => { return await window.api.undoNoResponse(ids) },
     onJobReceived: (callback: (jobData: JobOfferPayload) => void) => window.api.onJobReceived(callback),
+    onApplicationsChanged: (callback: (event: ApplicationsChangedEvent) => void) => window.api.onApplicationsChanged(callback),
     vault: {
         list: () => window.api.vault.list(),
         import: (payload: VaultImportPayload) => window.api.vault.import(payload),

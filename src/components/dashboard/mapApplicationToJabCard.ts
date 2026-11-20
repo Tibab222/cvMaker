@@ -1,5 +1,6 @@
 import type { ColumnId, JobCard, TimelineEvent, Tone } from "@/lib/dashboard-data";
 import {
+  APPLICATION_CHANNELS,
   ApplicationEventType,
   JobApplicationStatus,
   type Application,
@@ -17,6 +18,7 @@ export const STATUS_META: Record<JobApplicationStatus, { label: string; tone: To
   [JobApplicationStatus.OFFER]: { label: "Offer", tone: "ok", column: "offer" },
   [JobApplicationStatus.ACCEPTED]: { label: "Accepted", tone: "ok", column: "archived" },
   [JobApplicationStatus.REJECTED]: { label: "Rejected", tone: "danger", column: "archived" },
+  [JobApplicationStatus.NO_RESPONSE]: { label: "No response", tone: "muted", column: "archived" },
   [JobApplicationStatus.WITHDRAWN]: { label: "Withdrawn", tone: "muted", column: "archived" },
   [JobApplicationStatus.ARCHIVED]: { label: "Archived", tone: "muted", column: "archived" },
 };
@@ -62,6 +64,9 @@ export function mapApplicationToJobCard(application: Application): JobCard {
     coverLetter: fileName(application.motivation_letter_file_path),
     notes: application.notes ?? "",
     recruiterContact: application.recruiter_contact ?? "",
+    channel: APPLICATION_CHANNELS.find((channel) => channel.value === application.channel)?.label,
+    description: application.description ?? undefined,
+    hasResumeSession: Boolean(application.json_file_path),
     timeline: [],
   };
 }
@@ -71,6 +76,8 @@ function describeEvent(event: ApplicationEvent): Pick<TimelineEvent, "label" | "
     case ApplicationEventType.STATUS_CHANGE: {
       const status = event.to_status ? STATUS_META[event.to_status]?.label ?? event.to_status : null;
       const isCreation = event.description?.startsWith("Created");
+      if (event.description === "Created manually") return { label: `Applied outside CVMaker${status ? ` · ${status}` : ""}` };
+      if (event.description === "Saved from the browser") return { label: "Applied · noticed by the browser extension" };
       // "New status: X : my note" -> keep only the note part
       const note = event.description?.split(" : ").slice(1).join(" : ").trim();
       return {

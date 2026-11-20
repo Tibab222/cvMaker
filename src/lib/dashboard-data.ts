@@ -39,6 +39,12 @@ export interface JobCard {
   coverLetter?: string;
   notes: string;
   recruiterContact: string;
+  /** How it was sent ("LinkedIn"), when known. */
+  channel?: string;
+  /** Offer text kept on applications added by hand. */
+  description?: string;
+  /** False for applications added by hand: no resume to open in the editor. */
+  hasResumeSession: boolean;
   timeline: TimelineEvent[];
 }
 
@@ -48,7 +54,7 @@ export const COLUMNS: { id: ColumnId; label: string; hint: string; accent: strin
   { id: "applied", label: "Applied", hint: "Waiting for an answer", accent: "bg-sky-500" },
   { id: "interviewing", label: "Interviewing", hint: "In the process", accent: "bg-amber-500" },
   { id: "offer", label: "Offer", hint: "Negotiation", accent: "bg-emerald-500" },
-  { id: "archived", label: "Closed", hint: "Accepted, rejected or archived", accent: "bg-zinc-400" },
+  { id: "archived", label: "Closed", hint: "Accepted, rejected, no response or archived", accent: "bg-zinc-400" },
 ];
 
 /** Pill colors per tone, shared by the board, the drawer and the status select. */

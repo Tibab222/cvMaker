@@ -4,7 +4,7 @@ import { SystemRecommendations } from '../shared/SystemRecommendation';
 import { OnProgressCallback } from '../shared/OllamaDownloadStatus';
 import { RewriteResumeOptions } from '../shared/RewriteResume.type';
 import { KeywordStat } from '../shared/Keywords.types';
-import { Application, ApplicationDetailsDto, ApplicationEvent, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats, NewApplicationEventDto, Reminder } from '../shared/jobApplications.type';
+import { Application, ApplicationsChangedEvent, ApplicationDetailsDto, ApplicationEvent, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats, NewApplicationEventDto, PastApplicationDto, PastApplicationResult, Reminder, SilentApplication } from '../shared/jobApplications.type';
 import { JobOfferPayload } from '../shared/Extension.types';
 import { Language } from '../shared/profile.interface';
 import { Experience } from '../shared/Experience.interface';
@@ -51,6 +51,9 @@ declare global {
       saveCVSession: (data: Partial<CVSessionDataDTO>) => Promise<{ success: boolean; id?: string; error?: string }>;
       getKeyStats: () => Promise<KeyStats>;
       getApplications: () => Promise<Application[]>;
+      addPastApplication: (dto: PastApplicationDto) => Promise<PastApplicationResult>;
+      /** The browser extension recorded an application. Returns the unsubscribe function. */
+      onApplicationsChanged: (callback: (event: ApplicationsChangedEvent) => void) => () => void;
       updateApplicationStatus: (id: string, newStatus: JobApplicationStatus) => Promise<JobApplicationStatus | null>;
       getApplicationWithTimeline: (applicationId: string) => Promise<ApplicationWithEvents | null>;
       getCVSession: (applicationId: string) => Promise<CVSessionDataDTO | null>;
@@ -63,6 +66,11 @@ declare global {
       deleteApplicationEvent: (eventId: number) => Promise<boolean>;
       updateApplicationDetails: (applicationId: string, details: ApplicationDetailsDto) => Promise<boolean>;
       getReminders: (limit?: number) => Promise<Reminder[]>;
+      /** Applications marked Applied without any sign of life for NO_RESPONSE_AFTER_DAYS or more. */
+      getSilentApplications: () => Promise<SilentApplication[]>;
+      /** Closes them as No response; returns the ids actually closed (still Applied). */
+      markNoResponse: (ids: string[]) => Promise<string[]>;
+      undoNoResponse: (ids: string[]) => Promise<number>;
       onJobReceived: (callback: (jobData: JobOfferPayload) => void) => () => void;
       vault: {
         list: () => Promise<VaultResume[]>;

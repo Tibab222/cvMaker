@@ -78,4 +78,131 @@ export interface AutofillReportMessage {
   report: AutofillReport;
 }
 
-export type ContentMessage = ExtractRequestMessage | AutofillRequestMessage | ClearAutofillMessage;
+/** Reads the offer on the page without highlighting or scrolling (to rank resumes from an application page). */
+export interface ExtractOfferMessage {
+  action: 'EXTRACT_OFFER';
+}
+
+export interface ExtractOfferResponse {
+  title: string;
+  mandate: string;
+}
+
+/** A resume of the desktop app's vault (shared/vault.types.ts ExtensionVaultResume). */
+export interface VaultResume {
+  id: string;
+  name: string;
+  file_name: string;
+  pages: number;
+  language: string;
+  has_text: boolean;
+  keywords: string[];
+}
+
+/** How well a vault resume fits an offer (shared/vault.types.ts VaultMatch). */
+export interface VaultMatch {
+  resume_id: string;
+  name: string;
+  score: number;
+  matched: string[];
+  missing: string[];
+}
+
+export interface VaultFile {
+  fileName: string;
+  mime: string;
+  /** Base64 of the PDF. */
+  data: string;
+}
+
+/** Puts a resume in the resume/CV file field of the form. Never submits. */
+export interface AttachResumeMessage extends VaultFile {
+  action: 'ATTACH_RESUME';
+  runId: string;
+}
+
+/** Sent by every frame that has file fields. */
+export interface AttachReportMessage {
+  action: 'ATTACH_REPORT';
+  runId: string;
+  /** Label of the field the resume went in, null when no field looked like the resume one. */
+  attached: string | null;
+  fileFields: number;
+}
+
+export type ContentMessage = ExtractRequestMessage | ExtractOfferMessage | AutofillRequestMessage | ClearAutofillMessage | AttachResumeMessage;
+
+/* ------------------------------------------------------------------ */
+/* Application tracking: content scripts and panel <-> background       */
+/* ------------------------------------------------------------------ */
+
+/** An offer as a page reads it (the background adds when it was seen). */
+export interface SeenOffer {
+  title: string;
+  company: string;
+  url: string;
+  mandate: string;
+  salary: string;
+  strength: 'strong' | 'medium';
+}
+
+/** A question waiting for the user: "did you apply for … at …?". */
+export interface ApplyPrompt {
+  id: string;
+  tabId: number;
+  createdAt: number;
+  /** The page said the application went through ("Thank you for applying"). */
+  confirmed: boolean;
+  title: string;
+  company: string;
+  url: string;
+  /** How the offer was found, for a short "from …" line. */
+  by: 'this-tab' | 'opener' | 'referrer' | 'company-site' | 'guess' | 'none';
+  confidence: 'high' | 'medium' | 'low';
+  /** Host of the page where the posting was read. */
+  offerHost: string;
+  /** Host of the form. */
+  formHost: string;
+  hasDescription: boolean;
+  /** Other recent offers the user may have meant. */
+  candidates: { index: number; title: string; company: string; host: string }[];
+  /** Hidden from the page ("not now"); still listed in the panel. */
+  snoozed: boolean;
+}
+
+export type TrackMessage =
+  /** Every top frame on load and on in-page navigation; answers whether tracking is on and any open question. */
+  | { action: 'TRACK_HELLO'; url: string; title: string; referrer: string }
+  | { action: 'OFFER_SEEN'; offer: SeenOffer; atApply: boolean }
+  /** A form was sent ('submit') or the page thanks the user for applying ('confirmation'). */
+  | { action: 'APPLY_SIGNAL'; kind: 'submit' | 'confirmation'; hints: string[] }
+  /** The form came back with errors: it was not sent. */
+  | { action: 'APPLY_CANCEL' }
+  | { action: 'APPLY_ANSWER'; promptId: string; answer: 'yes' | 'no' | 'later'; title?: string; company?: string; candidate?: number }
+  | { action: 'LIST_PROMPTS' }
+  | { action: 'GET_TRACKING' }
+  | { action: 'SET_TRACKING'; enabled: boolean };
+
+export interface TrackHelloResponse {
+  enabled: boolean;
+  prompt: ApplyPrompt | null;
+}
+
+export interface ApplyAnswerResponse {
+  ok: boolean;
+  /** What the user reads: "Saved to CVMaker", "Already in your pipeline", "Saved once CVMaker is open"… */
+  message: string;
+  state: 'saved' | 'updated' | 'duplicate' | 'queued' | 'dismissed' | 'snoozed' | 'error';
+}
+
+/** Background -> top frame of a tab. */
+export type TabTrackMessage =
+  | { action: 'SHOW_APPLY_PROMPT'; prompt: ApplyPrompt }
+  | { action: 'HIDE_APPLY_PROMPT'; promptId: string }
+  /** Reads the offer on screen right now (a tab is opening from this one). */
+  | { action: 'SNAPSHOT_OFFER' };
+
+/** Background -> panel. */
+export interface PromptsChangedMessage {
+  action: 'PROMPTS_CHANGED';
+}

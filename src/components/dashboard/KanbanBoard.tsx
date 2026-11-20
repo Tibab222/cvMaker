@@ -1,15 +1,21 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNowStrict } from "date-fns";
-import { BellRing, CalendarClock, CalendarDays, GripVertical, Inbox } from "lucide-react";
+import { BellRing, CalendarClock, CalendarDays, ChevronDown, Ghost, GripVertical, Inbox } from "lucide-react";
 import { COLUMNS, type ColumnId, type JobCard } from "@/lib/dashboard-data";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/motion";
 import type { Reminder } from "@shared/jobApplications.type";
 import { useDashboard } from "./provider/hook";
-import { columnToStatusMap, mapApplicationToJobCard } from "./mapApplicationToJabCard";
+import { columnToStatusMap } from "./mapApplicationToJabCard";
 import StatusPill from "./StatusPill";
+
+/** Cards shown per column before "Show more": long columns made the whole page scroll. Closed ones matter less. */
+const COLUMN_LIMIT = 5;
+const CLOSED_LIMIT = 3;
+
+const lastActivity = (job: JobCard) => Math.max(job.updatedAt?.getTime() ?? 0, job.appliedAt?.getTime() ?? 0);
 
 function dateLabel(job: JobCard) {
   if (job.appliedAt) return `Applied ${formatDistanceToNowStrict(job.appliedAt, { addSuffix: true })}`;
@@ -23,6 +29,14 @@ function ReminderBadge({ reminder }: { reminder: Reminder }) {
       <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/12 px-2 py-0.5 text-[11px] font-medium text-amber-700">
         <CalendarClock className="size-3" />
         {reminder.days === 0 ? "Interview today" : `Interview in ${reminder.days}d`}
+      </span>
+    );
+  }
+  if (reminder.kind === "no_response") {
+    return (
+      <span title={`No sign of life for ${reminder.days} days: close it as No response?`} className="inline-flex items-center gap-1 rounded-full bg-zinc-500/12 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+        <Ghost className="size-3" />
+        No answer · {reminder.days}d
       </span>
     );
   }
@@ -104,18 +118,13 @@ function KanbanCard({ job, reminder, dragging, onDragStart, onDragEnd, onOpen }:
   );
 }
 
-export default function KanbanBoard() {
-  const { applications, reminders, updateApplicationStatus, isLoading, openApplication } = useDashboard();
+/** Pipeline as columns. Gets the (already filtered) cards from the pipeline section. */
+export default function KanbanBoard({ jobs, filtered, columns }: { jobs: JobCard[]; filtered: boolean; columns?: ColumnId[] | null }) {
+  const shownColumns = columns ? COLUMNS.filter((col) => columns.includes(col.id)) : COLUMNS;
+  const { attentionByApp: reminderByApp, updateApplicationStatus, isLoading, openApplication } = useDashboard();
   const [dragId, setDragId] = useState<string | null>(null);
   const [overColumn, setOverColumn] = useState<ColumnId | null>(null);
-
-  const jobs = useMemo(() => applications.map(mapApplicationToJobCard), [applications]);
-  const reminderByApp = useMemo(() => {
-    const map = new Map<string, Reminder>();
-    // reminders arrive sorted by priority: keep the most important one per application
-    for (const r of reminders) if (!map.has(r.application_id)) map.set(r.application_id, r);
-    return map;
-  }, [reminders]);
+  const [expanded, setExpanded] = useState<Set<ColumnId>>(() => new Set());
 
   const drop = (column: ColumnId) => {
     const job = jobs.find((j) => j.id === dragId);
@@ -130,7 +139,7 @@ export default function KanbanBoard() {
   if (isLoading && jobs.length === 0) {
     return (
       <div className="-mx-1 flex gap-4 overflow-hidden px-1 pb-3">
-        {COLUMNS.map((col) => (
+        {shownColumns.map((col) => (
           <div key={col.id} className="w-72 shrink-0 space-y-2.5 rounded-xl border border-border/70 bg-surface/60 p-3">
             <div className="h-4 w-24 animate-pulse rounded bg-muted" />
             <div className="h-24 animate-pulse rounded-lg bg-muted/70" />
@@ -143,9 +152,23 @@ export default function KanbanBoard() {
 
   return (
     <div className="-mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-3">
-      {COLUMNS.map((col, colIndex) => {
-        const items = jobs.filter((j) => j.column === col.id);
+      {shownColumns.map((col, colIndex) => {
+        // what needs action first (interview, follow-up), then the most recently active
+        const items = jobs
+          .filter((j) => j.column === col.id)
+          .sort((a, b) => Number(reminderByApp.has(b.id)) - Number(reminderByApp.has(a.id)) || lastActivity(b) - lastActivity(a));
+        const limit = col.id === "archived" ? CLOSED_LIMIT : COLUMN_LIMIT;
+        // a search shows every match: hiding some would look like they were not found
+        const isExpanded = filtered || expanded.has(col.id);
+        const visible = isExpanded ? items : items.slice(0, limit);
+        const hidden = items.length - visible.length;
         const isOver = overColumn === col.id && dragId !== null;
+        const toggle = () => setExpanded((current) => {
+          const next = new Set(current);
+          if (next.has(col.id)) next.delete(col.id);
+          else next.add(col.id);
+          return next;
+        });
         return (
           <motion.section
             key={col.id}
@@ -186,7 +209,7 @@ export default function KanbanBoard() {
 
             <div className="flex min-h-28 flex-1 flex-col gap-2.5">
               <AnimatePresence initial={false}>
-                {items.map((job) => (
+                {visible.map((job) => (
                   <KanbanCard
                     key={job.id}
                     job={job}
@@ -201,6 +224,17 @@ export default function KanbanBoard() {
                   />
                 ))}
               </AnimatePresence>
+
+              {(hidden > 0 || (expanded.has(col.id) && !filtered && items.length > limit)) && (
+                <button
+                  type="button"
+                  onClick={toggle}
+                  className="group/more flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/80 py-2 text-xs font-medium text-muted-foreground transition-colors hover:border-brand/40 hover:bg-brand-muted/40 hover:text-brand"
+                >
+                  {hidden > 0 ? `Show ${hidden} more` : "Show less"}
+                  <ChevronDown className={cn("size-3.5 transition-transform", hidden === 0 && "rotate-180")} />
+                </button>
+              )}
 
               {items.length === 0 && (
                 <div

@@ -27,6 +27,7 @@ const STATUS_LABELS: Record<JobApplicationStatus, string> = {
   [JobApplicationStatus.OFFER]: "Offer",
   [JobApplicationStatus.ACCEPTED]: "Accepted",
   [JobApplicationStatus.REJECTED]: "Rejected",
+  [JobApplicationStatus.NO_RESPONSE]: "No response",
   [JobApplicationStatus.WITHDRAWN]: "Withdrawn",
   [JobApplicationStatus.ARCHIVED]: "Archived",
 };
@@ -39,6 +40,7 @@ const ALL_STATUSES: JobApplicationStatus[] = [
   JobApplicationStatus.OFFER,
   JobApplicationStatus.ACCEPTED,
   JobApplicationStatus.REJECTED,
+  JobApplicationStatus.NO_RESPONSE,
   JobApplicationStatus.WITHDRAWN,
   JobApplicationStatus.ARCHIVED,
 ];

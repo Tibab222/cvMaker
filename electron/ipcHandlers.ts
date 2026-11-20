@@ -19,7 +19,8 @@ import { selectExportFolder, setDefaultExportPath } from './functions/exportPath
 import { ProfileService } from './services/ProfileService';
 import { rewriteResume } from './functions/rewriteResume';
 import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
-import { ApplicationDetailsDto, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto } from '../shared/jobApplications.type';
+import { ApplicationDetailsDto, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto, PastApplicationDto, PastApplicationResult } from '../shared/jobApplications.type';
+import { offerKeywords } from './functions/offerKeywords';
 import { generateCoverLetter } from './functions/generateCoverLetter';
 import { getDiscoveryManager } from './services/discovery';
 import { getVaultManager } from './services/vault';
@@ -188,6 +189,16 @@ export function registerIpcHandlers() {
     });
     ipcMain.handle('get-key-stats', () => { return JobApplicationManager.getInstance().getKeyStats(); });
     ipcMain.handle('get-applications', () => { return JobApplicationManager.getInstance().getAllApplications(); });
+    // an application sent outside the app; validation errors come back as a result, not as a thrown IPC error
+    ipcMain.handle('add-past-application', async (event, dto: PastApplicationDto): Promise<PastApplicationResult> => {
+        try {
+            // a real application: it belongs in the market stats like the offers tailored in the editor
+            const keywords = await offerKeywords(dto?.description);
+            return { ok: true, application: JobApplicationManager.getInstance().addPastApplication(dto, keywords) };
+        } catch (error) {
+            return { ok: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
     ipcMain.handle('get-application-with-timeline', (event, applicationId: string) => {
         return JobApplicationManager.getInstance().getApplicationWithTimeline(applicationId);
     });
@@ -223,6 +234,15 @@ export function registerIpcHandlers() {
     });
     ipcMain.handle('get-reminders', (event, limit?: number) => {
         return JobApplicationManager.getInstance().getReminders(limit);
+    });
+    ipcMain.handle('get-silent-applications', () => {
+        return JobApplicationManager.getInstance().getSilentApplications();
+    });
+    ipcMain.handle('mark-no-response', (event, ids: string[]) => {
+        return JobApplicationManager.getInstance().markNoResponse(Array.isArray(ids) ? ids.filter((id) => typeof id === 'string') : []);
+    });
+    ipcMain.handle('undo-no-response', (event, ids: string[]) => {
+        return JobApplicationManager.getInstance().undoNoResponse(Array.isArray(ids) ? ids.filter((id) => typeof id === 'string') : []);
     });
 
     // Job discovery (morning queue)

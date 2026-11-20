@@ -1,7 +1,9 @@
 import browser from 'webextension-polyfill';
 import { extractJobFromCurrentPageWhenReady } from '../scrapers';
-import type { AutofillReportMessage, ContentMessage, ExtractResponseMessage } from '../core/messages';
+import type { AttachReportMessage, AutofillReportMessage, ContentMessage, ExtractOfferResponse, ExtractResponseMessage } from '../core/messages';
 import { autofillDocument, clearAutofillHighlights } from '../autofill/fill';
+import { attachResume } from '../autofill/attach';
+import { startTracking } from '../tracking/watcher';
 import './styles.css';
 
 /**
@@ -51,6 +53,30 @@ const onMessage = (request: unknown, _sender: unknown, sendResponse: (response: 
       return true; // async response
     }
 
+    case 'EXTRACT_OFFER': {
+      if (!isTopFrame) return undefined;
+      extractJobFromCurrentPageWhenReady({ timeoutMs: 1500, minMandateLength: 100 })
+        .then((extracted) => sendResponse({ title: extracted.titleText || '', mandate: extracted.mandateText || '' } satisfies ExtractOfferResponse))
+        .catch(() => sendResponse({ title: '', mandate: '' } satisfies ExtractOfferResponse));
+      return true; // async response
+    }
+
+    case 'ATTACH_RESUME': {
+      let result: { attached: string | null; fileFields: number };
+      try {
+        result = attachResume(document, message);
+      } catch (error) {
+        console.warn('[CVMaker] Could not attach the resume', error);
+        result = { attached: null, fileFields: 0 };
+      }
+      if (result.fileFields > 0 || isTopFrame) {
+        const report: AttachReportMessage = { action: 'ATTACH_REPORT', runId: message.runId, ...result };
+        browser.runtime.sendMessage(report).catch(() => undefined);
+      }
+      if (isTopFrame) sendResponse({ ok: true });
+      return undefined;
+    }
+
     case 'AUTOFILL': {
       clearAutofillHighlights(document);
       const report = autofillDocument(document, message.profile);
@@ -79,3 +105,6 @@ const onMessage = (request: unknown, _sender: unknown, sendResponse: (response: 
 };
 
 browser.runtime.onMessage.addListener(onMessage as MessageListener);
+
+// notices applications sent from this page, and asks before saving them (see tracking/watcher.ts)
+void startTracking();

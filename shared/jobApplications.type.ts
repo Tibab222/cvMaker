@@ -8,6 +8,7 @@ export enum JobApplicationStatus {
     OFFER = 'OFFER',         // received an offer from the company
     ACCEPTED = 'ACCEPTED',   // Offer accepted by the user
     REJECTED = 'REJECTED',   // Rejected by the company
+    NO_RESPONSE = 'NO_RESPONSE', // The company never answered (closed after a long silence)
     WITHDRAWN = 'WITHDRAWN', // Offer declined by the user
     ARCHIVED = 'ARCHIVED',   // Application archived by the user
 }
@@ -27,10 +28,90 @@ export const ACTIVE_STATUSES: JobApplicationStatus[] = [
     JobApplicationStatus.OFFER,
 ];
 
+/** How the user sent an application. Stored as text: adding a channel needs no migration. */
+export enum ApplicationChannel {
+    LINKEDIN = 'LINKEDIN',
+    COMPANY_SITE = 'COMPANY_SITE',
+    INDEED = 'INDEED',
+    JOB_BOARD = 'JOB_BOARD',
+    REFERRAL = 'REFERRAL',
+    RECRUITER = 'RECRUITER',
+    EMAIL = 'EMAIL',
+    IN_PERSON = 'IN_PERSON',
+    OTHER = 'OTHER',
+}
+
+export const APPLICATION_CHANNELS: { value: ApplicationChannel; label: string }[] = [
+    { value: ApplicationChannel.LINKEDIN, label: 'LinkedIn' },
+    { value: ApplicationChannel.COMPANY_SITE, label: 'Company website' },
+    { value: ApplicationChannel.INDEED, label: 'Indeed' },
+    { value: ApplicationChannel.JOB_BOARD, label: 'Other job board' },
+    { value: ApplicationChannel.REFERRAL, label: 'Referral' },
+    { value: ApplicationChannel.RECRUITER, label: 'Recruiter / agency' },
+    { value: ApplicationChannel.EMAIL, label: 'Email' },
+    { value: ApplicationChannel.IN_PERSON, label: 'In person / job fair' },
+    { value: ApplicationChannel.OTHER, label: 'Other' },
+];
+
+/** Where an application added by hand can stand: it was sent, so never a draft. */
+export const PAST_APPLICATION_STATUSES: JobApplicationStatus[] = [
+    JobApplicationStatus.APPLIED,
+    JobApplicationStatus.INTERVIEW,
+    JobApplicationStatus.OFFER,
+    JobApplicationStatus.REJECTED,
+    JobApplicationStatus.NO_RESPONSE,
+    JobApplicationStatus.ACCEPTED,
+    JobApplicationStatus.WITHDRAWN,
+];
+
+/** An application sent outside the app (or before using it). */
+export interface PastApplicationDto {
+    company: string;
+    title: string;
+    /** Local calendar day it was sent, "YYYY-MM-DD". */
+    appliedOn: string;
+    status: JobApplicationStatus;
+    channel: ApplicationChannel | null;
+    url?: string;
+    description?: string;
+}
+
+/** An application the browser extension saw being sent, confirmed by the user (POST /api/applications). */
+export interface BrowserApplicationDto {
+    company: string;
+    title: string;
+    /** The user's calendar day, YYYY-MM-DD. */
+    appliedOn: string;
+    url?: string;
+    description?: string;
+    salary?: string;
+    channel?: ApplicationChannel | null;
+}
+
+/**
+ * created: a new application; promoted: the one already prepared in CVMaker for this offer moved to Applied;
+ * duplicate: already in the pipeline as sent, nothing changed.
+ */
+export interface BrowserApplicationResult {
+    action: "created" | "promoted" | "duplicate";
+    application: Application;
+}
+
+/** Main -> renderer: applications changed outside the renderer (the extension recorded one). */
+export interface ApplicationsChangedEvent {
+    source: "extension";
+    action: BrowserApplicationResult["action"];
+    title: string;
+    company: string;
+}
+
+export type PastApplicationResult = { ok: true; application: Application } | { ok: false; error: string };
+
 /** Statuses that close an application. */
 export const CLOSED_STATUSES: JobApplicationStatus[] = [
     JobApplicationStatus.ACCEPTED,
     JobApplicationStatus.REJECTED,
+    JobApplicationStatus.NO_RESPONSE,
     JobApplicationStatus.WITHDRAWN,
     JobApplicationStatus.ARCHIVED,
 ];
@@ -108,6 +189,8 @@ export interface Application {
     motivation_letter_file_path?: string | null; // NULLABLE, exported cover letter
     notes?: string | null;           // Free-form "Notes & Prep"
     recruiter_contact?: string | null; // Free-form recruiter name / email / phone
+    channel?: ApplicationChannel | null; // How it was sent; null when unknown (applications made in the app)
+    description?: string | null;     // Offer text of applications added by hand (others keep it in their session)
     applied_at?: string | null;      // DATETIME (Format ISO/string en JS)
     created_at: string;              // DATETIME DEFAULT CURRENT_TIMESTAMP
     updated_at: string;              // DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -136,7 +219,24 @@ export interface ApplicationDetailsDto {
   recruiter_contact?: string | null;
 }
 
-export type ReminderKind = 'follow_up' | 'interview' | 'stale_draft';
+export type ReminderKind = 'follow_up' | 'interview' | 'stale_draft' | 'no_response';
+
+/** Days without any sign of life after which an application is suggested to close as "No response". */
+export const NO_RESPONSE_AFTER_DAYS = 45;
+
+/** An application still marked Applied, silent for NO_RESPONSE_AFTER_DAYS or more. */
+export interface SilentApplication {
+    id: string;
+    job_title: string;
+    company_name: string;
+    channel: ApplicationChannel | null;
+    applied_at: string;
+    /** Last sign of life: the submission, a follow-up, an interview or an answer, whichever is latest (ISO). */
+    last_sign: string;
+    /** Whole days since last_sign. */
+    days: number;
+    follow_ups: number;
+}
 
 export interface Reminder {
   id: string;

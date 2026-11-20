@@ -177,7 +177,8 @@ export default function ResumeLibrary() {
 
   useEffect(() => {
     api.getApplications()
-      .then((applications) => setResumes(applications.map(mapApplicationToResume)))
+      // applications added by hand have no resume made in the app: nothing to open in the editor
+      .then((applications) => setResumes(applications.filter((application) => application.json_file_path).map(mapApplicationToResume)))
       .catch(() => toast.error("Could not load your resumes"))
       .finally(() => setLoading(false));
   }, []);

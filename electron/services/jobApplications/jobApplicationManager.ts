@@ -3,17 +3,24 @@ import fs from "node:fs";
 import {
     ACTIVE_STATUSES,
     Application,
+    ApplicationChannel,
     ApplicationDetailsDto,
     ApplicationEvent,
     ApplicationEventType,
     ApplicationWithEvents,
+    BrowserApplicationDto,
+    BrowserApplicationResult,
     CLOSED_STATUSES,
     CreateApplicationDto,
     CVSessionDataDTO,
     JobApplicationStatus,
     KeyStats,
     NewApplicationEventDto,
+    NO_RESPONSE_AFTER_DAYS,
+    PAST_APPLICATION_STATUSES,
+    PastApplicationDto,
     Reminder,
+    SilentApplication,
 } from "../../../shared/jobApplications.type";
 import { parseDbDate, parseSalary } from "../../../shared/utils";
 import { JobApplicationDb } from "./jobApplicationDb";
@@ -25,6 +32,7 @@ const SUBMITTED_STATUSES: JobApplicationStatus[] = [
     JobApplicationStatus.OFFER,
     JobApplicationStatus.ACCEPTED,
     JobApplicationStatus.REJECTED,
+    JobApplicationStatus.NO_RESPONSE,
 ];
 
 /** Status changes that count as an answer from the company. */
@@ -50,6 +58,48 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 
 const sqlList = (values: string[]) => values.map((value) => `'${value}'`).join(", ");
+
+/** SQLite's own format (UTC), like CURRENT_TIMESTAMP: "YYYY-MM-DD HH:MM:SS". */
+const toDbDate = (date: Date) => date.toISOString().slice(0, 19).replace("T", " ");
+
+/**
+ * Day the user says they applied ("YYYY-MM-DD", their local calendar) as a database date.
+ * Today means now; an earlier day is stored at local noon, so no timezone can move it to the day before or after.
+ */
+export function appliedOnToDb(appliedOn: string, now: Date = new Date()): string {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(appliedOn ?? "");
+    if (!match) throw new Error("When did you apply? Pick a date.");
+    const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+    const noon = new Date(year, month - 1, day, 12);
+    if (noon.getFullYear() !== year || noon.getMonth() !== month - 1 || noon.getDate() !== day) throw new Error("This date does not exist.");
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+    if (noon.getTime() > today.getTime()) throw new Error("The application date cannot be in the future.");
+    if (year < 1990) throw new Error("This date is too far in the past.");
+    return toDbDate(noon.getTime() === today.getTime() ? now : noon);
+}
+
+/** "linkedin.com/jobs/1" -> "https://linkedin.com/jobs/1"; anything that is not a web link is refused. */
+export function normalizeUrl(raw: string | undefined | null): string {
+    const value = (raw ?? "").trim();
+    if (!value) return "";
+    const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(value) ? value : `https://${value}`;
+    let parsed: URL;
+    try {
+        parsed = new URL(withScheme);
+    } catch {
+        throw new Error("This link does not look like a web address.");
+    }
+    if (!/^https?:$/.test(parsed.protocol) || !parsed.hostname.includes(".")) throw new Error("The link must be a web address (https://…).");
+    return parsed.toString().slice(0, 2000);
+}
+
+/** First line of the timeline of applications not made in the editor (the dashboard labels them from it). */
+export const MANUAL_ORIGIN = "Created manually";
+export const BROWSER_ORIGIN = "Saved from the browser";
+
+/** "  Société  Générale " and "societe generale" name the same company. */
+const foldName = (value: unknown): string =>
+    typeof value === "string" ? value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/\s+/g, " ").trim() : "";
 
 const splitKeywords = (raw: unknown): string[] =>
     typeof raw === "string" && raw.trim() ? raw.split(",").map((k) => k.trim()).filter(Boolean) : [];
@@ -178,6 +228,101 @@ export class JobApplicationManager {
     }
 
     /**
+     * Records an application the user sent outside the app (or before using it): no resume session, the offer text
+     * is kept on the row. The timeline starts on the day it was sent, so stats (activity, ghosting) see the real date.
+     * @param keywords Terms of the offer text, read by the caller (the extractor lives with the app services).
+     * @param origin First line of its timeline: how it got into the app.
+     */
+    public addPastApplication(dto: PastApplicationDto, keywords: string[] = [], now: Date = new Date(), origin: string = MANUAL_ORIGIN): Application {
+        const clean = (value: unknown, max: number) => (typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : "");
+        const company = clean(dto.company, 200);
+        const title = clean(dto.title, 200);
+        if (!company) throw new Error("Which company did you apply to?");
+        if (!title) throw new Error("Which position did you apply for?");
+        if (!PAST_APPLICATION_STATUSES.includes(dto.status)) throw new Error(`An application added by hand cannot be ${dto.status}`);
+        if (dto.channel != null && !Object.values(ApplicationChannel).includes(dto.channel)) throw new Error(`Unknown channel: ${dto.channel}`);
+
+        const appliedAt = appliedOnToDb(dto.appliedOn, now);
+        const url = normalizeUrl(dto.url);
+        const description = typeof dto.description === "string" && dto.description.trim() ? dto.description.trim().slice(0, 50_000) : null;
+
+        const id = `app_${crypto.randomUUID()}`;
+        const rawDb = this.getDb();
+        rawDb.transaction(() => {
+            rawDb.prepare(`
+                INSERT INTO applications (id, job_title, company_name, status, keywords, url, channel, description, applied_at, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(id, title, company, dto.status, keywords.join(","), url, dto.channel ?? null, description, appliedAt, appliedAt);
+            // dated on the day it was sent: an answer logged later counts from there, and this is not an answer itself
+            this.insertEvent(id, ApplicationEventType.STATUS_CHANGE, origin, { toStatus: dto.status, eventDate: appliedAt });
+        })();
+
+        return this.getApplication(id)!;
+    }
+
+    /**
+     * Records an application the browser extension saw being sent (the user confirmed it). Merged with what the
+     * pipeline already has for that offer: a resume prepared in CVMaker moves to Applied (its link and offer text
+     * filled in if missing), one already recorded as sent stays as it is. Otherwise a new application.
+     * @param keywords Reads the terms of the offer; called only when a new application is created.
+     */
+    public recordBrowserApplication(dto: BrowserApplicationDto, keywords: () => string[] = () => [], now: Date = new Date()): BrowserApplicationResult {
+        const company = foldName(dto.company);
+        const title = foldName(dto.title);
+        if (!company) throw new Error("Which company did you apply to?");
+        if (!title) throw new Error("Which position did you apply for?");
+        if (dto.channel != null && !Object.values(ApplicationChannel).includes(dto.channel)) throw new Error(`Unknown channel: ${dto.channel}`);
+        let url = "";
+        try {
+            url = normalizeUrl(dto.url);
+        } catch {
+            // a link the page gave is a bonus: a strange one is dropped, the application is still recorded
+        }
+        const description = typeof dto.description === "string" && dto.description.trim() ? dto.description.trim().slice(0, 50_000) : null;
+
+        const sameOffer = (app: Application) =>
+            (url !== "" && app.url === url) || (foldName(app.company_name) === company && foldName(app.job_title) === title);
+        const matches = this.getAllApplications().filter(sameOffer);
+
+        const prepared = matches.find((app) => app.status === JobApplicationStatus.DRAFT || app.status === JobApplicationStatus.REVIEW);
+        if (prepared) {
+            const rawDb = this.getDb();
+            rawDb.transaction(() => {
+                this.updateStatus(prepared.id, JobApplicationStatus.APPLIED, "sent from the browser");
+                rawDb.prepare(`
+                    UPDATE applications SET
+                        url = CASE WHEN url IS NULL OR url = '' THEN ? ELSE url END,
+                        description = COALESCE(description, ?),
+                        channel = COALESCE(channel, ?)
+                    WHERE id = ?
+                `).run(url, description, dto.channel ?? null, prepared.id);
+            })();
+            return { action: "promoted", application: this.getApplication(prepared.id)! };
+        }
+
+        // sent recently: the same application seen twice (or sent again), not a new one
+        const recentLimit = now.getTime() - 60 * DAY_MS;
+        const sent = matches.find((app) => SUBMITTED_STATUSES.includes(app.status) && (parseDbDate(app.applied_at)?.getTime() ?? 0) >= recentLimit);
+        if (sent) return { action: "duplicate", application: sent };
+
+        const application = this.addPastApplication(
+            { company: dto.company, title: dto.title, appliedOn: dto.appliedOn, status: JobApplicationStatus.APPLIED, channel: dto.channel ?? null, url, description: description ?? undefined },
+            // read only now: extracting them counts them in the market stats, once per real application
+            keywords(),
+            now,
+            BROWSER_ORIGIN,
+        );
+        const salary = parseSalary(dto.salary);
+        if (salary != null) this.getDb().prepare(`UPDATE applications SET salary = ? WHERE id = ?`).run(salary, application.id);
+        return { action: "created", application: this.getApplication(application.id)! };
+    }
+
+    private getApplication(id: string): Application | null {
+        const row = this.getDb().prepare(`SELECT * FROM applications WHERE id = ?`).get(id) as Record<string, unknown> | undefined;
+        return row ? ({ ...row, keywords: splitKeywords(row.keywords) } as Application) : null;
+    }
+
+    /**
      * Moves an application to a new status and records it on the timeline.
      * Re-applying the current status is a no-op, so dropping a card back on its own column does not pollute the history.
      */
@@ -231,7 +376,8 @@ export class JobApplicationManager {
         rawDb.transaction(() => {
             eventId = this.insertEvent(applicationId, dto.event_type, description, { scheduledAt: scheduledAt?.toISOString() ?? null });
 
-            const preInterview = [JobApplicationStatus.DRAFT, JobApplicationStatus.REVIEW, JobApplicationStatus.APPLIED];
+            // an interview after a long silence: the company answered after all
+            const preInterview = [JobApplicationStatus.DRAFT, JobApplicationStatus.REVIEW, JobApplicationStatus.APPLIED, JobApplicationStatus.NO_RESPONSE];
             if (dto.event_type === ApplicationEventType.INTERVIEW_SCHEDULED && preInterview.includes(app.status)) {
                 this.updateStatus(applicationId, JobApplicationStatus.INTERVIEW);
             }
@@ -349,9 +495,9 @@ export class JobApplicationManager {
     /**
      * What needs attention today: upcoming interviews, applications to follow up on, drafts left behind.
      */
-    public getReminders(limit = 8): Reminder[] {
+    public getReminders(limit = 8, at: Date = new Date()): Reminder[] {
         const rawDb = this.getDb();
-        const now = Date.now();
+        const now = at.getTime();
         const reminders: Reminder[] = [];
 
         const interviews = rawDb.prepare(`
@@ -382,33 +528,17 @@ export class JobApplicationManager {
             });
         }
 
-        // last sign of life on an application: the submission, a follow-up or any answer, whichever is latest
-        const waiting = rawDb.prepare(`
-            SELECT a.id, a.job_title, a.company_name, a.applied_at,
-                   (SELECT MAX(e.event_date) FROM application_events e
-                     WHERE e.application_id = a.id
-                       AND e.event_type IN ('${ApplicationEventType.FOLLOW_UP}', '${ApplicationEventType.INTERVIEW_SCHEDULED}')) AS last_contact,
-                   (SELECT COUNT(*) FROM application_events e
-                     WHERE e.application_id = a.id AND e.event_type = '${ApplicationEventType.FOLLOW_UP}') AS follow_ups
-            FROM applications a
-            WHERE a.status = '${JobApplicationStatus.APPLIED}' AND a.applied_at IS NOT NULL
-        `).all() as { id: string; job_title: string; company_name: string; applied_at: string; last_contact: string | null; follow_ups: number }[];
-
-        for (const app of waiting) {
-            const applied = parseDbDate(app.applied_at);
-            const lastContact = parseDbDate(app.last_contact);
-            const reference = lastContact && applied && lastContact > applied ? lastContact : applied;
-            if (!reference) continue;
-            const days = Math.floor((now - reference.getTime()) / DAY_MS);
-            if (days < FOLLOW_UP_AFTER_DAYS) continue;
+        // silent for a long time: not a follow-up any more, they are offered to close (getSilentApplications)
+        for (const app of this.waitingApplications(now)) {
+            if (app.days < FOLLOW_UP_AFTER_DAYS || app.days >= NO_RESPONSE_AFTER_DAYS) continue;
             reminders.push({
                 id: `follow_up_${app.id}`,
                 kind: "follow_up",
                 application_id: app.id,
                 job_title: app.job_title,
                 company_name: app.company_name,
-                date: reference.toISOString(),
-                days,
+                date: app.last_sign,
+                days: app.days,
                 detail: app.follow_ups > 0 ? `${app.follow_ups} follow-up${app.follow_ups > 1 ? "s" : ""} sent` : null,
             });
         }
@@ -434,10 +564,104 @@ export class JobApplicationManager {
             });
         }
 
-        const rank: Record<Reminder["kind"], number> = { interview: 0, follow_up: 1, stale_draft: 2 };
+        const rank: Record<Reminder["kind"], number> = { interview: 0, follow_up: 1, no_response: 2, stale_draft: 3 };
         return reminders
             .sort((a, b) => rank[a.kind] - rank[b.kind] || (a.kind === "interview" ? a.date.localeCompare(b.date) : b.days - a.days))
             .slice(0, limit);
+    }
+
+    /**
+     * Applications still marked Applied with no sign of life for NO_RESPONSE_AFTER_DAYS or more, the longest silent
+     * first. Each one shows on its card and in the drawer, and they can be closed together as "No response".
+     */
+    public getSilentApplications(at: Date = new Date()): SilentApplication[] {
+        return this.waitingApplications(at.getTime())
+            .filter((app) => app.days >= NO_RESPONSE_AFTER_DAYS)
+            .sort((a, b) => b.days - a.days);
+    }
+
+    /**
+     * Closes applications as "No response". Only ones still marked Applied move: an application that got an answer
+     * since the list was shown (a stale screen) is left alone.
+     * @returns The ids actually closed, for an undo.
+     */
+    public markNoResponse(ids: string[], at: Date = new Date()): string[] {
+        const rawDb = this.getDb();
+        const silence = new Map(this.waitingApplications(at.getTime()).map((app) => [app.id, app.days]));
+        const closed: string[] = [];
+        rawDb.transaction(() => {
+            for (const id of new Set(ids)) {
+                const days = silence.get(id);
+                if (days === undefined) continue; // not Applied (or not sent) any more
+                this.updateStatus(id, JobApplicationStatus.NO_RESPONSE, `no answer for ${days} day${days === 1 ? "" : "s"}`);
+                closed.push(id);
+            }
+        })();
+        return closed;
+    }
+
+    /**
+     * Undoes markNoResponse: the "No response" step leaves the timeline and the previous status comes back, so the
+     * history reads as if nothing happened (moving it back by hand would log a new step instead).
+     */
+    public undoNoResponse(ids: string[]): number {
+        const rawDb = this.getDb();
+        let restored = 0;
+        rawDb.transaction(() => {
+            for (const id of new Set(ids)) {
+                const app = rawDb.prepare(`SELECT status FROM applications WHERE id = ?`).get(id) as { status: JobApplicationStatus } | undefined;
+                if (app?.status !== JobApplicationStatus.NO_RESPONSE) continue;
+                const steps = rawDb.prepare(`
+                    SELECT id, to_status FROM application_events
+                    WHERE application_id = ? AND event_type = '${ApplicationEventType.STATUS_CHANGE}'
+                    ORDER BY event_date DESC, id DESC LIMIT 2
+                `).all(id) as { id: number; to_status: JobApplicationStatus | null }[];
+                if (steps[0]?.to_status !== JobApplicationStatus.NO_RESPONSE) continue;
+                const previous = steps[1]?.to_status && Object.values(JobApplicationStatus).includes(steps[1].to_status) ? steps[1].to_status : JobApplicationStatus.APPLIED;
+                rawDb.prepare(`DELETE FROM application_events WHERE id = ?`).run(steps[0].id);
+                rawDb.prepare(`UPDATE applications SET status = ? WHERE id = ?`).run(previous, id);
+                restored++;
+            }
+        })();
+        return restored;
+    }
+
+    /**
+     * Applications marked Applied and their last sign of life: the submission, a follow-up, an interview or an
+     * answer, whichever is latest. Moving a card back to Applied is not one: it is still waiting.
+     */
+    private waitingApplications(now: number): SilentApplication[] {
+        const rows = this.getDb().prepare(`
+            SELECT a.id, a.job_title, a.company_name, a.channel, a.applied_at,
+                   (SELECT MAX(e.event_date) FROM application_events e
+                     WHERE e.application_id = a.id
+                       AND (e.event_type IN ('${ApplicationEventType.FOLLOW_UP}', '${ApplicationEventType.INTERVIEW_SCHEDULED}')
+                            OR (e.event_type = '${ApplicationEventType.STATUS_CHANGE}' AND e.to_status IN (${sqlList(RESPONSE_STATUSES)})))) AS last_contact,
+                   (SELECT COUNT(*) FROM application_events e
+                     WHERE e.application_id = a.id AND e.event_type = '${ApplicationEventType.FOLLOW_UP}') AS follow_ups
+            FROM applications a
+            WHERE a.status = '${JobApplicationStatus.APPLIED}' AND a.applied_at IS NOT NULL
+        `).all() as { id: string; job_title: string; company_name: string; channel: ApplicationChannel | null; applied_at: string; last_contact: string | null; follow_ups: number }[];
+
+        const waiting: SilentApplication[] = [];
+        for (const app of rows) {
+            const applied = parseDbDate(app.applied_at);
+            const lastContact = parseDbDate(app.last_contact);
+            const reference = lastContact && applied && lastContact > applied ? lastContact : applied;
+            if (!reference) continue;
+            waiting.push({
+                id: app.id,
+                job_title: app.job_title,
+                company_name: app.company_name,
+                channel: app.channel ?? null,
+                applied_at: applied!.toISOString(),
+                last_sign: reference.toISOString(),
+                // calendar days: applied 45 days ago reads 45 in the morning too (past applications are stored at noon)
+                days: Math.max(0, Math.round((startOfDay(new Date(now)) - startOfDay(reference)) / DAY_MS)),
+                follow_ups: app.follow_ups,
+            });
+        }
+        return waiting;
     }
 
     /* ------------------------------------------------------------------ */
@@ -526,11 +750,12 @@ export class JobApplicationManager {
         return result?.rate ?? 0;
     }
 
-    /** Share of submitted applications still without any answer 30 days later. */
+    /** Share of submitted applications without any answer 30 days later: still waiting, or closed as No response. */
     private getGhostingRate(): number {
         const result = this.getDb().prepare(`
             SELECT ROUND(
-                SUM(CASE WHEN status = '${JobApplicationStatus.APPLIED}' AND applied_at <= datetime('now', '-30 days') THEN 1 ELSE 0 END) * 100.0
+                SUM(CASE WHEN status = '${JobApplicationStatus.NO_RESPONSE}'
+                          OR (status = '${JobApplicationStatus.APPLIED}' AND applied_at <= datetime('now', '-30 days')) THEN 1 ELSE 0 END) * 100.0
                 / NULLIF(COUNT(*), 0), 1) AS rate
             FROM applications
             WHERE applied_at IS NOT NULL
@@ -562,12 +787,12 @@ export class JobApplicationManager {
         applicationId: string,
         type: ApplicationEventType,
         description: string | null,
-        extra: { toStatus?: JobApplicationStatus; scheduledAt?: string | null } = {},
+        extra: { toStatus?: JobApplicationStatus; scheduledAt?: string | null; eventDate?: string } = {},
     ): number {
         const result = this.getDb().prepare(`
-            INSERT INTO application_events (application_id, event_type, description, to_status, scheduled_at)
-            VALUES (?, ?, ?, ?, ?)
-        `).run(applicationId, type, description, extra.toStatus ?? null, extra.scheduledAt ?? null);
+            INSERT INTO application_events (application_id, event_type, description, to_status, scheduled_at, event_date)
+            VALUES (?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))
+        `).run(applicationId, type, description, extra.toStatus ?? null, extra.scheduledAt ?? null, extra.eventDate ?? null);
         return Number(result.lastInsertRowid);
     }
 

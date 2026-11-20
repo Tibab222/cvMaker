@@ -1,16 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { AlertTriangle, BellRing, CalendarClock, Check, ChevronRight, Coffee, FileClock, Plus, Radar, Send } from "lucide-react";
+import { AlertTriangle, BellRing, CalendarClock, Check, ChevronRight, Coffee, FileClock, Ghost, Plus, Radar, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { fadeUp, staggerContainer } from "@/lib/motion";
 import { useProfileStore } from "@/store/profile";
-import type { Reminder } from "@shared/jobApplications.type";
+import { NO_RESPONSE_AFTER_DAYS, type Reminder } from "@shared/jobApplications.type";
 import { parseDbDate } from "@shared/utils";
 import EmptyState from "../general/EmptyState";
+import NoResponseDialog from "./NoResponseDialog";
 import { useDashboard } from "./provider/hook";
 
 /** "Node.js", "nodejs" and "NODE JS" are the same skill. */
@@ -20,6 +21,7 @@ const REMINDER_STYLE: Record<Reminder["kind"], { icon: typeof Send; className: s
   interview: { icon: CalendarClock, className: "bg-amber-500/12 text-amber-700" },
   follow_up: { icon: Send, className: "bg-sky-500/12 text-sky-700" },
   stale_draft: { icon: FileClock, className: "bg-zinc-500/10 text-zinc-600" },
+  no_response: { icon: Ghost, className: "bg-zinc-500/12 text-zinc-600 dark:text-zinc-300" },
 };
 
 function reminderCopy(reminder: Reminder) {
@@ -39,6 +41,12 @@ function reminderCopy(reminder: Reminder) {
         detail: `${reminder.job_title}${reminder.detail ? ` · ${reminder.detail}` : ""}`,
         meta: `${reminder.days} days of silence`,
       };
+    case "no_response":
+      return {
+        title: `No answer from ${reminder.company_name}`,
+        detail: reminder.job_title,
+        meta: `${reminder.days} days of silence`,
+      };
     case "stale_draft":
     default:
       return {
@@ -50,7 +58,9 @@ function reminderCopy(reminder: Reminder) {
 }
 
 export default function MarketPanel() {
-  const { keywords, reminders, openApplication } = useDashboard();
+  const { keywords, reminders, silentApplications, openApplication } = useDashboard();
+  const [reviewing, setReviewing] = useState(false);
+  const silent = silentApplications.length;
   const { skills, projects } = useProfileStore();
 
   // everything the profile can prove: declared skills and the tags on project bullets
@@ -150,10 +160,34 @@ export default function MarketPanel() {
           <CardTitle className="flex items-center gap-2 text-base">
             <BellRing className="size-4 text-brand" /> Today
           </CardTitle>
-          <CardDescription>Upcoming interviews, follow-ups due and drafts left behind</CardDescription>
+          <CardDescription>Upcoming interviews, follow-ups due, long silences and drafts left behind</CardDescription>
         </CardHeader>
         <CardContent>
-          {reminders.length === 0 ? (
+          {silent > 0 && (
+            <button
+              type="button"
+              onClick={() => setReviewing(true)}
+              className="group mb-2 flex w-full items-start gap-3 rounded-lg border border-dashed border-border bg-muted/30 p-3 text-left transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md hover:shadow-brand/5"
+            >
+              <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-md", REMINDER_STYLE.no_response.className)}>
+                <Ghost className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className="truncate text-sm font-medium text-foreground">
+                    {silent === 1 ? `No answer from ${silentApplications[0].company_name}` : `${silent} applications without an answer`}
+                  </span>
+                  <span className="shrink-0 text-[11px] text-muted-foreground">{NO_RESPONSE_AFTER_DAYS}+ days</span>
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                  {silent === 1 ? `${silentApplications[0].job_title} · close it as No response?` : "Review and close them as No response"}
+                </span>
+              </span>
+              <ChevronRight className="mt-2 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+            </button>
+          )}
+          <NoResponseDialog open={reviewing} onOpenChange={setReviewing} />
+          {reminders.length === 0 && silent > 0 ? null : reminders.length === 0 ? (
             <EmptyState
               compact
               icon={Coffee}

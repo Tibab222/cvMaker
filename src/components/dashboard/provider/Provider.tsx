@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DashboardContext } from "./Context";
 import type { KeywordStat } from "@shared/Keywords.types";
@@ -10,7 +10,10 @@ import {
   type ApplicationWithEvents,
   type KeyStats,
   type NewApplicationEventDto,
+  type PastApplicationDto,
+  type PastApplicationResult,
   type Reminder,
+  type SilentApplication,
 } from "@shared/jobApplications.type";
 
 export interface DashboardContextType {
@@ -18,6 +21,12 @@ export interface DashboardContextType {
   keyStats: KeyStats | null;
   applications: Application[];
   reminders: Reminder[];
+  /** Applications marked Applied without any sign of life for NO_RESPONSE_AFTER_DAYS or more, longest silence first. */
+  silentApplications: SilentApplication[];
+  /** The one thing to show on each application's card: an interview, a follow-up due, a long silence, a stale draft. */
+  attentionByApp: Map<string, Reminder>;
+  /** Closes applications as No response (only the ones still Applied), with an undo in the toast. */
+  markNoResponse: (ids: string[]) => Promise<number>;
   isLoading: boolean;
   /** Application shown in the side drawer, if any. */
   selectedApplicationId: string | null;
@@ -29,6 +38,8 @@ export interface DashboardContextType {
   addEvent: (applicationId: string, dto: NewApplicationEventDto) => Promise<boolean>;
   deleteEvent: (eventId: number) => Promise<boolean>;
   updateDetails: (applicationId: string, details: ApplicationDetailsDto) => Promise<boolean>;
+  /** Adds an application sent outside the app; validation errors come back in the result. */
+  addPastApplication: (dto: PastApplicationDto) => Promise<PastApplicationResult>;
   /** Bumped after every change, so views showing derived data (the drawer timeline) know when to reload. */
   revision: number;
 }
@@ -38,6 +49,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [keyStats, setKeyStats] = useState<KeyStats | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [silentApplications, setSilentApplications] = useState<SilentApplication[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
@@ -68,7 +80,23 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch (error) {
       console.error("Error fetching reminders:", error);
     }
+    try {
+      setSilentApplications(await api.getSilentApplications());
+    } catch (error) {
+      console.error("Error fetching silent applications:", error);
+    }
   }, []);
+
+  const attentionByApp = useMemo(() => {
+    const map = new Map<string, Reminder>();
+    // reminders arrive sorted by priority: keep the most important one per application
+    for (const reminder of reminders) if (!map.has(reminder.application_id)) map.set(reminder.application_id, reminder);
+    for (const app of silentApplications) {
+      if (map.has(app.id)) continue;
+      map.set(app.id, { id: `no_response_${app.id}`, kind: "no_response", application_id: app.id, job_title: app.job_title, company_name: app.company_name, date: app.last_sign, days: app.days });
+    }
+    return map;
+  }, [reminders, silentApplications]);
 
   /** Everything derived from the applications: stats, reminders and the drawer. */
   const refreshDerived = useCallback(() => {
@@ -97,6 +125,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return () => window.clearTimeout(timeoutId);
   }, [fetchApplications, fetchKeyStats, fetchReminders]);
 
+  // the browser extension recorded an application while the dashboard is open: refresh quietly and say so
+  useEffect(() => {
+    return api.onApplicationsChanged(async (event) => {
+      try {
+        setApplications(await api.getApplications());
+        refreshDerived();
+      } catch (error) {
+        console.error("Error refreshing applications:", error);
+      }
+      if (event.action === "created") toast.success(`${event.title} at ${event.company} added from your browser`);
+      else if (event.action === "promoted") toast.success(`${event.title} at ${event.company} moved to Applied`);
+    });
+  }, [refreshDerived]);
+
   const updateApplicationStatus = useCallback(async (id: string, newStatus: JobApplicationStatus) => {
     const previous = applications;
     // optimistic move; the real applied_at comes back with the refetch
@@ -112,6 +154,41 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       toast.error("Could not move the application");
     }
   }, [applications, refreshDerived]);
+
+  const markNoResponse = useCallback(async (ids: string[]): Promise<number> => {
+    try {
+      const closed = await api.markNoResponse(ids);
+      setApplications(await api.getApplications());
+      refreshDerived();
+      if (closed.length === 0) {
+        toast.info("Nothing to close: they are no longer waiting");
+        return 0;
+      }
+      toast.success(closed.length === 1 ? "Closed as No response" : `${closed.length} applications closed as No response`, {
+        description: "They moved to Closed. If a company answers later, move its card back.",
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void (async () => {
+              try {
+                await api.undoNoResponse(closed);
+                setApplications(await api.getApplications());
+                refreshDerived();
+              } catch (error) {
+                console.error("Failed to undo:", error);
+                toast.error("Could not undo");
+              }
+            })();
+          },
+        },
+      });
+      return closed.length;
+    } catch (error) {
+      console.error("Failed to close applications:", error);
+      toast.error("Could not close these applications");
+      return 0;
+    }
+  }, [refreshDerived]);
 
   const getApplicationInfos = useCallback(async (applicationId: string): Promise<ApplicationWithEvents | null> => {
     try {
@@ -180,6 +257,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, []);
 
+  const addPastApplication = useCallback(async (dto: PastApplicationDto): Promise<PastApplicationResult> => {
+    try {
+      const result = await api.addPastApplication(dto);
+      if (result.ok) {
+        setApplications((prev) => [result.application, ...prev]);
+        refreshDerived();
+      }
+      return result;
+    } catch (error) {
+      console.error("Failed to add application:", error);
+      return { ok: false, error: "Could not save this application" };
+    }
+  }, [refreshDerived]);
+
   return (
     <DashboardContext.Provider
       value={{
@@ -187,6 +278,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         keyStats,
         applications,
         reminders,
+        silentApplications,
+        attentionByApp,
+        markNoResponse,
         isLoading,
         selectedApplicationId,
         openApplication: setSelectedApplicationId,
@@ -197,6 +291,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addEvent,
         deleteEvent,
         updateDetails,
+        addPastApplication,
         revision,
       }}
     >

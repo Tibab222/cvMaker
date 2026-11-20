@@ -1,7 +1,7 @@
 import { CoverLetterStatusPayload, GenerateCoverLetterDTO } from "../shared/CoverLetter.types";
 import { Experience } from "../shared/Experience.interface";
 import { JobOfferPayload } from "../shared/Extension.types";
-import { Application, ApplicationDetailsDto, ApplicationEvent, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats, NewApplicationEventDto, Reminder } from "../shared/jobApplications.type";
+import { Application, ApplicationsChangedEvent, PastApplicationDto, PastApplicationResult, ApplicationDetailsDto, ApplicationEvent, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats, NewApplicationEventDto, Reminder, SilentApplication } from "../shared/jobApplications.type";
 import { OnProgressCallback, SetupProgressStatus } from "../shared/OllamaDownloadStatus";
 import { Language } from "../shared/profile.interface";
 import { ProfilesData } from "../shared/profilesData.interface";
@@ -63,6 +63,12 @@ contextBridge.exposeInMainWorld('api', {
   saveCVSession: (data: Partial<CVSessionDataDTO>) => ipcRenderer.invoke('save-CV-session', data) as Promise<{ id: string; success: boolean; error?: string }>, // return the id of the saved session or an error message if it fails
   getKeyStats: () => ipcRenderer.invoke('get-key-stats') as Promise<KeyStats>,
   getApplications: () => ipcRenderer.invoke('get-applications') as Promise<Application[]>,
+  addPastApplication: (dto: PastApplicationDto) => ipcRenderer.invoke('add-past-application', dto) as Promise<PastApplicationResult>,
+  onApplicationsChanged: (callback: (event: ApplicationsChangedEvent) => void) => {
+    const subscription = (_event: Electron.IpcRendererEvent, value: ApplicationsChangedEvent) => callback(value);
+    ipcRenderer.on('applications:changed', subscription);
+    return () => ipcRenderer.removeListener('applications:changed', subscription);
+  },
   getApplicationWithTimeline: (applicationId: string) => ipcRenderer.invoke('get-application-with-timeline', applicationId) as Promise<ApplicationWithEvents | null>,
   updateApplicationStatus: (applicationId: string, newStatus: JobApplicationStatus, note?: string) => ipcRenderer.invoke('update-application-status', applicationId, newStatus, note) as Promise<void>,
   getCVSession: (applicationId: string) => ipcRenderer.invoke('get-CV-session', applicationId) as Promise<CVSessionDataDTO | null>,
@@ -81,6 +87,9 @@ contextBridge.exposeInMainWorld('api', {
   deleteApplicationEvent: (eventId: number) => ipcRenderer.invoke('delete-application-event', eventId) as Promise<boolean>,
   updateApplicationDetails: (applicationId: string, details: ApplicationDetailsDto) => ipcRenderer.invoke('update-application-details', applicationId, details) as Promise<boolean>,
   getReminders: (limit?: number) => ipcRenderer.invoke('get-reminders', limit) as Promise<Reminder[]>,
+  getSilentApplications: () => ipcRenderer.invoke('get-silent-applications') as Promise<SilentApplication[]>,
+  markNoResponse: (ids: string[]) => ipcRenderer.invoke('mark-no-response', ids) as Promise<string[]>,
+  undoNoResponse: (ids: string[]) => ipcRenderer.invoke('undo-no-response', ids) as Promise<number>,
   vault: {
     list: () => ipcRenderer.invoke('vault:list'),
     import: (payload: VaultImportPayload) => ipcRenderer.invoke('vault:import', payload),

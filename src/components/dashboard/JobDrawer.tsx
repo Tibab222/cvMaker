@@ -11,6 +11,7 @@ import {
   FileText,
   FileX,
   FolderOpen,
+  Ghost,
   Loader2,
   MessageSquareText,
   Pencil,
@@ -290,6 +291,16 @@ function NotesPanel({ job }: { job: JobCard }) {
           className="min-h-56 bg-surface-elevated text-sm leading-relaxed"
         />
       </div>
+      {job.description && (
+        <details className="group rounded-lg border border-border/70 bg-surface-elevated">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-sm font-medium text-foreground">
+            The offer
+            <span className="text-xs font-normal text-muted-foreground group-open:hidden">Show</span>
+            <span className="hidden text-xs font-normal text-muted-foreground group-open:inline">Hide</span>
+          </summary>
+          <p className="max-h-72 overflow-y-auto whitespace-pre-line border-t border-border/60 px-3 py-2.5 text-sm leading-relaxed text-foreground/90">{job.description}</p>
+        </details>
+      )}
       {job.stack.length > 0 && (
         <div>
           <p className="mb-1.5 text-xs font-medium text-muted-foreground">Keywords to prepare</p>
@@ -314,6 +325,8 @@ export default function JobDrawer() {
     addEvent,
     deleteEvent,
     revision,
+    silentApplications,
+    markNoResponse,
   } = useDashboard();
   const [job, setJob] = useState<JobCard | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -337,6 +350,7 @@ export default function JobDrawer() {
   const isOpen = !!selectedApplicationId;
   const isLoading = isOpen && (!job || job.id !== selectedApplicationId);
   const confirmDelete = !!job && confirmDeleteId === job.id;
+  const silent = job ? silentApplications.find((app) => app.id === job.id) : undefined;
 
   const handleDelete = async () => {
     if (!job) return;
@@ -442,12 +456,25 @@ export default function JobDrawer() {
                 </Button>
               </div>
 
+              {silent && job.status === JobApplicationStatus.APPLIED && (
+                <div className="flex items-center gap-3 rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2.5">
+                  <Ghost className="size-4 shrink-0 text-muted-foreground" />
+                  <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">No sign of life for {silent.days} days.</span> Followed up or heard back? Log it below.
+                    Otherwise it is probably a no.
+                  </p>
+                  <Button size="sm" variant="outline" className="h-7 shrink-0 text-xs" onClick={() => void markNoResponse([job.id])}>
+                    Close as No response
+                  </Button>
+                </div>
+              )}
+
               <div className="grid grid-cols-3 gap-2">
                 <InfoTile
                   icon={CalendarDays}
                   label="Applied"
                   value={job.appliedAt ? format(job.appliedAt, "d MMM yyyy") : "Not yet"}
-                  hint={job.appliedAt ? formatDistanceToNow(job.appliedAt, { addSuffix: true }) : undefined}
+                  hint={job.appliedAt ? `${formatDistanceToNow(job.appliedAt, { addSuffix: true })}${job.channel ? ` · via ${job.channel}` : ""}` : job.channel ? `via ${job.channel}` : undefined}
                 />
                 <InfoTile icon={Wallet} label="Salary" value={job.salary || "Not set"} />
                 <InfoTile
@@ -514,7 +541,7 @@ export default function JobDrawer() {
                     <EmptyState
                       icon={FileX}
                       title="No resume exported yet"
-                      description="Export a PDF from the resume editor and it will show up here."
+                      description={job.hasResumeSession ? "Export a PDF from the resume editor and it will show up here." : "Sent outside CVMaker: no resume made in the app for this one."}
                     />
                   )}
                   {job.coverLetter && (

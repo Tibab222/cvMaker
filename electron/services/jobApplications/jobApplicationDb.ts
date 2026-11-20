@@ -204,6 +204,62 @@ const MIGRATIONS: Migration[] = [
             `);
         },
     },
+    {
+        version: 6,
+        name: "applications added by hand (how the user applied, offer text)",
+        up: (db) => {
+            // no CHECK on channel: new channels must not need a table rebuild; the manager validates it
+            addColumnIfMissing(db, "applications", "channel", "TEXT");
+            // offer text of applications made outside the app (the others keep it in their resume session)
+            addColumnIfMissing(db, "applications", "description", "TEXT");
+            db.exec(`CREATE INDEX IF NOT EXISTS idx_applications_company ON applications(company_name COLLATE NOCASE)`);
+        },
+    },
+    {
+        version: 7,
+        name: "No response status",
+        up: (db) => {
+            // SQLite cannot alter a CHECK constraint: applications is rebuilt with the new status list. Foreign keys
+            // are off during migrations, so the events keep pointing at the same ids; the trigger and indexes go with
+            // the old table and are recreated.
+            db.exec(`
+                CREATE TABLE applications_new (
+                    id TEXT PRIMARY KEY,
+                    job_title TEXT NOT NULL,
+                    company_name TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK (status IN (${statusList(Object.values(JobApplicationStatus))})),
+                    keywords TEXT,
+                    salary INTEGER,
+                    recruiter_contact TEXT,
+                    url TEXT,
+                    json_file_path TEXT,
+                    pdf_file_path TEXT,
+                    motivation_letter_file_path TEXT,
+                    notes TEXT,
+                    applied_at DATETIME,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    channel TEXT,
+                    description TEXT
+                );
+                INSERT INTO applications_new (id, job_title, company_name, status, keywords, salary, recruiter_contact, url, json_file_path,
+                                              pdf_file_path, motivation_letter_file_path, notes, applied_at, created_at, updated_at, channel, description)
+                SELECT id, job_title, company_name, status, keywords, salary, recruiter_contact, url, json_file_path,
+                       pdf_file_path, motivation_letter_file_path, notes, applied_at, created_at, updated_at, channel, description
+                FROM applications;
+                DROP TABLE applications;
+                ALTER TABLE applications_new RENAME TO applications;
+
+                CREATE TRIGGER IF NOT EXISTS update_applications_timestamp
+                AFTER UPDATE ON applications
+                BEGIN
+                    UPDATE applications SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+                END;
+                CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
+                CREATE INDEX IF NOT EXISTS idx_applications_company ON applications(company_name COLLATE NOCASE);
+            `);
+        },
+    },
 ];
 
 export class JobApplicationDb {

@@ -2,16 +2,38 @@ import http, { Server, IncomingMessage, ServerResponse } from 'http';
 import { BrowserWindow } from 'electron';
 import { JobOfferPayload } from '../../../shared/Extension.types';
 import { AutofillProfile, LocalServerStatus } from '../../../shared/discovery.types';
+import type { ExtensionVaultResume, VaultMatch, VaultOffer } from '../../../shared/vault.types';
+import { ApplicationChannel, type BrowserApplicationDto, type BrowserApplicationResult } from '../../../shared/jobApplications.type';
+
+/** Resume vault, for the extension to pick a resume and attach it to an application form. */
+export interface LocalVaultHandlers {
+  list: () => ExtensionVaultResume[];
+  match: (offer: VaultOffer, limit: number) => Promise<VaultMatch[]>;
+  file: (id: string) => { fileName: string; bytes: Buffer };
+}
 
 /** What the server can do besides opening an offer in the editor. Injected, so this file stays free of app logic. */
 export interface LocalServerHandlers {
   getStatus: () => LocalServerStatus;
   getAutofillProfile: () => Promise<AutofillProfile | null>;
   queueJob: (payload: JobOfferPayload) => Promise<{ id: number; score: number | null; duplicate: boolean }>;
+  vault?: LocalVaultHandlers;
+  /** An application the user confirmed sending, seen by the extension. Throws a readable message when refused. */
+  recordApplication?: (dto: BrowserApplicationDto) => Promise<BrowserApplicationResult>;
 }
+
+const RECORD_MESSAGES: Record<BrowserApplicationResult['action'], string> = {
+  created: 'Saved to CVMaker',
+  promoted: 'Moved to Applied in CVMaker (the resume you prepared for it)',
+  duplicate: 'Already in your CVMaker pipeline',
+};
+const CHANNELS = new Set<string>(Object.values(ApplicationChannel));
 
 /** Origins of browser-extension pages (Chrome/Edge/Brave and Firefox). Regular websites never match. */
 const EXTENSION_ORIGIN = /^(chrome-extension|moz-extension|safari-web-extension):\/\/[a-z0-9-]+$/i;
+/** Header the browser extension adds to every request (navigator_extension/src/core/localServer.ts). */
+const CLIENT_HEADER = 'x-cvmaker-client';
+const CLIENT_NAME = 'extension';
 const MAX_BODY_BYTES = 2 * 1024 * 1024; // a job posting is a few KB; this only guards against abuse
 
 /** Reads the optional delivery mode without failing on bad JSON (parsing errors are reported elsewhere). */
@@ -58,6 +80,11 @@ export class HttpServerService {
       }
       if (origin) this.handleCors(res, origin);
 
+      // Chrome sends the extension origin. Firefox does not when the extension has host permissions (no CORS then),
+      // so the extension also names itself in a custom header: a web page cannot send that header here without a
+      // CORS preflight, and the preflight carries its own origin, refused above.
+      const fromExtension = origin ? true : req.headers[CLIENT_HEADER] === CLIENT_NAME;
+
       if (req.method === 'OPTIONS') {
         res.writeHead(204);
         res.end();
@@ -68,12 +95,26 @@ export class HttpServerService {
       if (req.method === 'GET' && route === '/api/status') {
         this.sendJson(res, 200, { status: 'success', ...(this.handlers?.getStatus() ?? { app: 'cvmaker', profileLoaded: false, profileName: null }) });
       } else if (req.method === 'GET' && route === '/api/profile') {
-        // personal data: only for the extension itself, never for local tools without an Origin
-        if (!origin) {
+        // personal data: only for the extension itself
+        if (!fromExtension) {
           this.sendJson(res, 403, { status: 'error', message: 'Only the browser extension can read the profile' });
           return;
         }
         this.handleProfileEndpoint(res);
+      } else if (route.startsWith('/api/vault')) {
+        // personal files: only for the extension itself, like the profile
+        if (!fromExtension) {
+          this.sendJson(res, 403, { status: 'error', message: 'Only the browser extension can read the vault' });
+          return;
+        }
+        void this.handleVault(req, res, route);
+      } else if (req.method === 'POST' && route === '/api/applications') {
+        // writes to the user's pipeline: only the extension itself
+        if (!fromExtension) {
+          this.sendJson(res, 403, { status: 'error', message: 'Only the browser extension can record applications' });
+          return;
+        }
+        void this.handleRecordApplication(req, res);
       } else if (req.method === 'POST' && route === '/api/job') {
         this.handleJobEndpoint(req, res, mainWindowGetter);
       } else {
@@ -100,7 +141,7 @@ export class HttpServerService {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', `Content-Type, ${CLIENT_HEADER}`);
   }
 
   private sendJson(res: ServerResponse, status: number, body: Record<string, unknown>): void {
@@ -190,6 +231,111 @@ export class HttpServerService {
     } catch (error) {
       console.error('[HttpServerService] Profile read failed:', error);
       this.sendJson(res, 500, { status: 'error', message: 'Could not read the profile' });
+    }
+  }
+
+  /** Body of a small JSON request; null (and an answer already sent) when it is too large or not JSON. */
+  private readJson(req: IncomingMessage, res: ServerResponse, maxBytes: number): Promise<Record<string, unknown> | null> {
+    return new Promise((resolve) => {
+      let body = '';
+      let size = 0;
+      let aborted = false;
+      req.on('data', (chunk: Buffer) => {
+        if (aborted) return;
+        size += chunk.length;
+        if (size > maxBytes) {
+          aborted = true;
+          // the rest is read and dropped (not cut off), so the client gets the answer instead of a reset
+          res.setHeader('Connection', 'close');
+          this.sendJson(res, 413, { status: 'error', message: 'Payload too large' });
+          req.resume();
+          resolve(null);
+          return;
+        }
+        body += chunk.toString('utf-8');
+      });
+      req.on('end', () => {
+        if (aborted) return;
+        try {
+          const parsed = JSON.parse(body) as unknown;
+          if (parsed && typeof parsed === 'object') return resolve(parsed as Record<string, unknown>);
+        } catch {
+          /* answered below */
+        }
+        this.sendJson(res, 400, { status: 'error', message: 'JSON not valid' });
+        resolve(null);
+      });
+    });
+  }
+
+  private async handleVault(req: IncomingMessage, res: ServerResponse, route: string): Promise<void> {
+    const vault = this.handlers?.vault;
+    if (!vault) {
+      this.sendJson(res, 503, { status: 'error', message: 'Resume vault not available' });
+      return;
+    }
+    if (!this.handlers?.getStatus().profileLoaded) {
+      this.sendJson(res, 409, { status: 'error', message: 'Open a profile in CV Maker first' });
+      return;
+    }
+    try {
+      if (req.method === 'GET' && route === '/api/vault') {
+        this.sendJson(res, 200, { status: 'success', resumes: vault.list() });
+      } else if (req.method === 'POST' && route === '/api/vault/match') {
+        const data = await this.readJson(req, res, MAX_BODY_BYTES);
+        if (!data) return;
+        const text = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+        const offer: VaultOffer = { title: text(data.title, 300), description: text(data.description, 60_000) };
+        const limit = Math.min(Math.max(Math.floor(Number(data.limit)) || 10, 1), 50);
+        this.sendJson(res, 200, { status: 'success', matches: await vault.match(offer, limit) });
+      } else if (req.method === 'GET' && route === '/api/vault/file') {
+        const id = new URL(req.url ?? '', 'http://localhost').searchParams.get('id') ?? '';
+        if (!/^[0-9a-f-]{36}$/i.test(id)) {
+          this.sendJson(res, 400, { status: 'error', message: 'Unknown resume' });
+          return;
+        }
+        const { fileName, bytes } = vault.file(id);
+        // JSON + base64: the extension hands it to the page as a message, which carries text, not binary
+        this.sendJson(res, 200, { status: 'success', fileName, mime: 'application/pdf', data: bytes.toString('base64') });
+      } else {
+        this.sendJson(res, 404, { status: 'error', message: 'Route not found' });
+      }
+    } catch (error) {
+      console.error('[HttpServerService] Vault request failed:', error);
+      this.sendJson(res, 409, { status: 'error', message: error instanceof Error ? error.message : 'Vault request failed' });
+    }
+  }
+
+  private async handleRecordApplication(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const record = this.handlers?.recordApplication;
+    if (!record) {
+      this.sendJson(res, 503, { status: 'error', message: 'Applications cannot be recorded from the browser' });
+      return;
+    }
+    // no profile open yet: the extension keeps it and sends it again later
+    if (!this.handlers?.getStatus().profileLoaded) {
+      this.sendJson(res, 409, { status: 'error', code: 'no-profile', message: 'Open a profile in CV Maker first' });
+      return;
+    }
+    const data = await this.readJson(req, res, MAX_BODY_BYTES);
+    if (!data) return;
+    const text = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+    const channel = text(data.channel, 40);
+    const dto: BrowserApplicationDto = {
+      company: text(data.company, 200),
+      title: text(data.title, 200),
+      appliedOn: text(data.appliedOn, 10),
+      url: text(data.url, 2000),
+      description: text(data.description, 50_000),
+      salary: text(data.salary, 100),
+      channel: CHANNELS.has(channel) ? (channel as ApplicationChannel) : null,
+    };
+    try {
+      const result = await record(dto);
+      const { id, job_title, company_name, status } = result.application;
+      this.sendJson(res, 200, { status: 'success', action: result.action, message: RECORD_MESSAGES[result.action], application: { id, job_title, company_name, status } });
+    } catch (error) {
+      this.sendJson(res, 422, { status: 'error', message: error instanceof Error ? error.message : 'Could not record the application' });
     }
   }
 

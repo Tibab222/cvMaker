@@ -50,5 +50,17 @@ export interface VaultMatch {
   missing: string[];
 }
 
+/** A vault resume as the browser extension sees it: enough to choose one, no thumbnail, no text. */
+export interface ExtensionVaultResume {
+  id: string;
+  name: string;
+  file_name: string;
+  pages: number;
+  language: Language;
+  has_text: boolean;
+  /** The first few keywords only. */
+  keywords: string[];
+}
+
 /** Largest PDF accepted (a resume is rarely over 2 MB; this leaves room for photos). */
 export const VAULT_MAX_BYTES = 15 * 1024 * 1024;
