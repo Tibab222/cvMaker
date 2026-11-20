@@ -1,52 +1,64 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { LayoutDashboard, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import AddApplicationDialog from "./AddApplicationDialog";
 import StatsRow from "./StatsRow";
-import KanbanBoard from "./KanbanBoard";
+import PipelineSection from "./PipelineSection";
 import MarketPanel from "./MarketPanel";
+import JobDrawer from "./JobDrawer";
+import PageHeader from "../general/PageHeader";
+import { useDashboard } from "./provider/hook";
+import { fadeUp, staggerContainer } from "@/lib/motion";
 
 export default function DashboardShell() {
+  const { applications, reminders, silentApplications } = useDashboard();
+  // long silences count once: they are reviewed together
+  const urgent = reminders.filter((r) => r.kind !== "stale_draft").length + (silentApplications.length > 0 ? 1 : 0);
+  const [adding, setAdding] = useState(false);
+
   return (
     <>
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-border/70 bg-background/70 px-4 backdrop-blur-xl md:px-6">
-            <div>
-                <h1 className="text-sm font-semibold">Career Analytics</h1>
-                <p className="hidden text-[11px] text-muted-foreground sm:block">
-                    Local pipeline
-                </p>
-            </div>
-            <div className="relative ml-auto hidden w-72 lg:block">
-                {/* <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                    placeholder="Search roles, companies…"
-                    className="h-9 bg-surface/70 pl-9 pr-12"
-                />
-                <kbd className="pointer-events-none absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-0.5 rounded border border-border/70 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                    <Command className="size-2.5" />K
-                </kbd> */}
-            </div>
-            {/* <Button variant="ghost" size="icon" className="ml-auto lg:ml-0" aria-label="Notifications">
-                <Bell className="size-4" />
-            </Button> */}
-        </header>
+      <PageHeader
+        icon={LayoutDashboard}
+        title="Career dashboard"
+        description={
+          applications.length === 0
+            ? "Your local job-search pipeline"
+            : `${applications.length} application${applications.length > 1 ? "s" : ""} tracked${urgent ? ` · ${urgent} thing${urgent > 1 ? "s" : ""} to do` : ""}`
+        }
+        actions={
+          <Button size="sm" onClick={() => setAdding(true)} className="gap-1.5 shadow-sm shadow-brand/20" title="An application you sent without CVMaker">
+            <Plus className="size-4" /> Add application
+          </Button>
+        }
+      />
+      <AddApplicationDialog open={adding} onOpenChange={setAdding} />
 
-        <main className="flex-1 space-y-6 p-4 md:p-6 min-w-0 overflow-y-auto">
-            <StatsRow />
+      <motion.main
+        className="min-w-0 flex-1 space-y-8 p-4 md:p-6"
+        variants={staggerContainer(0.08, 0.05)}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.div variants={fadeUp}>
+          <StatsRow />
+        </motion.div>
 
-            <section className="space-y-3">
-            <div className="flex items-baseline justify-between gap-3">
-                <div>
-                    <h2 className="text-base font-semibold">Application Pipeline</h2>
-                    <p className="text-xs text-muted-foreground">
-                        Drag cards between stages · click a card for the full dossier
-                    </p>
-                </div>
-            </div>
-            <KanbanBoard />
-            </section>
+        <motion.div variants={fadeUp}>
+          <PipelineSection />
+        </motion.div>
 
-            <section className="space-y-3">
-            <h2 className="text-base font-semibold">My Market</h2>
-            <MarketPanel />
-            </section>
-        </main>
+        <motion.section variants={fadeUp} className="space-y-3">
+          <div>
+            <h2 className="text-base font-semibold tracking-tight">My market</h2>
+            <p className="text-xs text-muted-foreground">What employers ask for, and what needs your attention</p>
+          </div>
+          <MarketPanel />
+        </motion.section>
+      </motion.main>
+
+      <JobDrawer />
     </>
   );
 }

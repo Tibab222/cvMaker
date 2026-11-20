@@ -1,12 +1,17 @@
 import { useProfileStore } from "@/store/profile";
 import SkillCard from "./SkillCard";
 import type { Skills } from "@shared/Skills.interface";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { Sparkles } from "lucide-react";
+import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
+import SectionPage from "../SectionPage";
 
 export default function Skills() {
     const {skills, updateSection} = useProfileStore();
     const [showAddNew, setShowAddNew] = useState(false);
+
+    const handleAddShortcut = useCallback(() => setShowAddNew(true), []);
+    useKeyboardShortcut("n", handleAddShortcut, { enabled: !showAddNew });
 
     const handleOnSave = (updatedSkill: Skills) => {
         const newSkillList = skills.map((skill) => skill.id === updatedSkill.id ? updatedSkill : skill);
@@ -26,24 +31,21 @@ export default function Skills() {
     }
 
     return (
-        <div className="w-full h-full flex flex-col gap-4 p-4">
-            { skills.length === 0 && <h2 className="text-2xl font-bold">No skill entries yet.</h2> }
-            <div className="w-full grid grid-cols-3 gap-2">
-            {
-                skills.map((skill, index) => (
-                    <SkillCard key={index} skill={skill} onSave={handleOnSave} onDelete={handleDelete} />
-                ))
-            }
-            </div>
-            {
-                showAddNew ? (
-                    <SkillCard skill={{name: "", id: ""}} onSave={handleNewSave} onDelete={() => setShowAddNew(false)} />
-                ) : (
-                    <Button variant="default" className="ml-auto" onClick={() => setShowAddNew(true)}>
-                        Add Skill
-                    </Button>
-                )
-            }
-        </div>
+        <SectionPage
+            icon={Sparkles}
+            title="Skills"
+            description="Languages, tools and soft skills, with an optional level"
+            noun="skill"
+            layout="grid"
+            isAdding={showAddNew}
+            onAdd={() => setShowAddNew(true)}
+            emptyDescription="List what you master. Skills missing from this list show up as gaps on the dashboard."
+            // keyed by id, not index: deleting a skill must not shift the edit state of the others
+            items={skills.map((skill) => ({
+                key: skill.id,
+                node: <SkillCard skill={skill} onSave={handleOnSave} onDelete={handleDelete} />,
+            }))}
+            newItem={<SkillCard skill={{ name: "", id: "" }} onSave={handleNewSave} onDelete={() => setShowAddNew(false)} />}
+        />
     )
 }

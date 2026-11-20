@@ -4,6 +4,15 @@ import { fileURLToPath } from 'url';
 import { registerIpcHandlers } from './ipcHandlers';
 import { existsSync, mkdirSync } from 'fs';
 import { HttpServerService } from './services/HttpServer/HttpServerService';
+import { getDiscoveryManager } from './services/discovery';
+import { ProfileService } from './services/ProfileService';
+import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
+import { buildAutofillProfile } from './functions/autofillProfile';
+import { getVaultManager } from './services/vault';
+import { getAnswerBank } from './services/answers';
+import { recordApplicationFromBrowser } from './functions/applicationFromOffer';
+import { offerKeywordsIn, profileLanguage } from './functions/offerKeywords';
+import type { ApplicationsChangedEvent } from '../shared/jobApplications.type';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,7 +86,50 @@ function createWindow() {
 app.whenReady().then(() => {
   registerIpcHandlers();
   createWindow();
-  HttpServerService.getInstance().init(() => win);
+  HttpServerService.getInstance().init(() => win, {
+    getStatus: () => {
+      const profilePath = ProfileService.getInstance().getCurrentProfilePath();
+      return {
+        app: 'cvmaker',
+        profileLoaded: JobApplicationManager.getInstance().isConnected(),
+        profileName: profilePath ? path.basename(profilePath) : null,
+      };
+    },
+    getAutofillProfile: async () => {
+      const data = await ProfileService.getInstance().getCurrentProfile();
+      return data ? buildAutofillProfile(data) : null;
+    },
+    queueJob: (payload) => getDiscoveryManager().addFromExtension(payload),
+    openedOffers: () => getDiscoveryManager().openedOffers(),
+    vault: {
+      list: () => getVaultManager().list().map(({ id, name, file_name, pages, language, has_text, keywords }) => ({
+        id, name, file_name, pages, language, has_text, keywords: keywords.slice(0, 8),
+      })),
+      match: (offer, limit) => getVaultManager().match(offer, limit),
+      file: (id) => getVaultManager().readFile(id),
+    },
+    recordApplication: async (dto) => {
+      const language = await profileLanguage();
+      // linked to the offer of the Opportunities queue it was made for, whose analysis it reuses
+      const result = recordApplicationFromBrowser(JobApplicationManager.getInstance(), getDiscoveryManager(), dto, () => offerKeywordsIn(dto.description, language));
+      // the dashboard refreshes and says what came in
+      const event: ApplicationsChangedEvent = { source: 'extension', action: result.action, title: result.application.job_title, company: result.application.company_name, fromOffer: !!result.offer };
+      BrowserWindow.getAllWindows().forEach((window) => {
+        if (!window.isDestroyed()) window.webContents.send('applications:changed', event);
+      });
+      return result;
+    },
+    answers: {
+      capture: (answers) => getAnswerBank().capture(answers),
+      match: (questions) => getAnswerBank().match(questions),
+    },
+  });
+  // daily job search; it only runs while the app is open (a missed run happens at the next launch)
+  getDiscoveryManager().startScheduler();
+});
+
+app.on('before-quit', () => {
+  getDiscoveryManager().stopScheduler();
 });
 
 app.on('window-all-closed', () => {

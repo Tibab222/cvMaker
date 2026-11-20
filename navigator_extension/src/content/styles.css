@@ -1,14 +1,40 @@
+/* Offer extraction: which part of the page became which field */
+.cvmaker-highlight-title,
+.cvmaker-highlight-company,
+.cvmaker-highlight-mandate {
+  outline-offset: 3px !important;
+  border-radius: 4px !important;
+  transition: outline-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
 .cvmaker-highlight-title {
-  outline: 3px solid #3b82f6 !important; /* Blue */
-  outline-offset: 2px !important;
+  outline: 2px solid #6366f1 !important;
+  box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.12) !important;
 }
 
 .cvmaker-highlight-company {
-  outline: 3px solid #10b981 !important; /* Green */
-  outline-offset: 2px !important;
+  outline: 2px solid #10b981 !important;
+  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.12) !important;
 }
 
 .cvmaker-highlight-mandate {
-  outline: 3px solid #8b5cf6 !important; /* Violet */
+  outline: 2px dashed #a855f7 !important;
+}
+
+/* Autofill: green = filled from your profile, amber = your turn */
+.cvmaker-filled {
+  outline: 2px solid #10b981 !important;
+  outline-offset: 1px !important;
+  background-color: rgba(16, 185, 129, 0.06) !important;
+  animation: cvmaker-pop 0.6s ease-out !important;
+}
+
+.cvmaker-attention {
+  outline: 2px dashed #f59e0b !important;
   outline-offset: 2px !important;
+}
+
+@keyframes cvmaker-pop {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+  100% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
 }

@@ -28,3 +28,7 @@ dist-electron
 build
 out/
 perso.md
+
+.claude
+.env
+/navigator_extension/.env

@@ -123,8 +123,8 @@ export abstract class BaseAdapter {
   /** Strips tags from an HTML string (e.g. a JSON-LD `description` field). */
   protected static stripHtml(html: string | null | undefined): string {
     if (!html) return '';
-    const container = document.createElement('div');
-    container.innerHTML = html;
+    // an inert document: unlike innerHTML on a page element, nothing in it loads or runs (no <img onerror>)
+    const container = new DOMParser().parseFromString(html, 'text/html').body;
     container.querySelectorAll('script, style').forEach((n) => n.remove());
     const raw = container.innerText !== undefined ? container.innerText : container.textContent;
     return this.cleanText(raw);

@@ -7,7 +7,9 @@
     "dev": "npm run build:firefox -- --watch",
     "build:chrome": "vite build --mode chrome-sidebar && vite build --mode chrome-content && vite build --mode chrome-background",
     "build:firefox": "vite build --mode firefox-sidebar && vite build --mode firefox-content && vite build --mode firefox-background",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint:firefox": "npm run build:firefox && npx web-ext@10 lint --source-dir dist/firefox",
+    "sign:firefox": "npm run build:firefox && node --env-file-if-exists=.env scripts/sign-firefox.mjs"
   },
   "keywords": [],
   "author": "",

@@ -2,12 +2,15 @@ import type { AIAnalysisStatus } from "@shared/AIAnalysisStatus";
 import type { CoverLetterStatusPayload, GenerateCoverLetterDTO } from "@shared/CoverLetter.types";
 import type { Experience } from "@shared/Experience.interface";
 import type { JobOfferPayload } from "@shared/Extension.types";
-import type { CVSessionDataDTO, JobApplicationStatus } from "@shared/jobApplications.type";
+import type { ApplicationDetailsDto, ApplicationEditDto, ApplicationsChangedEvent, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto, PastApplicationDto } from "@shared/jobApplications.type";
 import type { OnProgressCallback } from "@shared/OllamaDownloadStatus";
 import type { Language } from "@shared/profile.interface";
 import type { ProfilesData } from "@shared/profilesData.interface";
 import type { Project } from "@shared/projects.interface";
 import type { RewriteResumeOptions } from "@shared/RewriteResume.type";
+import type { VaultImportPayload, VaultOffer } from "@shared/vault.types";
+import type { SavedAnswerDto } from "@shared/answers.types";
+import type { AdzunaQuery, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings } from "@shared/discovery.types";
 
 export const api = {
     minimize: () => window.api.minimize(),
@@ -42,6 +45,7 @@ export const api = {
     saveCVSession: async (data: Partial<CVSessionDataDTO>) => { return await window.api.saveCVSession(data) },
     getKeyStats: async () => { return await window.api.getKeyStats() },
     getApplications: async () => { return await window.api.getApplications() },
+    addPastApplication: (dto: PastApplicationDto) => window.api.addPastApplication(dto),
     updateApplicationStatus: async (id: string, newStatus: JobApplicationStatus) => { return await window.api.updateApplicationStatus(id, newStatus) },
     getApplicationWithTimeline: async (applicationId: string) => { return await window.api.getApplicationWithTimeline(applicationId) },
     getCVSession: async (applicationId: string) => { return await window.api.getCVSession(applicationId) },
@@ -50,5 +54,51 @@ export const api = {
     generateCoverLetter: async (options: GenerateCoverLetterDTO) => { return await window.api.generateCoverLetter(options) },
     onCoverLetterStatusUpdate: (callback: (payload: CoverLetterStatusPayload) => void) => window.api.onCoverLetterStatusUpdate(callback),
     deleteApplication: async (applicationId: string) => { return await window.api.deleteApplication(applicationId) },
+    addApplicationEvent: async (applicationId: string, dto: NewApplicationEventDto) => { return await window.api.addApplicationEvent(applicationId, dto) },
+    deleteApplicationEvent: async (eventId: number) => { return await window.api.deleteApplicationEvent(eventId) },
+    updateApplicationDetails: async (applicationId: string, details: ApplicationDetailsDto) => { return await window.api.updateApplicationDetails(applicationId, details) },
+    editApplication: async (applicationId: string, dto: ApplicationEditDto) => { return await window.api.editApplication(applicationId, dto) },
+    getReminders: async (limit?: number) => { return await window.api.getReminders(limit) },
+    getSilentApplications: async () => { return await window.api.getSilentApplications() },
+    markNoResponse: async (ids: string[]) => { return await window.api.markNoResponse(ids) },
+    undoNoResponse: async (ids: string[]) => { return await window.api.undoNoResponse(ids) },
     onJobReceived: (callback: (jobData: JobOfferPayload) => void) => window.api.onJobReceived(callback),
+    onApplicationsChanged: (callback: (event: ApplicationsChangedEvent) => void) => window.api.onApplicationsChanged(callback),
+    vault: {
+        list: () => window.api.vault.list(),
+        import: (payload: VaultImportPayload) => window.api.vault.import(payload),
+        rename: (id: string, name: string) => window.api.vault.rename(id, name),
+        remove: (id: string) => window.api.vault.remove(id),
+        open: (id: string) => window.api.vault.open(id),
+        reveal: (id: string) => window.api.vault.reveal(id),
+        match: (offer: VaultOffer, limit?: number) => window.api.vault.match(offer, limit),
+    },
+    answers: {
+        list: () => window.api.answers.list(),
+        add: (dto: SavedAnswerDto) => window.api.answers.add(dto),
+        update: (id: string, dto: SavedAnswerDto) => window.api.answers.update(id, dto),
+        remove: (id: string) => window.api.answers.remove(id),
+    },
+    discovery: {
+        listSources: () => window.api.discovery.listSources(),
+        addSource: (input: string) => window.api.discovery.addSource(input),
+        removeSource: (id: number) => window.api.discovery.removeSource(id),
+        setSourceEnabled: (id: number, enabled: boolean) => window.api.discovery.setSourceEnabled(id, enabled),
+        getSettings: () => window.api.discovery.getSettings(),
+        saveSettings: (settings: DiscoverySettings) => window.api.discovery.saveSettings(settings),
+        suggestFilters: () => window.api.discovery.suggestFilters(),
+        addSearch: (query: AdzunaQuery) => window.api.discovery.addSearch(query),
+        adzunaStatus: () => window.api.discovery.adzunaStatus(),
+        connectAdzuna: (appId: string, appKey: string) => window.api.discovery.connectAdzuna(appId, appKey),
+        disconnectAdzuna: () => window.api.discovery.disconnectAdzuna(),
+        listJobs: () => window.api.discovery.listJobs(),
+        setJobStatus: (id: number, status: DiscoveredJobStatus) => window.api.discovery.setJobStatus(id, status),
+        prepareJob: (id: number) => window.api.discovery.prepareJob(id),
+        markOpened: (id: number) => window.api.discovery.markOpened(id),
+        start: () => window.api.discovery.start(),
+        cancel: () => window.api.discovery.cancel(),
+        getStatus: () => window.api.discovery.getStatus(),
+        onStatus: (callback: (status: DiscoveryRunStatus) => void) => window.api.discovery.onStatus(callback),
+        onJobsChanged: (callback: () => void) => window.api.discovery.onJobsChanged(callback),
+    },
 }

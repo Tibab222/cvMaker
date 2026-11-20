@@ -34,6 +34,15 @@ export class ProfileService {
         return profile;
     }
 
+    /** Profile currently open in the app, re-read from disk so background jobs see the latest edits. */
+    public async getCurrentProfile(): Promise<ProfilesData | null> {
+        return this.profile_path ? this.loadProfile(this.profile_path) : null;
+    }
+
+    public getCurrentProfilePath(): string | null {
+        return this.profile_path;
+    }
+
     public async getExperiences(): Promise<ProfilesData['experience']> {
         if (!this.profile_path) {
             throw new Error('No profile loaded');

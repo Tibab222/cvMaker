@@ -2,6 +2,23 @@ import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
 import { KeywordStat } from '../../../shared/Keywords.types';
+import { Migration, runMigrations } from '../db/migrations';
+
+const MIGRATIONS: Migration[] = [
+  {
+    version: 1,
+    name: 'baseline keyword affinity',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS local_skills_affinity (
+          keyword TEXT PRIMARY KEY,
+          global_count INTEGER DEFAULT 1,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    },
+  },
+];
 
 export class KeywordsAffinityDatabase {
   private static instance: KeywordsAffinityDatabase | null = null;
@@ -21,7 +38,7 @@ export class KeywordsAffinityDatabase {
     const instance = this.getInstance();
     if (!instance.db) throw new Error("Affinity Database not connected");
     const stmt = instance.db.prepare(`
-      UPDATE local_skills_affinity SET global_count = global_count - ? WHERE keyword = ?
+      UPDATE local_skills_affinity SET global_count = MAX(global_count - ?, 0), updated_at = CURRENT_TIMESTAMP WHERE keyword = ?
     `);
     stmt.run(amount, keyword.toLowerCase().trim());
   }
@@ -42,22 +59,11 @@ export class KeywordsAffinityDatabase {
     if (this.dbPath === dbPath && this.db) {
       return;
     }
+    this.db?.close();
     this.dbPath = dbPath;
     this.db = new Database(dbPath);
 
-    this.initSchema();
-  }
-
-  private initSchema(): void {
-    if (!this.db) return;
-
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS local_skills_affinity (
-        keyword TEXT PRIMARY KEY,
-        global_count INTEGER DEFAULT 1,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    runMigrations(this.db, MIGRATIONS, 'keywords_affinity');
   }
 
   /**
@@ -127,8 +133,9 @@ export class KeywordsAffinityDatabase {
 
     const stmt = this.db.prepare(`
       SELECT keyword, global_count 
-      FROM local_skills_affinity 
-      ORDER BY global_count DESC 
+      FROM local_skills_affinity
+      WHERE global_count > 0
+      ORDER BY global_count DESC, keyword ASC
       LIMIT ?
     `);
 
