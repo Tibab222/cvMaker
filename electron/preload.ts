@@ -8,6 +8,7 @@ import { ProfilesData } from "../shared/profilesData.interface";
 import { Project } from "../shared/projects.interface";
 import { RewriteResumeOptions } from "../shared/RewriteResume.type";
 import type { VaultImportPayload, VaultOffer } from "../shared/vault.types";
+import type { SavedAnswerDto } from "../shared/answers.types";
 import { AdzunaQuery, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings } from "../shared/discovery.types";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -99,6 +100,12 @@ contextBridge.exposeInMainWorld('api', {
     open: (id: string) => ipcRenderer.invoke('vault:open', id),
     reveal: (id: string) => ipcRenderer.invoke('vault:reveal', id),
     match: (offer: VaultOffer, limit?: number) => ipcRenderer.invoke('vault:match', offer, limit),
+  },
+  answers: {
+    list: () => ipcRenderer.invoke('answers:list'),
+    add: (dto: SavedAnswerDto) => ipcRenderer.invoke('answers:add', dto),
+    update: (id: string, dto: SavedAnswerDto) => ipcRenderer.invoke('answers:update', id, dto),
+    remove: (id: string) => ipcRenderer.invoke('answers:remove', id),
   },
   discovery: {
     listSources: () => ipcRenderer.invoke('discovery:list-sources'),

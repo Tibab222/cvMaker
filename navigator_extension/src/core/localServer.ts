@@ -1,4 +1,4 @@
-import type { AutofillProfile, CVMakerPayload, VaultFile, VaultMatch, VaultResume } from './messages';
+import type { AnswerMatch, AnswerQuestion, AutofillProfile, CapturedAnswer, CVMakerPayload, VaultFile, VaultMatch, VaultResume } from './messages';
 import { AppOfflineError, type AppApplication, type AppSaveAnswer } from '../background/tracker';
 
 /** The desktop app's local server (electron/services/HttpServer). It only listens on this machine. */
@@ -126,4 +126,39 @@ export async function saveApplication(application: AppApplication): Promise<AppS
 export async function getVaultFile(id: string): Promise<VaultFile> {
   const body = await call(`/api/vault/file?id=${encodeURIComponent(id)}`, undefined, 15000, 'Could not read this resume');
   return { fileName: String(body.fileName), mime: String(body.mime || 'application/pdf'), data: String(body.data) };
+}
+
+/**
+ * Keeps answers the user gave on a form in the app's answer bank.
+ * @throws AppOfflineError when they should be sent again later (app closed, no profile open yet)
+ */
+export async function captureAnswers(answers: CapturedAnswer[]): Promise<number> {
+  let answer;
+  try {
+    answer = await request('/api/answers/capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers }),
+    }, 10000);
+  } catch {
+    throw new AppOfflineError(OFFLINE);
+  }
+  if (answer.status === 409) throw new AppOfflineError(String(answer.body.message));
+  if (!answer.ok) throw new Error(answer.body.message || 'CVMaker refused these answers');
+  return Number(answer.body.kept) || 0;
+}
+
+/** Saved answers for the questions of a form; none when the app is closed or cannot compare them. */
+export async function matchAnswers(questions: AnswerQuestion[]): Promise<AnswerMatch[]> {
+  try {
+    // the first comparison may load the local language model: give it time
+    const answer = await request('/api/answers/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questions }),
+    }, 30000);
+    return answer.ok && Array.isArray(answer.body.matches) ? (answer.body.matches as AnswerMatch[]) : [];
+  } catch {
+    return [];
+  }
 }

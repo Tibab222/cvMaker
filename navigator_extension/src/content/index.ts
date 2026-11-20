@@ -1,8 +1,9 @@
 import browser from 'webextension-polyfill';
 import { extractJobFromCurrentPageWhenReady } from '../scrapers';
-import type { AttachReportMessage, AutofillReportMessage, ContentMessage, ExtractOfferResponse, ExtractResponseMessage } from '../core/messages';
+import type { AnswerMatch, AnswerMessage, AttachReportMessage, AutofillReportMessage, ContentMessage, ExtractOfferResponse, ExtractResponseMessage } from '../core/messages';
 import { autofillDocument, clearAutofillHighlights } from '../autofill/fill';
 import { attachResume } from '../autofill/attach';
+import { applyAnswers, openQuestions } from '../autofill/questions';
 import { startTracking } from '../tracking/watcher';
 import './styles.css';
 
@@ -11,6 +12,8 @@ import './styles.css';
  * Offer extraction only answers from the top frame; autofill runs in each frame and reports back to the panel.
  */
 const isTopFrame = window === window.top;
+/** Tells this frame's reports apart from another frame of the same site. */
+const FRAME_KEY = Math.random().toString(36).slice(2);
 
 const HIGHLIGHT_CLASSES = ['cvmaker-highlight-title', 'cvmaker-highlight-company', 'cvmaker-highlight-mandate'];
 
@@ -79,17 +82,35 @@ const onMessage = (request: unknown, _sender: unknown, sendResponse: (response: 
 
     case 'AUTOFILL': {
       clearAutofillHighlights(document);
-      const report = autofillDocument(document, message.profile);
-      const hasFields = report.filled.length > 0 || report.attention.length > 0 || report.alreadyFilled > 0;
-      if (hasFields || isTopFrame) {
-        const reportMessage: AutofillReportMessage = {
-          action: 'AUTOFILL_REPORT',
-          runId: message.runId,
-          frame: isTopFrame ? 'page' : location.hostname,
-          report,
-        };
-        // the panel may already be closed: nothing to do then
-        browser.runtime.sendMessage(reportMessage).catch(() => undefined);
+      const { attentionControls, ...report } = autofillDocument(document, message.profile);
+      const open = openQuestions(document);
+      const hasFields = report.filled.length > 0 || report.attention.length > 0 || report.alreadyFilled > 0 || open.questions.length > 0;
+      const reportOf = (final: boolean): AutofillReportMessage => ({
+        action: 'AUTOFILL_REPORT',
+        runId: message.runId,
+        frame: isTopFrame ? 'page' : location.hostname,
+        frameKey: FRAME_KEY,
+        final,
+        report,
+      });
+      // the panel may already be closed: nothing to do then
+      const post = (final: boolean) => browser.runtime.sendMessage(reportOf(final)).catch(() => undefined);
+      if (hasFields || isTopFrame) void post(open.questions.length === 0);
+
+      // then the questions the user already answered on other forms (the app may take a few seconds to compare them)
+      if (open.questions.length > 0) {
+        void (browser.runtime.sendMessage({ action: 'MATCH_ANSWERS', questions: open.questions } satisfies AnswerMessage) as Promise<AnswerMatch[] | undefined>)
+          .catch(() => [] as AnswerMatch[])
+          .then((matches) => {
+            const { answered, controls } = applyAnswers(open, matches ?? []);
+            if (answered.length) {
+              const taken = new Set<Element>(controls);
+              const kept = report.attention.filter((_, index) => !taken.has(attentionControls[index]));
+              report.attention = kept;
+              report.answered = answered;
+            }
+            void post(true);
+          });
       }
       // the top frame acknowledges, so the panel knows the page can be filled at all
       if (isTopFrame) sendResponse({ ok: true });

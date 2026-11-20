@@ -9,6 +9,7 @@ import { ProfileService } from './services/ProfileService';
 import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
 import { buildAutofillProfile } from './functions/autofillProfile';
 import { getVaultManager } from './services/vault';
+import { getAnswerBank } from './services/answers';
 import { offerKeywordsIn, profileLanguage } from './functions/offerKeywords';
 import type { ApplicationsChangedEvent } from '../shared/jobApplications.type';
 
@@ -114,6 +115,10 @@ app.whenReady().then(() => {
         if (!window.isDestroyed()) window.webContents.send('applications:changed', event);
       });
       return result;
+    },
+    answers: {
+      capture: (answers) => getAnswerBank().capture(answers),
+      match: (questions) => getAnswerBank().match(questions),
     },
   });
   // daily job search; it only runs while the app is open (a missed run happens at the next launch)

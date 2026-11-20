@@ -9,6 +9,7 @@ import type { ProfilesData } from "@shared/profilesData.interface";
 import type { Project } from "@shared/projects.interface";
 import type { RewriteResumeOptions } from "@shared/RewriteResume.type";
 import type { VaultImportPayload, VaultOffer } from "@shared/vault.types";
+import type { SavedAnswerDto } from "@shared/answers.types";
 import type { AdzunaQuery, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings } from "@shared/discovery.types";
 
 export const api = {
@@ -71,6 +72,12 @@ export const api = {
         open: (id: string) => window.api.vault.open(id),
         reveal: (id: string) => window.api.vault.reveal(id),
         match: (offer: VaultOffer, limit?: number) => window.api.vault.match(offer, limit),
+    },
+    answers: {
+        list: () => window.api.answers.list(),
+        add: (dto: SavedAnswerDto) => window.api.answers.add(dto),
+        update: (id: string, dto: SavedAnswerDto) => window.api.answers.update(id, dto),
+        remove: (id: string) => window.api.answers.remove(id),
     },
     discovery: {
         listSources: () => window.api.discovery.listSources(),

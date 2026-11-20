@@ -12,6 +12,7 @@ import { Project } from '../shared/projects.interface';
 import { AIAnalysisStatus } from '../shared/AIAnalysisStatus';
 import { CoverLetterStatusPayload, GenerateCoverLetterDTO } from '../shared/CoverLetter.types';
 import type { VaultImportPayload, VaultImportResult, VaultMatch, VaultOffer, VaultResume } from '../shared/vault.types';
+import type { SavedAnswer, SavedAnswerDto, SavedAnswerResult } from '../shared/answers.types';
 import { AddSourceResult, AdzunaConnectResult, AdzunaQuery, AdzunaStatus, DiscoveredJob, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings, JobSource, ProfileFilterSuggestion } from '../shared/discovery.types';
 
 export {};
@@ -82,6 +83,13 @@ declare global {
         open: (id: string) => Promise<boolean>;
         reveal: (id: string) => Promise<boolean>;
         match: (offer: VaultOffer, limit?: number) => Promise<VaultMatch[]>;
+      };
+      /** Answers given to application-form questions, kept by the browser extension. */
+      answers: {
+        list: () => Promise<SavedAnswer[]>;
+        add: (dto: SavedAnswerDto) => Promise<SavedAnswerResult>;
+        update: (id: string, dto: SavedAnswerDto) => Promise<SavedAnswerResult>;
+        remove: (id: string) => Promise<boolean>;
       };
       discovery: {
         listSources: () => Promise<JobSource[]>;

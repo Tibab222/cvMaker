@@ -53,12 +53,57 @@ export interface AttentionField {
   reason: AttentionReason;
 }
 
+/** A question answered with one of the user's saved answers. */
+export interface AnsweredField {
+  label: string;
+  value: string;
+  /** The saved question it comes from (worded differently when score < 1). */
+  savedQuestion: string;
+  score: number;
+}
+
 export interface AutofillReport {
   filled: FilledField[];
   attention: AttentionField[];
   /** Recognized fields that already had a value: left untouched. */
   alreadyFilled: number;
+  /** Questions answered from the answer bank. */
+  answered: AnsweredField[];
 }
+
+/* Answer bank: same shapes as shared/answers.types.ts in the desktop app. */
+
+export type AnswerKind = 'text' | 'choice';
+
+/** An answer read from a form the user filled and moved on from. */
+export interface CapturedAnswer {
+  question: string;
+  answer: string;
+  kind: AnswerKind;
+  options?: string[];
+  host?: string;
+}
+
+/** A question of a form being filled, sent to find a saved answer. */
+export interface AnswerQuestion {
+  ref: string;
+  question: string;
+  kind: AnswerKind;
+  options?: string[];
+}
+
+export interface AnswerMatch {
+  ref: string;
+  answerId: string;
+  answer: string;
+  savedQuestion: string;
+  score: number;
+}
+
+/** Content scripts -> background (which talks to the app). */
+export type AnswerMessage =
+  | { action: 'ANSWERS_CAPTURED'; answers: CapturedAnswer[] }
+  | { action: 'MATCH_ANSWERS'; questions: AnswerQuestion[] };
 
 export interface AutofillRequestMessage {
   action: 'AUTOFILL';
@@ -75,6 +120,10 @@ export interface AutofillReportMessage {
   action: 'AUTOFILL_REPORT';
   runId: string;
   frame: string;
+  /** One per frame: a frame reports again once its saved answers are in, replacing its first report. */
+  frameKey: string;
+  /** False while saved answers are still being looked for: another report follows. */
+  final: boolean;
   report: AutofillReport;
 }
 

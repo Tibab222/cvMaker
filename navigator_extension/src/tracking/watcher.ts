@@ -4,7 +4,8 @@
  * "did you just apply?" card. The background decides which offer it was and whether to ask.
  */
 import browser from 'webextension-polyfill';
-import type { ApplyAnswerResponse, SeenOffer, TabTrackMessage, TrackHelloResponse, TrackMessage } from '../core/messages';
+import type { AnswerMessage, ApplyAnswerResponse, CapturedAnswer, SeenOffer, TabTrackMessage, TrackHelloResponse, TrackMessage } from '../core/messages';
+import { collectAnswers } from '../autofill/questions';
 import { clickMeaning, confirmationText, controlOf, hasVisibleErrors, isApplicationFlow, looksLikeApplicationForm, pageHints, scopeOf, submitsSomethingElse } from './applyDetect';
 import { readOffer } from './offerPage';
 import { hidePrompt, showPrompt } from './prompt';
@@ -121,6 +122,30 @@ function checkConfirmation(): boolean {
   return true;
 }
 
+/* ------------------------------------------------------------------ */
+/* Answers given (answer bank)                                          */
+/* ------------------------------------------------------------------ */
+
+/** Answers already sent from this page: the click and the submit of one step are the same answers. */
+const keptAnswers = new Set<string>();
+
+/** Keeps the answers of the step the user is leaving, for the next forms that ask the same questions. */
+function keepAnswers(scope: Element): void {
+  let answers: CapturedAnswer[];
+  try {
+    answers = collectAnswers(scope).filter((answer) => {
+      const key = `${answer.question}|${answer.answer}`;
+      if (keptAnswers.has(key)) return false;
+      keptAnswers.add(key);
+      return true;
+    });
+  } catch (error) {
+    console.debug('[CVMaker] Could not read the answers', error);
+    return;
+  }
+  if (answers.length) browser.runtime.sendMessage({ action: 'ANSWERS_CAPTURED', answers } satisfies AnswerMessage).catch(() => undefined);
+}
+
 function signalSent(scope: Element): void {
   const now = Date.now();
   // the click on "Submit" and the form's submit event are the same send
@@ -140,6 +165,8 @@ function onClick(event: MouseEvent): void {
   const control = controlOf(event.target);
   if (!control) return;
   const meaning = clickMeaning(control, isApplying());
+  // the answers are read now, before the page moves to the next step
+  if (meaning === 'send' || meaning === 'step') keepAnswers(scopeOf(control));
   if (meaning === 'send') signalSent(scopeOf(control));
   else if (meaning === 'step') markApplying();
   // "Apply" on a posting: what is on screen right now is the offer about to be applied to
@@ -152,7 +179,9 @@ function onClick(event: MouseEvent): void {
 function onSubmit(event: SubmitEvent): void {
   if (!enabled || !(event.target instanceof HTMLFormElement)) return;
   if (submitsSomethingElse(event.target, event.submitter)) return;
-  if (looksLikeApplicationForm(event.target)) signalSent(event.target);
+  if (!looksLikeApplicationForm(event.target)) return;
+  keepAnswers(event.target);
+  signalSent(event.target);
 }
 
 /* ------------------------------------------------------------------ */

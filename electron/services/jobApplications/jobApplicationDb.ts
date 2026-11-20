@@ -260,6 +260,29 @@ const MIGRATIONS: Migration[] = [
             `);
         },
     },
+    {
+        version: 8,
+        name: "answer bank (application-form questions and the answers given)",
+        up: (db) => {
+            // question_key: the question without case, accents or punctuation, so a form asking it again finds it
+            db.exec(`
+                CREATE TABLE form_answers (
+                    id TEXT PRIMARY KEY,
+                    question TEXT NOT NULL,
+                    question_key TEXT NOT NULL UNIQUE,
+                    answer TEXT NOT NULL,
+                    kind TEXT NOT NULL DEFAULT 'text',
+                    options TEXT NOT NULL DEFAULT '[]',
+                    source_host TEXT,
+                    uses INTEGER NOT NULL DEFAULT 1,
+                    embedding BLOB, -- local MiniLM vector of the question, computed on the first match
+                    last_used_at DATETIME,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+        },
+    },
 ];
 
 export class JobApplicationDb {

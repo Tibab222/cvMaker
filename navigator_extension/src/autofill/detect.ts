@@ -81,6 +81,27 @@ function nearbyText(element: Element): string {
   return '';
 }
 
+/**
+ * The question a field asks, in full, as the user reads it: its label, aria label, the text before it or its
+ * placeholder. Empty when only the field's name or id says it (those are not questions).
+ */
+export function questionText(control: FormControl): string {
+  const labels = 'labels' in control && control.labels ? Array.from(control.labels).map((label) => clean(label.textContent)).filter(Boolean) : [];
+  const aria = clean(control.getAttribute('aria-label')) || textOfIds(control.getAttribute('aria-labelledby'));
+  const placeholder = 'placeholder' in control ? clean(control.placeholder) : '';
+  const text = labels[0] || aria || nearbyText(control) || placeholder;
+  return text.replace(/\s*\*\s*$/, '').replace(/\s*\((required|obligatoire)\)\s*$/i, '').trim();
+}
+
+/** Text of an element and of what it points at, for a group of fields (radio buttons under one question). */
+export function groupQuestionText(group: Element): string {
+  const aria = clean(group.getAttribute('aria-label')) || textOfIds(group.getAttribute('aria-labelledby'));
+  if (aria) return aria;
+  const legend = group.querySelector(':scope > legend');
+  if (legend) return clean(legend.textContent);
+  return nearbyText(group);
+}
+
 /** What a human reads as the field's label (for the report), and everything that describes it (for matching). */
 export function describe(control: FormControl): { label: string; haystack: string } {
   const labels = 'labels' in control && control.labels ? Array.from(control.labels).map((label) => clean(label.textContent)) : [];

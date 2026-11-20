@@ -24,6 +24,8 @@ import { offerKeywords, offerKeywordsIn, profileLanguage } from './functions/off
 import { generateCoverLetter } from './functions/generateCoverLetter';
 import { getDiscoveryManager } from './services/discovery';
 import { getVaultManager } from './services/vault';
+import { getAnswerBank } from './services/answers';
+import type { SavedAnswer, SavedAnswerDto, SavedAnswerResult } from '../shared/answers.types';
 import type { VaultImportPayload, VaultImportResult, VaultOffer } from '../shared/vault.types';
 import { AddSourceResult, AdzunaConnectResult, AdzunaQuery, DiscoveredJobStatus, DiscoverySettings } from '../shared/discovery.types';
 
@@ -308,6 +310,20 @@ export function registerIpcHandlers() {
         return true;
     });
     ipcMain.handle('vault:match', (event, offer: VaultOffer, limit?: number) => vault.match(offer, Math.min(Math.max(Number(limit) || 10, 1), 50)));
+
+    // Answer bank (application-form questions kept by the extension, edited here)
+    const answers = getAnswerBank();
+    const answerResult = (write: () => SavedAnswer): SavedAnswerResult => {
+        try {
+            return { ok: true, answer: write() };
+        } catch (error) {
+            return { ok: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    };
+    ipcMain.handle('answers:list', () => answers.list());
+    ipcMain.handle('answers:add', (event, dto: SavedAnswerDto) => answerResult(() => answers.add(dto)));
+    ipcMain.handle('answers:update', (event, id: string, dto: SavedAnswerDto) => answerResult(() => answers.update(id, dto)));
+    ipcMain.handle('answers:remove', (event, id: string) => answers.remove(id));
     ipcMain.handle('discovery:remove-source', (event, id: number) => discovery.removeSource(id));
     ipcMain.handle('discovery:set-source-enabled', (event, id: number, enabled: boolean) => discovery.setSourceEnabled(id, enabled));
     ipcMain.handle('discovery:get-settings', () => discovery.getSettings());

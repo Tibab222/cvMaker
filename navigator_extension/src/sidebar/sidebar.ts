@@ -44,6 +44,9 @@ const els = {
   attentionCount: $('attention-count'),
   keptCount: $('kept-count'),
   filledList: $<HTMLUListElement>('filled-list'),
+  answeredCard: $('answered-card'),
+  answeredList: $<HTMLUListElement>('answered-list'),
+  answersPending: $('answers-pending'),
   attentionList: $<HTMLUListElement>('attention-list'),
   clearBtn: $<HTMLButtonElement>('clear-btn'),
   offerVault: $('offer-vault'),
@@ -260,8 +263,8 @@ function listItem(className: string, icon: string, label: string, trailing: HTML
   return item;
 }
 
-function renderReport(report: AutofillReport) {
-  els.filledCount.textContent = String(report.filled.length);
+function renderReport(report: AutofillReport, pending = false) {
+  els.filledCount.textContent = String(report.filled.length + report.answered.length);
   els.attentionCount.textContent = String(report.attention.length);
   els.keptCount.textContent = String(report.alreadyFilled);
 
@@ -289,6 +292,30 @@ function renderReport(report: AutofillReport) {
   );
   if (attention.length === 0) els.attentionList.innerHTML = '<li class="empty">Nothing else spotted. Still read the whole form.</li>';
 
+  els.answeredCard.hidden = report.answered.length === 0;
+  els.answeredList.replaceChildren(
+    ...report.answered.map((field, index) => {
+      const value = document.createElement('span');
+      value.className = 'value';
+      value.textContent = field.value;
+      value.title = field.value;
+      const item = listItem('ok', CHECK_ICON, field.label, value, index);
+      // a question asked differently: say which saved one it comes from, so the user can check
+      if (field.score < 1) {
+        const text = item.querySelector('span')!;
+        const wrapper = document.createElement('span');
+        wrapper.className = 'answer-text';
+        const from = document.createElement('small');
+        from.textContent = `Saved for: ${field.savedQuestion}`;
+        from.title = field.savedQuestion;
+        text.replaceWith(wrapper);
+        wrapper.append(text, from);
+      }
+      return item;
+    }),
+  );
+  els.answersPending.hidden = !pending;
+
   els.fillResult.hidden = false;
 }
 
@@ -297,19 +324,29 @@ function mergeReports(reports: AutofillReport[]): AutofillReport {
     filled: reports.flatMap((report) => report.filled),
     attention: reports.flatMap((report) => report.attention),
     alreadyFilled: reports.reduce((sum, report) => sum + report.alreadyFilled, 0),
+    answered: reports.flatMap((report) => report.answered ?? []),
   };
 }
+
+/** Saved answers can take a while the first time (the app loads its language model): the panel waits this long. */
+const ANSWERS_WAIT_MS = 30_000;
 
 els.fillBtn.addEventListener('click', () => busy(els.fillBtn, 'Filling…', async () => {
   try {
     const [profile, tab] = await Promise.all([getAutofillProfile(), activeTab()]);
     const runId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const reports: AutofillReport[] = [];
-
-    // every frame holding fields reports on its own (forms often live in an iframe)
+    // every frame holding fields reports on its own (forms often live in an iframe), and again once its saved answers are in
+    const reports = new Map<string, AutofillReportMessage>();
+    const pending = () => [...reports.values()].some((report) => !report.final);
+    let shown = false;
+    let finished: () => void = () => undefined;
+    const allFinal = new Promise<void>((resolve) => (finished = resolve));
     const onReport = (message: unknown) => {
       const report = message as AutofillReportMessage;
-      if (report?.action === 'AUTOFILL_REPORT' && report.runId === runId) reports.push(report.report);
+      if (report?.action !== 'AUTOFILL_REPORT' || report.runId !== runId) return undefined;
+      reports.set(report.frameKey ?? String(reports.size), report);
+      if (shown) renderReport(mergeReports([...reports.values()].map((entry) => entry.report)), pending());
+      if (shown && !pending()) finished();
       return undefined;
     };
     browser.runtime.onMessage.addListener(onReport);
@@ -317,14 +354,22 @@ els.fillBtn.addEventListener('click', () => busy(els.fillBtn, 'Filling…', asyn
       const ack = await browser.tabs.sendMessage(tab.id!, { action: 'AUTOFILL', runId, profile } satisfies AutofillRequestMessage).catch(() => null);
       if (!ack) throw new Error(NOT_INJECTED);
       await new Promise((resolve) => window.setTimeout(resolve, 700));
+
+      const first = mergeReports([...reports.values()].map((entry) => entry.report));
+      shown = true;
+      renderReport(first, pending());
+      if (first.filled.length > 0) toast(`${first.filled.length} field${first.filled.length > 1 ? 's' : ''} filled. Check them before sending.`, 'success');
+      else if (first.attention.length === 0 && !pending()) toast('No application form found on this page.', 'error');
+
+      if (pending()) {
+        await Promise.race([allFinal, new Promise((resolve) => window.setTimeout(resolve, ANSWERS_WAIT_MS))]);
+        const report = mergeReports([...reports.values()].map((entry) => entry.report));
+        renderReport(report);
+        if (report.answered.length > 0) toast(`${report.answered.length} question${report.answered.length > 1 ? 's' : ''} answered from your saved answers. Check them.`, 'success');
+      }
     } finally {
       browser.runtime.onMessage.removeListener(onReport);
     }
-
-    const report = mergeReports(reports);
-    renderReport(report);
-    if (report.filled.length > 0) toast(`${report.filled.length} field${report.filled.length > 1 ? 's' : ''} filled. Check them before sending.`, 'success');
-    else if (report.attention.length === 0) toast('No application form found on this page.', 'error');
   } catch (error) {
     toast(errorText(error), 'error');
   }

@@ -6,6 +6,7 @@ import {
   FileText,
   FolderKanban,
   Library,
+  MessageSquareText,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -66,6 +67,7 @@ const GENERAL_ITEMS: MenuItem[] = [
 const DOCUMENT_ITEMS: MenuItem[] = [
   { label: "Create your CV", value: Tabs.CVMAKER, icon: FileText, trailing: WandSparkles },
   { label: "Resume library", value: Tabs.RESUME_LIBRARY, icon: Library },
+  { label: "Saved answers", value: Tabs.SAVED_ANSWERS, icon: MessageSquareText },
 ];
 
 const QUOTES = [

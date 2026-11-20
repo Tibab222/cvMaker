@@ -326,6 +326,8 @@ textarea.flash { animation: flash 0.8s var(--ease); }
 }
 .list li .value { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55%; margin-left: auto; }
 .list li .mark { width: 16px; height: 16px; margin-top: 1px; }
+.list li .answer-text { display: flex; min-width: 0; flex-direction: column; gap: 1px; }
+.list li .answer-text small { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list li.ok .mark { color: var(--ok); }
 .list li.warn .mark { color: var(--warn); }
 .badge.file { background: var(--brand-soft); color: var(--brand); }

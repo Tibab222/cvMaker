@@ -4,12 +4,19 @@ import { JobOfferPayload } from '../../../shared/Extension.types';
 import { AutofillProfile, LocalServerStatus } from '../../../shared/discovery.types';
 import type { ExtensionVaultResume, VaultMatch, VaultOffer } from '../../../shared/vault.types';
 import { ApplicationChannel, type BrowserApplicationDto, type BrowserApplicationResult } from '../../../shared/jobApplications.type';
+import type { AnswerMatch, AnswerQuestion, CapturedAnswer } from '../../../shared/answers.types';
 
 /** Resume vault, for the extension to pick a resume and attach it to an application form. */
 export interface LocalVaultHandlers {
   list: () => ExtensionVaultResume[];
   match: (offer: VaultOffer, limit: number) => Promise<VaultMatch[]>;
   file: (id: string) => { fileName: string; bytes: Buffer };
+}
+
+/** Answer bank: the extension keeps the answers given on application forms and asks for them on the next ones. */
+export interface LocalAnswerHandlers {
+  capture: (answers: CapturedAnswer[]) => number;
+  match: (questions: AnswerQuestion[]) => Promise<AnswerMatch[]>;
 }
 
 /** What the server can do besides opening an offer in the editor. Injected, so this file stays free of app logic. */
@@ -20,6 +27,7 @@ export interface LocalServerHandlers {
   vault?: LocalVaultHandlers;
   /** An application the user confirmed sending, seen by the extension. Throws a readable message when refused. */
   recordApplication?: (dto: BrowserApplicationDto) => Promise<BrowserApplicationResult>;
+  answers?: LocalAnswerHandlers;
 }
 
 const RECORD_MESSAGES: Record<BrowserApplicationResult['action'], string> = {
@@ -115,6 +123,13 @@ export class HttpServerService {
           return;
         }
         void this.handleRecordApplication(req, res);
+      } else if (req.method === 'POST' && route.startsWith('/api/answers/')) {
+        // what the user answered on forms: only the extension itself
+        if (!fromExtension) {
+          this.sendJson(res, 403, { status: 'error', message: 'Only the browser extension can use the answer bank' });
+          return;
+        }
+        void this.handleAnswers(req, res, route);
       } else if (req.method === 'POST' && route === '/api/job') {
         this.handleJobEndpoint(req, res, mainWindowGetter);
       } else {
@@ -336,6 +351,34 @@ export class HttpServerService {
       this.sendJson(res, 200, { status: 'success', action: result.action, message: RECORD_MESSAGES[result.action], application: { id, job_title, company_name, status } });
     } catch (error) {
       this.sendJson(res, 422, { status: 'error', message: error instanceof Error ? error.message : 'Could not record the application' });
+    }
+  }
+
+  private async handleAnswers(req: IncomingMessage, res: ServerResponse, route: string): Promise<void> {
+    const answers = this.handlers?.answers;
+    if (!answers) {
+      this.sendJson(res, 503, { status: 'error', message: 'Answer bank not available' });
+      return;
+    }
+    if (!this.handlers?.getStatus().profileLoaded) {
+      this.sendJson(res, 409, { status: 'error', code: 'no-profile', message: 'Open a profile in CV Maker first' });
+      return;
+    }
+    const data = await this.readJson(req, res, 256 * 1024);
+    if (!data) return;
+    try {
+      if (route === '/api/answers/capture') {
+        const list = Array.isArray(data.answers) ? (data.answers as CapturedAnswer[]) : [];
+        this.sendJson(res, 200, { status: 'success', kept: answers.capture(list) });
+      } else if (route === '/api/answers/match') {
+        const list = Array.isArray(data.questions) ? (data.questions as AnswerQuestion[]) : [];
+        this.sendJson(res, 200, { status: 'success', matches: await answers.match(list) });
+      } else {
+        this.sendJson(res, 404, { status: 'error', message: 'Route not found' });
+      }
+    } catch (error) {
+      console.error('[HttpServerService] Answer bank request failed:', error);
+      this.sendJson(res, 422, { status: 'error', message: error instanceof Error ? error.message : 'Answer bank request failed' });
     }
   }
 

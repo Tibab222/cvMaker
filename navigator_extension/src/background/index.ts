@@ -1,7 +1,7 @@
 import browser from 'webextension-polyfill';
-import { saveApplication } from '../core/localServer';
-import type { TrackMessage } from '../core/messages';
-import { ApplicationTracker, type LocalState, type SessionState } from './tracker';
+import { captureAnswers, matchAnswers, saveApplication } from '../core/localServer';
+import type { AnswerMessage, CapturedAnswer, TrackMessage } from '../core/messages';
+import { AppOfflineError, ApplicationTracker, type LocalState, type SessionState } from './tracker';
 
 /**
  * Chrome only: open the side panel when the toolbar button is clicked (Firefox uses sidebar_action instead).
@@ -56,7 +56,41 @@ browser.tabs.onCreated.addListener((tab) => {
   if (tab.id != null) void tracker.tabCreated(tab.id, tab.openerTabId ?? null);
 });
 browser.tabs.onRemoved.addListener((tabId) => void tracker.tabRemoved(tabId));
-browser.runtime.onStartup.addListener(() => void tracker.flushOutbox());
+browser.runtime.onStartup.addListener(() => {
+  void tracker.flushOutbox();
+  void keepAnswers([]);
+});
+
+/* ------------------------------------------------------------------ */
+/* Answer bank                                                          */
+/* ------------------------------------------------------------------ */
+
+/** Answers read while the app was closed, sent with the next ones. Old ones go first when it is full. */
+const ANSWER_OUTBOX = 'answerOutbox';
+const MAX_OUTBOX = 300;
+
+async function keepAnswers(answers: CapturedAnswer[]): Promise<void> {
+  const stored = ((await browser.storage.local.get(ANSWER_OUTBOX))[ANSWER_OUTBOX] as CapturedAnswer[] | undefined) ?? [];
+  const pending = [...stored, ...answers];
+  try {
+    // chunks: the app takes 60 answers per call
+    for (let start = 0; start < pending.length; start += 60) await captureAnswers(pending.slice(start, start + 60));
+    if (stored.length) await browser.storage.local.remove(ANSWER_OUTBOX);
+  } catch (error) {
+    if (!(error instanceof AppOfflineError)) {
+      console.warn('[CVMaker] Answers refused', error);
+      return;
+    }
+    await browser.storage.local.set({ [ANSWER_OUTBOX]: pending.slice(-MAX_OUTBOX) });
+  }
+}
+
+browser.runtime.onMessage.addListener(((request: unknown) => {
+  const message = request as AnswerMessage;
+  if (message?.action === 'ANSWERS_CAPTURED') return keepAnswers(Array.isArray(message.answers) ? message.answers : []);
+  if (message?.action === 'MATCH_ANSWERS') return matchAnswers(Array.isArray(message.questions) ? message.questions : []);
+  return undefined;
+}) as Parameters<typeof browser.runtime.onMessage.addListener>[0]);
 
 const TRACK_ACTIONS = new Set(['TRACK_HELLO', 'OFFER_SEEN', 'APPLY_SIGNAL', 'APPLY_CANCEL', 'APPLY_ANSWER', 'LIST_PROMPTS', 'GET_TRACKING', 'SET_TRACKING']);
 

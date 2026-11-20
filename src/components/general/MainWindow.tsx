@@ -19,6 +19,7 @@ import { useProfileStore } from "@/store/profile";
 import Dashboard from "../dashboard/Dashboard";
 import ResumeLibrary from "../resumeLibrary/ResumeLibrary";
 import Opportunities from "../opportunities/Opportunities";
+import SavedAnswers from "../answers/SavedAnswers";
 
 export default function MainWindow() {
     const { selectedTab, setSelectedTab } = useUiStore();
@@ -51,6 +52,8 @@ export default function MainWindow() {
                 return <ResumeLibrary />;
             case Tabs.OPPORTUNITIES:
                 return <Opportunities />;
+            case Tabs.SAVED_ANSWERS:
+                return <SavedAnswers />;
             default:
                 return (
                     <div className="flex h-full min-h-[60vh] w-full items-center justify-center p-6">
