@@ -20,6 +20,7 @@ import type {
   TrackMessage,
 } from '../core/messages';
 import { getAppStatus, getAutofillProfile, getVault, getVaultFile, matchVault, sendOffer } from '../core/localServer';
+import { fromMarkup } from '../core/markup';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -256,7 +257,7 @@ function listItem(className: string, icon: string, label: string, trailing: HTML
   const item = document.createElement('li');
   item.className = className;
   item.style.animationDelay = `${index * 40}ms`;
-  item.innerHTML = icon;
+  item.append(fromMarkup(icon));
   const text = document.createElement('span');
   text.textContent = label;
   item.append(text, trailing);
@@ -526,7 +527,7 @@ function resumeRow(resume: VaultResume, match: VaultMatch | null, best: boolean,
   main.append(name, details);
 
   button.append(ring, main);
-  button.insertAdjacentHTML('beforeend', CHECK_SMALL);
+  button.append(fromMarkup(CHECK_SMALL));
   item.append(button);
   return item;
 }

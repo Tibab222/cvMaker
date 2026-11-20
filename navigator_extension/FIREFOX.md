@@ -9,11 +9,14 @@ Regular Firefox only keeps extensions signed by Mozilla. Signing it as **unliste
 
 ## Sign and install
 
-From `navigator_extension`, in PowerShell:
+Put the keys in `navigator_extension/.env` (git ignores it):
 
-```powershell
-$env:WEB_EXT_API_KEY = "user:xxxx"; $env:WEB_EXT_API_SECRET = "xxxx"
 ```
+WEB_EXT_API_KEY=user:xxxx
+WEB_EXT_API_SECRET=xxxx
+```
+
+Then, from `navigator_extension`:
 
 ```powershell
 npm run lint:firefox

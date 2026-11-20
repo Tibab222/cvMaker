@@ -9,7 +9,7 @@
     "build:firefox": "vite build --mode firefox-sidebar && vite build --mode firefox-content && vite build --mode firefox-background",
     "typecheck": "tsc --noEmit",
     "lint:firefox": "npm run build:firefox && npx web-ext@10 lint --source-dir dist/firefox",
-    "sign:firefox": "npm run build:firefox && npx web-ext@10 sign --source-dir dist/firefox --artifacts-dir dist/signed --channel unlisted"
+    "sign:firefox": "npm run build:firefox && node --env-file-if-exists=.env scripts/sign-firefox.mjs"
   },
   "keywords": [],
   "author": "",

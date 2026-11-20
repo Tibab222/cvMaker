@@ -3,6 +3,7 @@
  * reach it and it cannot touch the site. Nothing is saved until the user says yes.
  */
 import type { ApplyAnswerResponse, ApplyPrompt } from '../core/messages';
+import { fromMarkup } from '../core/markup';
 
 export type Answer = (answer: 'yes' | 'no' | 'later', edits: { title?: string; company?: string; candidate?: number }) => Promise<ApplyAnswerResponse>;
 
@@ -136,7 +137,7 @@ export function showPrompt(prompt: ApplyPrompt, answer: Answer): void {
   const known = !!(prompt.title || prompt.company);
   const heading = element('strong', { textContent: known ? 'Did you just apply?' : 'Did you just apply for a job?' });
   const sub = element('span', { textContent: prompt.confirmed ? '' : 'A form was just sent on this page.' });
-  if (prompt.confirmed) sub.append(element('span', { className: 'badge ok', innerHTML: `${CHECK} The site confirms it was sent` }));
+  if (prompt.confirmed) sub.append(element('span', { className: 'badge ok' }, [fromMarkup(CHECK), ' The site confirms it was sent']));
   const close = element('button', { className: 'x', type: 'button', title: 'Not now (it stays in the CVMaker panel)', textContent: '×' });
   close.setAttribute('aria-label', 'Not now');
   const header = element('header', {}, [element('div', { className: 'logo', textContent: 'CV' }), element('div', { className: 'head' }, [heading, sub]), close]);
@@ -173,7 +174,7 @@ export function showPrompt(prompt: ApplyPrompt, answer: Answer): void {
   const msg = element('p', { className: 'msg' });
   msg.setAttribute('role', 'status');
   // what was read may be wrong (a job board's name as the company…): it is fixed here, before saving
-  const hint = element('p', { className: 'hint', innerHTML: known ? 'Not right? <b>Edit the position or company</b> before saving.' : 'Type the position and company, or pick an offer below.' });
+  const hint = element('p', { className: 'hint' }, known ? ['Not right? ', element('b', { textContent: 'Edit the position or company' }), ' before saving.'] : ['Type the position and company, or pick an offer below.']);
   const body = element('div', {}, [fields, hint, src, ...(others.length ? [choices] : []), element('div', { className: 'actions' }, [no, yes]), msg]);
   card.append(header, body);
   root.append(style, card);
@@ -182,7 +183,7 @@ export function showPrompt(prompt: ApplyPrompt, answer: Answer): void {
 
   const finish = (icon: string, text: string, tone: 'ok' | 'muted') => {
     state.done = true;
-    body.replaceChildren(element('div', { className: 'done' }, [element('span', { className: `check${tone === 'muted' ? ' muted' : ''}`, innerHTML: icon }), element('div', { textContent: text })]));
+    body.replaceChildren(element('div', { className: 'done' }, [element('span', { className: `check${tone === 'muted' ? ' muted' : ''}` }, [fromMarkup(icon)]), element('div', { textContent: text })]));
     header.querySelector('.head span')?.remove();
     heading.textContent = tone === 'ok' ? 'Application tracked' : 'Not saved';
     setTimeout(() => current === state && remove(), 4000);

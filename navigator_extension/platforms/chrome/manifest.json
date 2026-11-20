@@ -10,12 +10,12 @@
     "storage"
   ],
   "icons": {
-    "128": "icons/logo.png"
+    "128": "icons/logo-128.png"
   },
   "action": {
     "default_title": "Open CVMaker",
     "default_icon": {
-      "128": "icons/logo.png"
+      "128": "icons/logo-128.png"
     }
   },
   "background": {
