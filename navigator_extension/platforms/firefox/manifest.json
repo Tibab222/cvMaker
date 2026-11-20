@@ -3,6 +3,15 @@
   "name": "CVMaker",
   "version": "1.2.0",
   "description": "Save job offers to CVMaker, prefill application forms, and keep track of the applications you send. Nothing is ever submitted for you.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "cvmaker-navigator@cvmaker",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
   "permissions": [
     "activeTab",
     "scripting",
