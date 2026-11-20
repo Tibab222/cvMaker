@@ -29,7 +29,7 @@ export function pageMayBeOffer(doc: Document = document, loc: Location | URL = l
 }
 
 const text = (element: Element | null | undefined) =>
-  ((element as HTMLElement | null)?.innerText ?? element?.textContent ?? '').replace(/ /g, ' ').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  ((element as HTMLElement | null)?.innerText ?? element?.textContent ?? '').replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
 
 function first(doc: Document, selectors: string[], max = 300): string {
   for (const selector of selectors) {
