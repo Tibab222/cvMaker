@@ -13,6 +13,7 @@ export const QUEUE_VIEWS = [
   { status: DiscoveredJobStatus.NEW, label: "To review", empty: "Nothing new to review." },
   { status: DiscoveredJobStatus.SHORTLISTED, label: "Shortlist", empty: "Offers you keep (or send from the browser extension) land here." },
   { status: DiscoveredJobStatus.PREPARED, label: "Prepared", empty: "Offers you opened in the resume editor." },
+  { status: DiscoveredJobStatus.APPLIED, label: "Applied", empty: "Offers you applied to. Open an offer from here and apply in your browser: the extension links the two." },
   { status: DiscoveredJobStatus.DISMISSED, label: "Dismissed", empty: "Dismissed offers stay here for 30 days." },
 ] as const;
 

@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { formatDistanceToNowStrict } from "date-fns";
-import { Building2, Puzzle, Globe2, MapPin, RotateCcw, Star, WandSparkles, X } from "lucide-react";
+import { Building2, ExternalLink, Puzzle, Globe2, MapPin, RotateCcw, Star, WandSparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { listItem } from "@/lib/motion";
@@ -18,10 +18,12 @@ interface OpportunityCardProps {
   onOpen: (job: DiscoveredJob) => void;
   onStatus: (id: number, status: DiscoveredJobStatus) => void;
   onPrepare: (id: number) => void;
+  /** The offer's link was opened: the user is probably about to apply. */
+  onOpenLink: (id: number) => void;
 }
 
 /** One offer of the queue: who, where, how well it matches, and the next move. */
-const OpportunityCard = forwardRef<HTMLDivElement, OpportunityCardProps>(function OpportunityCard({ job, onOpen, onStatus, onPrepare }, ref) {
+const OpportunityCard = forwardRef<HTMLDivElement, OpportunityCardProps>(function OpportunityCard({ job, onOpen, onStatus, onPrepare, onOpenLink }, ref) {
   const posted = parseDbDate(job.posted_at) ?? parseDbDate(job.discovered_at);
   const applicationMeta = job.application_status ? STATUS_META[job.application_status as JobApplicationStatus] : null;
   const stop = (fn: () => void) => (event: React.MouseEvent) => {
@@ -93,6 +95,23 @@ const OpportunityCard = forwardRef<HTMLDivElement, OpportunityCardProps>(functio
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5 opacity-90 transition-opacity group-hover:opacity-100">
+        {job.url && (
+          <Button size="icon" variant="ghost" className="size-8 text-muted-foreground hover:text-foreground" asChild>
+            <a
+              href={job.url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open the offer"
+              title="Open the offer"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenLink(job.id);
+              }}
+            >
+              <ExternalLink className="size-4" />
+            </a>
+          </Button>
+        )}
         {job.status === DiscoveredJobStatus.NEW && (
           <Button size="sm" variant="outline" className="gap-1.5" onClick={stop(() => onStatus(job.id, DiscoveredJobStatus.SHORTLISTED))}>
             <Star className="size-3.5" /> Keep
@@ -103,7 +122,7 @@ const OpportunityCard = forwardRef<HTMLDivElement, OpportunityCardProps>(functio
             <WandSparkles className="size-3.5" /> {job.status === DiscoveredJobStatus.PREPARED ? "Open again" : "Prepare CV"}
           </Button>
         )}
-        {job.status === DiscoveredJobStatus.DISMISSED ? (
+        {job.status === DiscoveredJobStatus.APPLIED ? null : job.status === DiscoveredJobStatus.DISMISSED ? (
           <Button size="sm" variant="ghost" className="gap-1.5" onClick={stop(() => onStatus(job.id, DiscoveredJobStatus.NEW))}>
             <RotateCcw className="size-3.5" /> Restore
           </Button>

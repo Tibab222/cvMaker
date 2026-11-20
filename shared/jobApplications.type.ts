@@ -103,6 +103,8 @@ export interface ApplicationsChangedEvent {
     action: BrowserApplicationResult["action"];
     title: string;
     company: string;
+    /** Made for an offer of the Opportunities queue (now marked applied there). */
+    fromOffer?: boolean;
 }
 
 export type PastApplicationResult = { ok: true; application: Application } | { ok: false; error: string };

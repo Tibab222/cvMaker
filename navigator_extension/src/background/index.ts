@@ -1,5 +1,5 @@
 import browser from 'webextension-polyfill';
-import { captureAnswers, matchAnswers, saveApplication } from '../core/localServer';
+import { captureAnswers, getOpenedOffers, matchAnswers, saveApplication } from '../core/localServer';
 import type { AnswerMessage, CapturedAnswer, TrackMessage } from '../core/messages';
 import { AppOfflineError, ApplicationTracker, type LocalState, type SessionState } from './tracker';
 
@@ -47,6 +47,7 @@ const tracker = new ApplicationTracker({
     if (count) action.setBadgeBackgroundColor({ tabId, color: '#5b5bd6' }).catch(() => undefined);
   },
   saveToApp: saveApplication,
+  openedInApp: getOpenedOffers,
   later: (ms, task) => void setTimeout(task, ms),
   newId: () => crypto.randomUUID(),
 });

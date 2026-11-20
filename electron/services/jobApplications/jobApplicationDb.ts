@@ -283,6 +283,55 @@ const MIGRATIONS: Migration[] = [
             `);
         },
     },
+    {
+        version: 9,
+        name: "offers linked to the applications made from them (opened, applied)",
+        up: (db) => {
+            // new APPLIED status: discovered_jobs is rebuilt for its CHECK (nothing points at it). opened_at: the user
+            // opened the offer's link from the app; application_id: the application it turned into.
+            db.exec(`
+                CREATE TABLE discovered_jobs_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    source_id INTEGER REFERENCES job_sources(id) ON DELETE SET NULL,
+                    origin TEXT NOT NULL DEFAULT 'board' CHECK (origin IN ('board', 'extension')),
+                    external_key TEXT NOT NULL UNIQUE,
+                    company TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    location TEXT,
+                    remote INTEGER NOT NULL DEFAULT 0,
+                    url TEXT,
+                    description TEXT NOT NULL DEFAULT '',
+                    salary TEXT,
+                    posted_at DATETIME,
+                    discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    score REAL,
+                    matched_keywords TEXT,
+                    missing_keywords TEXT,
+                    status TEXT NOT NULL DEFAULT 'NEW' CHECK (status IN (${statusList(Object.values(DiscoveredJobStatus))})),
+                    opened_at DATETIME,
+                    application_id TEXT
+                );
+            `);
+            // the queue's offers move over (a database without the table, which migration 3 creates, has none to move)
+            const hasQueue = db.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'discovered_jobs'`).get();
+            if (hasQueue) {
+                db.exec(`
+                    INSERT INTO discovered_jobs_new (id, source_id, origin, external_key, company, title, location, remote, url, description, salary,
+                                                     posted_at, discovered_at, score, matched_keywords, missing_keywords, status)
+                    SELECT id, source_id, origin, external_key, company, title, location, remote, url, description, salary,
+                           posted_at, discovered_at, score, matched_keywords, missing_keywords, status
+                    FROM discovered_jobs;
+                    DROP TABLE discovered_jobs;
+                `);
+            }
+            db.exec(`
+                ALTER TABLE discovered_jobs_new RENAME TO discovered_jobs;
+                CREATE INDEX idx_discovered_jobs_status ON discovered_jobs(status, score);
+                CREATE INDEX idx_discovered_jobs_company_title ON discovered_jobs(company COLLATE NOCASE, title COLLATE NOCASE);
+                CREATE INDEX idx_discovered_jobs_opened ON discovered_jobs(opened_at);
+            `);
+        },
+    },
 ];
 
 export class JobApplicationDb {

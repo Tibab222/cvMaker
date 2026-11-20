@@ -168,6 +168,7 @@ export default function Opportunities() {
                       onOpen={(j) => setSelectedId(j.id)}
                       onStatus={discovery.setJobStatus}
                       onPrepare={discovery.prepareJob}
+                      onOpenLink={discovery.markOpened}
                     />
                   ))}
                 </AnimatePresence>
@@ -177,7 +178,7 @@ export default function Opportunities() {
         )}
       </div>
 
-      <OpportunityDetailSheet job={selected} onClose={() => setSelectedId(null)} onStatus={discovery.setJobStatus} onPrepare={discovery.prepareJob} />
+      <OpportunityDetailSheet job={selected} onClose={() => setSelectedId(null)} onStatus={discovery.setJobStatus} onPrepare={discovery.prepareJob} onOpenLink={discovery.markOpened} />
       <SearchSetupSheet open={setupOpen} onOpenChange={setSetupOpen} discovery={discovery} />
     </div>
   );

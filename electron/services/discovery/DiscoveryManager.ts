@@ -10,6 +10,7 @@ import {
     DiscoverySettings,
     JobSource,
     JobSourceKind,
+    OpenedOffer,
     ProfileFilterSuggestion,
 } from "../../../shared/discovery.types";
 import type { JobOfferPayload } from "../../../shared/Extension.types";
@@ -105,6 +106,44 @@ const cleanWords = (value: unknown): string[] =>
     Array.isArray(value)
         ? [...new Set(value.filter((item): item is string => typeof item === "string").map((item) => item.trim()).filter(Boolean))].slice(0, 50)
         : [];
+
+const HOUR_MS = 60 * 60 * 1000;
+/** An offer opened from the app this recently is what the user is probably applying to in the browser. */
+const OPENED_RECENTLY_HOURS = 12;
+
+/** UTC "YYYY-MM-DD HH:MM:SS", the format of SQLite's CURRENT_TIMESTAMP, so dates compare as text. */
+const dbTime = (date: Date) => date.toISOString().slice(0, 19).replace("T", " ");
+const parseDbTime = (value: unknown): number | null => {
+    if (typeof value !== "string" || !value) return null;
+    const time = new Date(value.includes("T") ? value : `${value.replace(" ", "T")}Z`).getTime();
+    return Number.isNaN(time) ? null : time;
+};
+
+const fold = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+const LEGAL_WORDS = new Set(["inc", "ltd", "llc", "corp", "corporation", "company", "co", "group", "sa", "sas", "gmbh", "plc", "the", "limited"]);
+const TITLE_SMALL_WORDS = new Set(["a", "an", "the", "of", "and", "or", "for", "in", "at", "to", "de", "des", "du", "la", "le", "et", "en", "h", "f", "m", "x"]);
+
+/** "Bank of Montreal Inc." and "bank of montréal" are the same; "Shopify" is in "Shopify Canada". */
+export function sameCompany(a: string, b: string): boolean {
+    const words = (text: string) => fold(text).split(/[^a-z0-9]+/).filter((word) => word && !LEGAL_WORDS.has(word));
+    const left = words(a).join(" ");
+    const right = words(b).join(" ");
+    if (!left || !right) return false;
+    if (left === right) return true;
+    const [short, long] = left.length <= right.length ? [left, right] : [right, left];
+    return short.length >= 3 && ` ${long} `.includes(` ${short} `);
+}
+
+/** Share of the title words two titles have in common (by the longer one): 1 for the same title. */
+export function wordOverlap(a: string, b: string): number {
+    const words = (text: string) => new Set(fold(text).split(/[^a-z0-9+#]+/).filter((word) => word && !TITLE_SMALL_WORDS.has(word)));
+    const left = words(a);
+    const right = words(b);
+    if (!left.size || !right.size) return 0;
+    let shared = 0;
+    for (const word of left) if (right.has(word)) shared++;
+    return shared / Math.max(left.size, right.size);
+}
 
 /** Same offer, different tracking parameters: compare URLs without query string and trailing slash. */
 export function normalizeUrl(url: string): string {
@@ -417,7 +456,10 @@ export class DiscoveryManager {
         if (!this.deps.isReady()) return [];
         const rows = this.deps.getDb().prepare(`
             SELECT d.*,
-                (SELECT a.status FROM applications a WHERE d.url IS NOT NULL AND a.url = d.url ORDER BY a.created_at DESC LIMIT 1) AS application_status,
+                COALESCE(
+                    (SELECT a.status FROM applications a WHERE a.id = d.application_id),
+                    (SELECT a.status FROM applications a WHERE d.url IS NOT NULL AND a.url = d.url ORDER BY a.created_at DESC LIMIT 1)
+                ) AS application_status,
                 s.kind AS source_kind,
                 s.token AS source_token
             FROM discovered_jobs d
@@ -465,6 +507,74 @@ export class DiscoveryManager {
             mandate: job.description,
             extractedAt: this.now().toISOString(),
         };
+    }
+
+    /**
+     * The user opened the offer's link from the app: they mean to read it, likely to apply. A new offer moves to the
+     * shortlist, and the time is kept so the application that follows in the browser finds its way back here.
+     * @returns true when it moved to the shortlist
+     */
+    public markOpened(id: number): boolean {
+        const db = this.deps.getDb();
+        const row = db.prepare(`SELECT status FROM discovered_jobs WHERE id = ?`).get(id) as { status: string } | undefined;
+        if (!row) return false;
+        const kept = row.status === DiscoveredJobStatus.NEW;
+        db.prepare(`UPDATE discovered_jobs SET opened_at = ?, status = CASE WHEN status = 'NEW' THEN 'SHORTLISTED' ELSE status END WHERE id = ?`)
+            .run(dbTime(this.now()), id);
+        this.emitJobsChanged();
+        return kept;
+    }
+
+    /** Offers opened from the app lately and not applied to yet, most recent first (the extension's candidates). */
+    public openedOffers(withinHours = OPENED_RECENTLY_HOURS): OpenedOffer[] {
+        if (!this.deps.isReady()) return [];
+        const since = dbTime(new Date(this.now().getTime() - withinHours * HOUR_MS));
+        const rows = this.deps.getDb().prepare(`
+            SELECT id, title, company, url, description, salary, opened_at FROM discovered_jobs
+            WHERE opened_at >= ? AND status != 'APPLIED' AND status != 'DISMISSED'
+            ORDER BY opened_at DESC LIMIT 10
+        `).all(since) as OpenedOffer[];
+        return rows;
+    }
+
+    /**
+     * The offer of the queue an application was made for: the same link, the same company and a close title, or a
+     * close title sent soon after the user opened that offer from the app (the company's site often names itself
+     * differently: "BMO" for "Bank of Montreal"). Null when nothing fits well enough.
+     */
+    public findOfferFor(application: { url?: string | null; company: string; title: string }): DiscoveredJob | null {
+        if (!this.deps.isReady()) return null;
+        const now = this.now().getTime();
+        const url = application.url ? normalizeUrl(application.url) : "";
+        const rows = this.deps.getDb().prepare(`
+            SELECT d.*, s.kind AS source_kind, s.token AS source_token FROM discovered_jobs d
+            LEFT JOIN job_sources s ON s.id = d.source_id
+            WHERE d.status != 'APPLIED' AND d.application_id IS NULL
+              AND (d.opened_at IS NOT NULL OR d.status IN ('SHORTLISTED', 'PREPARED') OR d.discovered_at >= datetime(?, '-60 days'))
+            ORDER BY d.opened_at DESC, d.discovered_at DESC
+            LIMIT 2000
+        `).all(dbTime(this.now())) as Record<string, unknown>[];
+
+        let best: { row: Record<string, unknown>; score: number } | null = null;
+        for (const row of rows) {
+            const opened = parseDbTime(row.opened_at);
+            const openedAgo = opened == null ? Infinity : now - opened;
+            const title = wordOverlap(application.title, String(row.title));
+            const company = sameCompany(application.company, String(row.company));
+            let score = 0;
+            if (url && row.url && normalizeUrl(String(row.url)) === url) score = 100;
+            else if (company && title >= 0.6) score = 60 + title * 20 + (openedAgo < OPENED_RECENTLY_HOURS * HOUR_MS ? 10 : 0);
+            else if (openedAgo < 6 * HOUR_MS && title >= 0.8) score = 50 + title * 10;
+            else if (openedAgo < 2 * HOUR_MS && company) score = 45;
+            if (score > (best?.score ?? 0)) best = { row, score };
+        }
+        return best ? this.mapJob(best.row) : null;
+    }
+
+    /** The offer was applied to: it leaves the queues and shows the application it became. */
+    public markApplied(id: number, applicationId: string): void {
+        this.deps.getDb().prepare(`UPDATE discovered_jobs SET status = 'APPLIED', application_id = ? WHERE id = ?`).run(applicationId, id);
+        this.emitJobsChanged();
     }
 
     /** An offer the user picked while browsing: queued as shortlisted, scored right away. */

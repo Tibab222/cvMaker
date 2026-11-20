@@ -107,6 +107,20 @@ export function useDiscovery() {
     }
   }, []);
 
+  /** The user opened the offer's link: a new one moves to the shortlist, and the extension links what they send. */
+  const markOpened = useCallback(async (id: number) => {
+    try {
+      const kept = await api.discovery.markOpened(id);
+      if (kept) {
+        setJobs((current) => current?.map((job) => (job.id === id ? { ...job, status: DiscoveredJobStatus.SHORTLISTED } : job)) ?? current);
+        toast.success("Kept in your shortlist", { description: "Apply in your browser: the extension links the application to this offer and moves it to Applied." });
+      }
+    } catch (error) {
+      // only a convenience: the link still opens
+      console.warn("Could not mark the offer as opened", error);
+    }
+  }, []);
+
   const start = useCallback(async () => {
     try {
       setStatus(await api.discovery.start());
@@ -173,6 +187,7 @@ export function useDiscovery() {
     disconnectAdzuna,
     setJobStatus,
     prepareJob,
+    markOpened,
     start,
     cancel,
     addSource,

@@ -13,6 +13,7 @@ import {
   resolveOffer,
   sameOffer,
   titleOverlap,
+  withOpenedOffers,
   type Channel,
   type OfferSnapshot,
   type Resolution,
@@ -78,6 +79,8 @@ export interface TrackerDeps {
   /** Throws AppOfflineError when the app cannot be reached, Error(message) when it refuses. */
   saveToApp(application: AppApplication): Promise<AppSaveAnswer>;
   later(ms: number, task: () => void): void;
+  /** Offers the user opened from the desktop app lately (Opportunities); empty when it is closed. */
+  openedInApp?(): Promise<OfferSnapshot[]>;
   newId(): string;
 }
 
@@ -130,6 +133,14 @@ export class ApplicationTracker {
   constructor(private readonly deps: TrackerDeps) {}
 
   /** One operation at a time: messages from several tabs arrive together and all touch the same state. */
+  private async openedInApp(): Promise<OfferSnapshot[]> {
+    try {
+      return (await this.deps.openedInApp?.()) ?? [];
+    } catch {
+      return [];
+    }
+  }
+
   private run<T>(task: () => Promise<T> | T): Promise<T> {
     const next = this.queue.then(async () => {
       await this.load();
@@ -267,6 +278,11 @@ export class ApplicationTracker {
       if (done) {
         if (now - done.at < REPEAT_WINDOW_MS || offerFitsPage(resolution.offer!, page)) return;
         resolution = { offer: null, by: 'none', confidence: 'low', candidates: resolution.candidates };
+      }
+      // nothing read here: the offer may have been opened from CV Maker (through a job board, then the company's site)
+      if (!resolution.offer || resolution.confidence === 'low') {
+        const opened = (await this.openedInApp()).filter((offer) => !this.state.answered[offerKey(offer)]);
+        resolution = withOpenedOffers(resolution, opened, page);
       }
       // offers already saved or turned down are not suggested again
       const chosen = resolution.offer;

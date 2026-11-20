@@ -94,6 +94,7 @@ export const api = {
         listJobs: () => window.api.discovery.listJobs(),
         setJobStatus: (id: number, status: DiscoveredJobStatus) => window.api.discovery.setJobStatus(id, status),
         prepareJob: (id: number) => window.api.discovery.prepareJob(id),
+        markOpened: (id: number) => window.api.discovery.markOpened(id),
         start: () => window.api.discovery.start(),
         cancel: () => window.api.discovery.cancel(),
         getStatus: () => window.api.discovery.getStatus(),

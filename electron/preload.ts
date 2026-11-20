@@ -122,6 +122,7 @@ contextBridge.exposeInMainWorld('api', {
     listJobs: () => ipcRenderer.invoke('discovery:list-jobs'),
     setJobStatus: (id: number, status: DiscoveredJobStatus) => ipcRenderer.invoke('discovery:set-job-status', id, status),
     prepareJob: (id: number) => ipcRenderer.invoke('discovery:prepare-job', id),
+    markOpened: (id: number) => ipcRenderer.invoke('discovery:mark-opened', id),
     start: () => ipcRenderer.invoke('discovery:start'),
     cancel: () => ipcRenderer.invoke('discovery:cancel'),
     getStatus: () => ipcRenderer.invoke('discovery:get-status'),

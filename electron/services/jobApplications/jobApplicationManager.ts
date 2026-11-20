@@ -277,7 +277,11 @@ export class JobApplicationManager {
      * filled in if missing), one already recorded as sent stays as it is. Otherwise a new application.
      * @param keywords Reads the terms of the offer; called only when a new application is created.
      */
-    public recordBrowserApplication(dto: BrowserApplicationDto, keywords: () => string[] = () => [], now: Date = new Date()): BrowserApplicationResult {
+    /**
+     * @param offerUrl Link of the offer it was made for, when known (an offer of the Opportunities queue): an
+     *   application already made from that link (a resume prepared for it) is the same one.
+     */
+    public recordBrowserApplication(dto: BrowserApplicationDto, keywords: () => string[] = () => [], now: Date = new Date(), offerUrl?: string | null): BrowserApplicationResult {
         const company = foldName(dto.company);
         const title = foldName(dto.title);
         if (!company) throw new Error("Which company did you apply to?");
@@ -289,10 +293,17 @@ export class JobApplicationManager {
         } catch {
             // a link the page gave is a bonus: a strange one is dropped, the application is still recorded
         }
+        let offerLink = "";
+        try {
+            offerLink = normalizeUrl(offerUrl);
+        } catch {
+            // no usable link
+        }
+        if (!url) url = offerLink;
         const description = typeof dto.description === "string" && dto.description.trim() ? dto.description.trim().slice(0, 50_000) : null;
 
         const sameOffer = (app: Application) =>
-            (url !== "" && app.url === url) || (foldName(app.company_name) === company && foldName(app.job_title) === title);
+            (url !== "" && app.url === url) || (offerLink !== "" && app.url === offerLink) || (foldName(app.company_name) === company && foldName(app.job_title) === title);
         const matches = this.getAllApplications().filter(sameOffer);
 
         const prepared = matches.find((app) => app.status === JobApplicationStatus.DRAFT || app.status === JobApplicationStatus.REVIEW);

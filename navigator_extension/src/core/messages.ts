@@ -206,7 +206,7 @@ export interface ApplyPrompt {
   company: string;
   url: string;
   /** How the offer was found, for a short "from …" line. */
-  by: 'this-tab' | 'opener' | 'referrer' | 'company-site' | 'guess' | 'none';
+  by: 'this-tab' | 'opener' | 'referrer' | 'company-site' | 'app' | 'guess' | 'none';
   confidence: 'high' | 'medium' | 'low';
   /** Host of the page where the posting was read. */
   offerHost: string;

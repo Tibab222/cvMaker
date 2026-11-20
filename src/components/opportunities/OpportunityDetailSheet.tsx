@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Building2, CalendarDays, ExternalLink, Globe2, MapPin, RotateCcw, Star, WandSparkles, X } from "lucide-react";
+import { ArrowRight, Building2, CalendarDays, ExternalLink, Globe2, MapPin, RotateCcw, Star, WandSparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { scoreTone } from "@/lib/opportunities";
@@ -8,17 +8,25 @@ import { parseDbDate } from "@shared/utils";
 import AdzunaAttribution from "./AdzunaAttribution";
 import ScoreRing from "./ScoreRing";
 import VaultSuggestion from "../resumeLibrary/vault/VaultSuggestion";
+import { STATUS_META } from "../dashboard/mapApplicationToJabCard";
+import StatusPill from "../dashboard/StatusPill";
+import { JobApplicationStatus } from "@shared/jobApplications.type";
+import { Tabs, useUiStore } from "@/store/ui";
 
 interface Props {
   job: DiscoveredJob | null;
   onClose: () => void;
   onStatus: (id: number, status: DiscoveredJobStatus) => void;
   onPrepare: (id: number) => void;
+  /** The offer's link was opened: the user is probably about to apply. */
+  onOpenLink: (id: number) => void;
 }
 
 /** Full offer, with why it matches and what it asks that the profile does not show. */
-export default function OpportunityDetailSheet({ job, onClose, onStatus, onPrepare }: Props) {
+export default function OpportunityDetailSheet({ job, onClose, onStatus, onPrepare, onOpenLink }: Props) {
   const posted = job ? parseDbDate(job.posted_at) : null;
+  const applicationMeta = job?.application_status ? STATUS_META[job.application_status as JobApplicationStatus] : null;
+  const setSelectedTab = useUiStore((state) => state.setSelectedTab);
   const tone = scoreTone(job?.score ?? null);
 
   return (
@@ -40,7 +48,10 @@ export default function OpportunityDetailSheet({ job, onClose, onStatus, onPrepa
                     {job.remote && <span className="inline-flex items-center gap-1 text-sky-700"><Globe2 className="size-3" /> Remote</span>}
                     {posted && <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> {format(posted, "d MMM yyyy")}</span>}
                   </SheetDescription>
-                  <p className={`mt-1.5 text-xs font-medium ${tone.text}`}>{tone.label}</p>
+                  <p className={`mt-1.5 flex flex-wrap items-center gap-2 text-xs font-medium ${tone.text}`}>
+                    {tone.label}
+                    {applicationMeta && <StatusPill label={applicationMeta.label} tone={applicationMeta.tone} />}
+                  </p>
                 </div>
               </div>
             </SheetHeader>
@@ -86,10 +97,17 @@ export default function OpportunityDetailSheet({ job, onClose, onStatus, onPrepa
             <div className="flex flex-wrap items-center gap-2 border-t border-border/70 px-5 py-3">
               {job.url && (
                 <Button variant="ghost" size="sm" asChild className="gap-1.5">
-                  <a href={job.url} target="_blank" rel="noreferrer"><ExternalLink className="size-3.5" /> Open the offer</a>
+                  <a href={job.url} target="_blank" rel="noreferrer" onClick={() => onOpenLink(job.id)}><ExternalLink className="size-3.5" /> Open the offer</a>
                 </Button>
               )}
               <AdzunaAttribution job={job} />
+              {job.status === DiscoveredJobStatus.APPLIED ? (
+                <div className="ml-auto flex gap-2">
+                  <Button size="sm" className="gap-1.5" onClick={() => { onClose(); setSelectedTab(Tabs.DASHBOARD); }}>
+                    See the application <ArrowRight className="size-3.5" />
+                  </Button>
+                </div>
+              ) : (
               <div className="ml-auto flex gap-2">
                 {job.status === DiscoveredJobStatus.DISMISSED ? (
                   <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onStatus(job.id, DiscoveredJobStatus.NEW)}>
@@ -109,6 +127,7 @@ export default function OpportunityDetailSheet({ job, onClose, onStatus, onPrepa
                   <WandSparkles className="size-3.5" /> Prepare CV
                 </Button>
               </div>
+              )}
             </div>
           </>
         )}

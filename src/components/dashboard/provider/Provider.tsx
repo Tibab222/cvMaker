@@ -137,7 +137,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       } catch (error) {
         console.error("Error refreshing applications:", error);
       }
-      if (event.action === "created") toast.success(`${event.title} at ${event.company} added from your browser`);
+      const linked = event.fromOffer ? ", linked to its offer in Opportunities" : "";
+      if (event.action === "created") toast.success(`${event.title} at ${event.company} added from your browser${linked}`);
       else if (event.action === "promoted") toast.success(`${event.title} at ${event.company} moved to Applied`);
     });
   }, [refreshDerived]);

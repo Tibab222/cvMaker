@@ -10,6 +10,7 @@ import { JobApplicationManager } from './services/jobApplications/jobApplication
 import { buildAutofillProfile } from './functions/autofillProfile';
 import { getVaultManager } from './services/vault';
 import { getAnswerBank } from './services/answers';
+import { recordApplicationFromBrowser } from './functions/applicationFromOffer';
 import { offerKeywordsIn, profileLanguage } from './functions/offerKeywords';
 import type { ApplicationsChangedEvent } from '../shared/jobApplications.type';
 
@@ -99,6 +100,7 @@ app.whenReady().then(() => {
       return data ? buildAutofillProfile(data) : null;
     },
     queueJob: (payload) => getDiscoveryManager().addFromExtension(payload),
+    openedOffers: () => getDiscoveryManager().openedOffers(),
     vault: {
       list: () => getVaultManager().list().map(({ id, name, file_name, pages, language, has_text, keywords }) => ({
         id, name, file_name, pages, language, has_text, keywords: keywords.slice(0, 8),
@@ -108,9 +110,10 @@ app.whenReady().then(() => {
     },
     recordApplication: async (dto) => {
       const language = await profileLanguage();
-      const result = JobApplicationManager.getInstance().recordBrowserApplication(dto, () => offerKeywordsIn(dto.description, language));
+      // linked to the offer of the Opportunities queue it was made for, whose analysis it reuses
+      const result = recordApplicationFromBrowser(JobApplicationManager.getInstance(), getDiscoveryManager(), dto, () => offerKeywordsIn(dto.description, language));
       // the dashboard refreshes and says what came in
-      const event: ApplicationsChangedEvent = { source: 'extension', action: result.action, title: result.application.job_title, company: result.application.company_name };
+      const event: ApplicationsChangedEvent = { source: 'extension', action: result.action, title: result.application.job_title, company: result.application.company_name, fromOffer: !!result.offer };
       BrowserWindow.getAllWindows().forEach((window) => {
         if (!window.isDestroyed()) window.webContents.send('applications:changed', event);
       });

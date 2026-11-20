@@ -205,7 +205,15 @@ export function registerIpcHandlers() {
         try {
             // a real application: it belongs in the market stats like the offers tailored in the editor
             const keywords = await offerKeywords(dto?.description);
-            return { ok: true, application: JobApplicationManager.getInstance().addPastApplication(dto, keywords) };
+            const application = JobApplicationManager.getInstance().addPastApplication(dto, keywords);
+            // made for an offer of the Opportunities queue: it leaves the queue
+            try {
+                const offer = getDiscoveryManager().findOfferFor({ url: dto.url, company: dto.company, title: dto.title });
+                if (offer) getDiscoveryManager().markApplied(offer.id, application.id);
+            } catch (error) {
+                console.warn("[applications] Could not link the offer:", error);
+            }
+            return { ok: true, application };
         } catch (error) {
             return { ok: false, error: error instanceof Error ? error.message : String(error) };
         }
@@ -331,6 +339,7 @@ export function registerIpcHandlers() {
     ipcMain.handle('discovery:list-jobs', () => discovery.listJobs());
     ipcMain.handle('discovery:set-job-status', (event, id: number, status: DiscoveredJobStatus) => discovery.setJobStatus(id, status));
     ipcMain.handle('discovery:prepare-job', (event, id: number) => discovery.prepareJob(id));
+    ipcMain.handle('discovery:mark-opened', (event, id: number) => discovery.markOpened(id));
     ipcMain.handle('discovery:start', () => discovery.start('manual'));
     ipcMain.handle('discovery:cancel', () => discovery.cancel());
     ipcMain.handle('discovery:get-status', () => discovery.getStatus());

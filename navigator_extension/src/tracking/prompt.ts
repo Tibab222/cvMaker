@@ -88,6 +88,8 @@ function sourceLine(prompt: ApplyPrompt): { text: string; warn: boolean } {
       return { text: `From the page that led here (${prompt.offerHost})${withText}.`, warn: false };
     case 'company-site':
       return { text: `This site belongs to ${prompt.company}: the offer you viewed there. Check it.`, warn: true };
+    case 'app':
+      return { text: `The offer you opened from CV Maker${prompt.offerHost ? ` (${prompt.offerHost})` : ''}. Check it.`, warn: true };
     case 'guess':
       return { text: 'Best guess among the offers you viewed: check it.', warn: true };
     default:

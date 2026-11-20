@@ -38,7 +38,7 @@ export interface TabTrail {
   closedAt?: number;
 }
 
-export type ResolvedBy = 'this-tab' | 'opener' | 'referrer' | 'company-site' | 'guess' | 'none';
+export type ResolvedBy = 'this-tab' | 'opener' | 'referrer' | 'company-site' | 'app' | 'guess' | 'none';
 
 export interface Resolution {
   offer: OfferSnapshot | null;
@@ -328,4 +328,29 @@ export function channelFor(offerUrl: string, formUrl: string): Channel | null {
     if (JOB_BOARDS.test(host)) return 'JOB_BOARD';
   }
   return offerHost || formHost ? 'COMPANY_SITE' : null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Offers opened from the desktop app                                   */
+/* ------------------------------------------------------------------ */
+
+/** An opened offer this recent, alone, is taken as the one even when the form page names nothing. */
+const OPENED_ALONE_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * Adds the offers the user opened from CV Maker (Opportunities): a form reached from there often shows no posting the
+ * extension could read (the link goes through a job board, then the company's own site). When nothing was resolved,
+ * the opened offer the page fits, or the only one opened in the last two hours, is taken; the others are candidates.
+ */
+export function withOpenedOffers(resolution: Resolution, opened: OfferSnapshot[], page: PageContext): Resolution {
+  if (!opened.length) return resolution;
+  const pool = [...resolution.candidates, ...opened.filter((offer) => !resolution.candidates.some((known) => sameOffer(known, offer)))];
+  if (resolution.offer) return { ...resolution, candidates: withCandidates(resolution.offer, pool) };
+
+  const scored = opened.map((offer) => ({ offer, score: fitScore(offer, page) })).sort((a, b) => b.score - a.score);
+  let chosen: OfferSnapshot | null = null;
+  if (scored[0].score >= 2 && (scored.length === 1 || scored[0].score > scored[1].score)) chosen = scored[0].offer;
+  else if (opened.length === 1 && page.now - opened[0].seenAt <= OPENED_ALONE_MS) chosen = opened[0];
+  if (!chosen) return { ...resolution, candidates: withCandidates(null, pool) };
+  return { offer: chosen, by: 'app', confidence: 'medium', candidates: withCandidates(chosen, pool) };
 }

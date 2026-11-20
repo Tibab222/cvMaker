@@ -1,5 +1,6 @@
 import type { AnswerMatch, AnswerQuestion, AutofillProfile, CapturedAnswer, CVMakerPayload, VaultFile, VaultMatch, VaultResume } from './messages';
 import { AppOfflineError, type AppApplication, type AppSaveAnswer } from '../background/tracker';
+import type { OfferSnapshot } from './offerTrail';
 
 /** The desktop app's local server (electron/services/HttpServer). It only listens on this machine. */
 const BASE_URL = 'http://127.0.0.1:9123';
@@ -158,6 +159,39 @@ export async function matchAnswers(questions: AnswerQuestion[]): Promise<AnswerM
       body: JSON.stringify({ questions }),
     }, 30000);
     return answer.ok && Array.isArray(answer.body.matches) ? (answer.body.matches as AnswerMatch[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+interface OpenedOfferRow {
+  title?: string;
+  company?: string;
+  url?: string | null;
+  description?: string;
+  salary?: string | null;
+  opened_at?: string;
+}
+
+/** Offers opened from the app's Opportunities lately, as the tracker reads offers; none when the app is closed. */
+export async function getOpenedOffers(): Promise<OfferSnapshot[]> {
+  try {
+    const answer = await request('/api/offers/opened', undefined, 1500);
+    if (!answer.ok || !Array.isArray(answer.body.offers)) return [];
+    return (answer.body.offers as OpenedOfferRow[])
+      .filter((offer) => offer.title && offer.company)
+      .map((offer) => {
+        const opened = offer.opened_at ? new Date(offer.opened_at.replace(' ', 'T') + 'Z').getTime() : NaN;
+        return {
+          title: String(offer.title),
+          company: String(offer.company),
+          url: offer.url ?? '',
+          mandate: offer.description ?? '',
+          salary: offer.salary ?? '',
+          strength: 'strong' as const,
+          seenAt: Number.isNaN(opened) ? Date.now() : opened,
+        };
+      });
   } catch {
     return [];
   }

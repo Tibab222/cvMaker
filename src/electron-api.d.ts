@@ -106,6 +106,8 @@ declare global {
         listJobs: () => Promise<DiscoveredJob[]>;
         setJobStatus: (id: number, status: DiscoveredJobStatus) => Promise<boolean>;
         prepareJob: (id: number) => Promise<JobOfferPayload | null>;
+        /** The user opened the offer's link: a new offer moves to the shortlist (true when it did). */
+        markOpened: (id: number) => Promise<boolean>;
         start: () => Promise<DiscoveryRunStatus>;
         cancel: () => Promise<void>;
         getStatus: () => Promise<DiscoveryRunStatus>;

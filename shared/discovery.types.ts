@@ -73,6 +73,8 @@ export enum DiscoveredJobStatus {
   DISMISSED = "DISMISSED",
   /** Sent to the resume editor. */
   PREPARED = "PREPARED",
+  /** Applied to: linked to the application in the pipeline. */
+  APPLIED = "APPLIED",
 }
 
 export type DiscoveredJobOrigin = "board" | "extension";
@@ -95,12 +97,27 @@ export interface DiscoveredJob {
   matched_keywords: string[];
   missing_keywords: string[];
   status: DiscoveredJobStatus;
-  /** Status of the application created from this offer, when one exists (matched on the offer URL). */
+  /** Status of the application created from this offer, when one exists. */
   application_status: string | null;
+  /** The application this offer turned into (linked when the user applied). */
+  application_id: string | null;
+  /** When the user last opened the offer's link from the app. */
+  opened_at: string | null;
   /** Where the offer was found, when it came from a source that still exists. */
   source_kind: JobSourceKind | null;
   /** Adzuna country of the search that found it, for the attribution link. */
   source_country: string | null;
+}
+
+/** An offer the user opened from the app lately: the browser extension takes it as the likely one being applied to. */
+export interface OpenedOffer {
+  id: number;
+  title: string;
+  company: string;
+  url: string | null;
+  description: string;
+  salary: string | null;
+  opened_at: string;
 }
 
 export interface DiscoveryFilters {

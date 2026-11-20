@@ -1,7 +1,7 @@
 import http, { Server, IncomingMessage, ServerResponse } from 'http';
 import { BrowserWindow } from 'electron';
 import { JobOfferPayload } from '../../../shared/Extension.types';
-import { AutofillProfile, LocalServerStatus } from '../../../shared/discovery.types';
+import { AutofillProfile, LocalServerStatus, type OpenedOffer } from '../../../shared/discovery.types';
 import type { ExtensionVaultResume, VaultMatch, VaultOffer } from '../../../shared/vault.types';
 import { ApplicationChannel, type BrowserApplicationDto, type BrowserApplicationResult } from '../../../shared/jobApplications.type';
 import type { AnswerMatch, AnswerQuestion, CapturedAnswer } from '../../../shared/answers.types';
@@ -28,6 +28,8 @@ export interface LocalServerHandlers {
   /** An application the user confirmed sending, seen by the extension. Throws a readable message when refused. */
   recordApplication?: (dto: BrowserApplicationDto) => Promise<BrowserApplicationResult>;
   answers?: LocalAnswerHandlers;
+  /** Offers opened from the app lately: what the user is probably applying to in the browser. */
+  openedOffers?: () => OpenedOffer[];
 }
 
 const RECORD_MESSAGES: Record<BrowserApplicationResult['action'], string> = {
@@ -123,6 +125,14 @@ export class HttpServerService {
           return;
         }
         void this.handleRecordApplication(req, res);
+      } else if (req.method === 'GET' && route === '/api/offers/opened') {
+        // what the user looks at: only the extension itself
+        if (!fromExtension) {
+          this.sendJson(res, 403, { status: 'error', message: 'Only the browser extension can read the opened offers' });
+          return;
+        }
+        const offers = this.handlers?.getStatus().profileLoaded ? this.handlers.openedOffers?.() ?? [] : [];
+        this.sendJson(res, 200, { status: 'success', offers });
       } else if (req.method === 'POST' && route.startsWith('/api/answers/')) {
         // what the user answered on forms: only the extension itself
         if (!fromExtension) {
@@ -348,7 +358,10 @@ export class HttpServerService {
     try {
       const result = await record(dto);
       const { id, job_title, company_name, status } = result.application;
-      this.sendJson(res, 200, { status: 'success', action: result.action, message: RECORD_MESSAGES[result.action], application: { id, job_title, company_name, status } });
+      // made for an offer of the Opportunities queue: say it moved there too
+      const fromOffer = !!(result as { offer?: unknown }).offer;
+      const message = RECORD_MESSAGES[result.action] + (fromOffer ? ' · moved to Applied in Opportunities' : '');
+      this.sendJson(res, 200, { status: 'success', action: result.action, message, application: { id, job_title, company_name, status } });
     } catch (error) {
       this.sendJson(res, 422, { status: 'error', message: error instanceof Error ? error.message : 'Could not record the application' });
     }
