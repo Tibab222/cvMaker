@@ -37,6 +37,7 @@ import { ApplicationEventType, JobApplicationStatus } from "@shared/jobApplicati
 import { useDashboard } from "./provider/hook";
 import { mapApplicationWithEventsToJobCard, STATUS_META } from "./mapApplicationToJabCard";
 import ResumePreviewDialog from "./ResumePreviewDialog";
+import AddApplicationDialog from "./AddApplicationDialog";
 import EmptyState from "../general/EmptyState";
 
 const ALL_STATUSES = Object.values(JobApplicationStatus);
@@ -327,12 +328,14 @@ export default function JobDrawer() {
     revision,
     silentApplications,
     markNoResponse,
+    applications,
   } = useDashboard();
   const [job, setJob] = useState<JobCard | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   // id of the application waiting for the second "delete" click, so the confirmation never leaks to another card
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -351,6 +354,7 @@ export default function JobDrawer() {
   const isLoading = isOpen && (!job || job.id !== selectedApplicationId);
   const confirmDelete = !!job && confirmDeleteId === job.id;
   const silent = job ? silentApplications.find((app) => app.id === job.id) : undefined;
+  const application = job ? applications.find((app) => app.id === job.id) ?? null : null;
 
   const handleDelete = async () => {
     if (!job) return;
@@ -441,6 +445,16 @@ export default function JobDrawer() {
                     </a>
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-full"
+                  onClick={() => setIsEditing(true)}
+                  disabled={!application}
+                  title="Fix the company, the position, the link…"
+                >
+                  <Pencil className="size-3.5" /> Edit
+                </Button>
                 <Button
                   variant={confirmDelete ? "destructive" : "ghost"}
                   size="sm"
@@ -555,6 +569,7 @@ export default function JobDrawer() {
               </div>
             </Tabs>
 
+            <AddApplicationDialog open={isEditing && !!application} onOpenChange={setIsEditing} application={application} />
             <ResumePreviewDialog
               applicationId={isPreviewOpen ? job.id : null}
               fileName={job.resume}

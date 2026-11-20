@@ -19,8 +19,8 @@ import { selectExportFolder, setDefaultExportPath } from './functions/exportPath
 import { ProfileService } from './services/ProfileService';
 import { rewriteResume } from './functions/rewriteResume';
 import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
-import { ApplicationDetailsDto, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto, PastApplicationDto, PastApplicationResult } from '../shared/jobApplications.type';
-import { offerKeywords } from './functions/offerKeywords';
+import { ApplicationDetailsDto, ApplicationEditDto, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto, PastApplicationDto, PastApplicationResult } from '../shared/jobApplications.type';
+import { offerKeywords, offerKeywordsIn, profileLanguage } from './functions/offerKeywords';
 import { generateCoverLetter } from './functions/generateCoverLetter';
 import { getDiscoveryManager } from './services/discovery';
 import { getVaultManager } from './services/vault';
@@ -190,6 +190,15 @@ export function registerIpcHandlers() {
     ipcMain.handle('get-key-stats', () => { return JobApplicationManager.getInstance().getKeyStats(); });
     ipcMain.handle('get-applications', () => { return JobApplicationManager.getInstance().getAllApplications(); });
     // an application sent outside the app; validation errors come back as a result, not as a thrown IPC error
+    ipcMain.handle('edit-application', async (event, id: string, dto: ApplicationEditDto): Promise<PastApplicationResult> => {
+        try {
+            const language = await profileLanguage();
+            // keywords are read only when an offer text arrives on an application that had none
+            return { ok: true, application: JobApplicationManager.getInstance().editApplication(id, dto, (text) => offerKeywordsIn(text, language)) };
+        } catch (error) {
+            return { ok: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
     ipcMain.handle('add-past-application', async (event, dto: PastApplicationDto): Promise<PastApplicationResult> => {
         try {
             // a real application: it belongs in the market stats like the offers tailored in the editor

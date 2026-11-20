@@ -219,6 +219,20 @@ export interface ApplicationDetailsDto {
   recruiter_contact?: string | null;
 }
 
+/** What the user can correct on an application: the offer it is for, and when and how it was sent. */
+export interface ApplicationEditDto {
+  company: string;
+  title: string;
+  url?: string;
+  channel?: ApplicationChannel | null;
+  /** Local calendar day it was sent, "YYYY-MM-DD". Ignored on applications not sent yet. */
+  appliedOn?: string | null;
+  /** Yearly amount as typed ("85000", "85k"); empty clears it. Left out: unchanged. */
+  salary?: string | null;
+  /** Offer text. Left out: unchanged. */
+  description?: string | null;
+}
+
 export type ReminderKind = 'follow_up' | 'interview' | 'stale_draft' | 'no_response';
 
 /** Days without any sign of life after which an application is suggested to close as "No response". */

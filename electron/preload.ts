@@ -1,7 +1,7 @@
 import { CoverLetterStatusPayload, GenerateCoverLetterDTO } from "../shared/CoverLetter.types";
 import { Experience } from "../shared/Experience.interface";
 import { JobOfferPayload } from "../shared/Extension.types";
-import { Application, ApplicationsChangedEvent, PastApplicationDto, PastApplicationResult, ApplicationDetailsDto, ApplicationEvent, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats, NewApplicationEventDto, Reminder, SilentApplication } from "../shared/jobApplications.type";
+import { Application, ApplicationEditDto, ApplicationsChangedEvent, PastApplicationDto, PastApplicationResult, ApplicationDetailsDto, ApplicationEvent, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats, NewApplicationEventDto, Reminder, SilentApplication } from "../shared/jobApplications.type";
 import { OnProgressCallback, SetupProgressStatus } from "../shared/OllamaDownloadStatus";
 import { Language } from "../shared/profile.interface";
 import { ProfilesData } from "../shared/profilesData.interface";
@@ -86,6 +86,7 @@ contextBridge.exposeInMainWorld('api', {
   addApplicationEvent: (applicationId: string, dto: NewApplicationEventDto) => ipcRenderer.invoke('add-application-event', applicationId, dto) as Promise<ApplicationEvent>,
   deleteApplicationEvent: (eventId: number) => ipcRenderer.invoke('delete-application-event', eventId) as Promise<boolean>,
   updateApplicationDetails: (applicationId: string, details: ApplicationDetailsDto) => ipcRenderer.invoke('update-application-details', applicationId, details) as Promise<boolean>,
+  editApplication: (applicationId: string, dto: ApplicationEditDto) => ipcRenderer.invoke('edit-application', applicationId, dto) as Promise<PastApplicationResult>,
   getReminders: (limit?: number) => ipcRenderer.invoke('get-reminders', limit) as Promise<Reminder[]>,
   getSilentApplications: () => ipcRenderer.invoke('get-silent-applications') as Promise<SilentApplication[]>,
   markNoResponse: (ids: string[]) => ipcRenderer.invoke('mark-no-response', ids) as Promise<string[]>,

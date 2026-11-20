@@ -7,6 +7,7 @@ import {
   JobApplicationStatus,
   type Application,
   type ApplicationDetailsDto,
+  type ApplicationEditDto,
   type ApplicationWithEvents,
   type KeyStats,
   type NewApplicationEventDto,
@@ -40,6 +41,8 @@ export interface DashboardContextType {
   updateDetails: (applicationId: string, details: ApplicationDetailsDto) => Promise<boolean>;
   /** Adds an application sent outside the app; validation errors come back in the result. */
   addPastApplication: (dto: PastApplicationDto) => Promise<PastApplicationResult>;
+  /** Corrects an application (company, position, link…); validation errors come back in the result. */
+  editApplication: (id: string, dto: ApplicationEditDto) => Promise<PastApplicationResult>;
   /** Bumped after every change, so views showing derived data (the drawer timeline) know when to reload. */
   revision: number;
 }
@@ -271,6 +274,20 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [refreshDerived]);
 
+  const editApplication = useCallback(async (id: string, dto: ApplicationEditDto): Promise<PastApplicationResult> => {
+    try {
+      const result = await api.editApplication(id, dto);
+      if (result.ok) {
+        setApplications((prev) => prev.map((app) => (app.id === id ? result.application : app)));
+        refreshDerived();
+      }
+      return result;
+    } catch (error) {
+      console.error("Failed to edit application:", error);
+      return { ok: false, error: "Could not save your changes" };
+    }
+  }, [refreshDerived]);
+
   return (
     <DashboardContext.Provider
       value={{
@@ -292,6 +309,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         deleteEvent,
         updateDetails,
         addPastApplication,
+        editApplication,
         revision,
       }}
     >

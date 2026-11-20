@@ -615,21 +615,45 @@ function trackRow(prompt: ApplyPrompt, index: number): HTMLLIElement {
   const complete = !!(prompt.title && prompt.company);
 
   const head = document.createElement('div');
+  head.className = 'track-head';
   const title = document.createElement('input');
   const company = document.createElement('input');
+  title.placeholder = 'Position';
+  title.value = prompt.title;
+  title.setAttribute('aria-label', 'Position');
+  company.placeholder = 'Company';
+  company.value = prompt.company;
+  company.setAttribute('aria-label', 'Company');
+  const fields = document.createElement('div');
+  fields.className = 'track-fields';
+  fields.append(title, company);
+  // fields shown: nothing was read before the form, or the user corrects what was
+  let editing = !complete;
   if (complete) {
+    const line = document.createElement('div');
+    line.className = 'track-line';
     const strong = document.createElement('strong');
     strong.textContent = `${prompt.title} · ${prompt.company}`;
-    head.append(strong);
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'track-edit';
+    edit.textContent = 'Edit';
+    edit.title = 'Fix the position or company before saving';
+    edit.addEventListener('click', () => {
+      editing = true;
+      line.replaceWith(fields);
+      company.focus();
+      company.select();
+    });
+    line.append(strong, edit);
+    head.append(line);
   } else {
-    // nothing read before the form: the user names it here
-    title.placeholder = 'Position';
-    title.value = prompt.title;
-    company.placeholder = 'Company';
-    company.value = prompt.company;
-    head.append(title, company);
-    head.style.display = 'grid';
-    head.style.gap = '6px';
+    head.append(fields);
+  }
+  for (const input of [title, company]) {
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') void reply('yes');
+    });
   }
   const meta = document.createElement('small');
   meta.className = prompt.confirmed ? 'ok' : prompt.confidence === 'high' ? '' : 'warn';
@@ -651,7 +675,7 @@ function trackRow(prompt: ApplyPrompt, index: number): HTMLLIElement {
   actions.append(no, yes);
 
   const reply = (answer: 'yes' | 'no') => busy(answer === 'yes' ? yes : no, answer === 'yes' ? 'Saving…' : '…', async () => {
-    const edits = complete ? {} : { title: title.value, company: company.value };
+    const edits = editing ? { title: title.value, company: company.value } : {};
     const response = (await browser.runtime.sendMessage({ action: 'APPLY_ANSWER', promptId: prompt.id, answer, ...edits } satisfies TrackMessage)) as ApplyAnswerResponse;
     if (!response.ok) {
       error.textContent = response.message;

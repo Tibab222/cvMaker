@@ -9,11 +9,27 @@ const SEND_APPLICATION = /\b(submit|send|complete|finish|confirm)\s+(my\s+|your\
 const SEND = /^\s*(submit|send|soumettre|envoyer|transmettre|valider|terminer|finish|done|apply|postuler|je postule|apply now|postuler maintenant|candidater|send application|submit now)\s*[!.]?\s*$/i;
 /** Opens an application ("Apply", "Easy Apply", "Postuler"): the offer on screen is the one about to be sent. */
 const START_APPLICATION = /\b(easy apply|candidature simplifi[ée]e|apply|postuler|postulez|candidater|je postule|i'?m interested|start (your |my )?application|commencer (ma|la) candidature)\b/i;
+/**
+ * The last button of a multi-step application (Workday's review page: "Submit"). Counts only once an application is
+ * known to be in progress in this tab: the page itself has no fields left to tell. "Apply" is not one, it opens.
+ */
+const SUBMIT_FINAL = /^\s*(submit|send|complete|finish|confirm|submit now|soumettre|envoyer|transmettre|terminer|finaliser|confirmer|valider)\s*[!.]?\s*$/i;
+/** A step of an application flow: "Next", "Save and Continue", or the way in ("Apply Manually", "Autofill with Resume"). */
+const STEP = /\b(next|continue|suivant|continuer|save and continue|enregistrer et continuer)\b/i;
+const FLOW_ENTRY = /\b(apply manually|autofill with (my )?resume|use my last application|postuler manuellement|remplir automatiquement|utiliser ma derni[èe]re candidature)\b/i;
+/** Addresses of application flows: Workday (/apply/applyManually…), Lever (/apply), iCIMS, Taleo, SmartRecruiters… */
+const FLOW_PATH = /\/apply(\/|$)|\/apply(manually|withresume)|applymanually|autofillwithresume|uselastapplication|\/application(s)?\/(form|apply|new|step)|\/candidature(s)?(\/|$)|\/postuler(\/|$)|\/careersection\/.*apply|\/oneclick-ui\//i;
+
+/** The address is one of an application flow (the steps after "Apply"). */
+export function isApplicationFlow(loc: { pathname: string; search?: string } = location): boolean {
+  return FLOW_PATH.test(loc.pathname + (loc.search ?? ''));
+}
+
 /** Moves without sending, or another kind of form. */
 const NOT_SENDING = /\b(next|continue|suivant|continuer|back|previous|pr[ée]c[ée]dent|retour|save|enregistrer|sauvegarder|draft|brouillon|search|rechercher|chercher|sign ?in|log ?in|connexion|se connecter|sign ?up|register|inscri|create (an )?account|cr[ée]er un compte|subscribe|abonner|newsletter|filters?|filtrer|upload|t[ée]l[ée]verser|attach|joindre|ajouter|add|cancel|annuler|review|r[ée]viser|v[ée]rifier|preview|aper[çc]u|edit|modifier|share|partager|alert|alerte)\b/i;
 /** Text on the page once an application went through. */
 const CONFIRMATION =
-  /\b(thanks?( you)? for (applying|your application|your interest in)|application (has been |was |is )?(successfully )?(submitted|received|sent|complete[d]?)|we('ve| have) (successfully )?received your application|your application (has been|was|is) (successfully )?(submitted|sent|received|complete)|you('ve| have) (successfully )?applied|successfully (applied|submitted)|merci (pour|de) votre (candidature|int[ée]r[êe]t)|candidature (a (bien )?[ée]t[ée] |bien )?(envoy[ée]e|transmise|re[çc]ue|soumise|enregistr[ée]e)|nous avons (bien )?re[çc]u votre candidature|votre candidature (a|est) (bien )?([ée]t[ée] )?(envoy[ée]e|transmise|re[çc]ue|soumise|enregistr[ée]e))/i;
+  /\b(thanks?( you)? for (applying|your application|your interest in|submitting)|you('ve| have) submitted( your application)?\b|application (has been |was |is )?(successfully )?(submitted|received|sent|complete[d]?)|we('ve| have) (successfully )?received your application|your application (has been|was|is) (successfully )?(submitted|sent|received|complete)|you('ve| have) (successfully )?applied|successfully (applied|submitted)|merci (pour|de) votre (candidature|int[ée]r[êe]t)|candidature (a (bien )?[ée]t[ée] |bien )?(envoy[ée]e|transmise|re[çc]ue|soumise|enregistr[ée]e)|nous avons (bien )?re[çc]u votre candidature|votre candidature (a|est) (bien )?([ée]t[ée] )?(envoy[ée]e|transmise|re[çc]ue|soumise|enregistr[ée]e))/i;
 const ERROR_TEXT = /\b(required|invalid|obligatoire|requis|erreur|error|please (fill|enter|select|complete|provide|upload)|veuillez (remplir|saisir|s[ée]lectionner|indiquer|fournir))\b/i;
 const RESUME_LABEL = /\b(resume|résumé|cv|curriculum)\b/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -94,21 +110,29 @@ export function looksLikeApplicationForm(scope: Element): boolean {
   return form.filled >= 2 && (form.email || form.phone || form.file || form.resumeField);
 }
 
-export type ClickMeaning = 'send' | 'start' | null;
+export type ClickMeaning = 'send' | 'start' | 'step' | null;
 
 /**
- * What a click means for tracking: 'send' an application, 'start' one (the offer on screen is the one),
- * or nothing. Every send also needs a form that reads like an application, except the explicit
- * "Submit application" kind (LinkedIn's last step shows a summary, the fields are gone by then).
+ * What a click means for tracking: 'send' an application, 'start' one (the offer on screen is the one), move
+ * through one ('step': an application is in progress in this tab), or nothing. A send needs a form that reads like
+ * an application, except the explicit "Submit application" kind and, once an application is in progress, the plain
+ * "Submit" of its last step (LinkedIn's and Workday's review pages show a summary, the fields are gone by then).
+ * @param applying An application flow was entered in this tab (see isApplicationFlow and the 'step' clicks).
  */
-export function clickMeaning(control: Element): ClickMeaning {
+export function clickMeaning(control: Element, applying = false): ClickMeaning {
   if ((control as HTMLButtonElement).disabled || control.getAttribute('aria-disabled') === 'true') return null;
   const label = controlText(control);
   if (!label || label.length > 60) return null;
   const scope = scopeOf(control);
-  if (SEND_APPLICATION.test(label) && !readForm(scope).password) return 'send';
-  if (NOT_SENDING.test(label)) return null;
+  const form = readForm(scope);
+  if (SEND_APPLICATION.test(label) && !form.password) return 'send';
+  if (FLOW_ENTRY.test(label)) return 'step';
+  if (NOT_SENDING.test(label)) {
+    // "Next" on an application form (not a login, not a search): its last page may have no fields left
+    return STEP.test(label) && !form.password && (applying || looksLikeApplicationForm(scope)) ? 'step' : null;
+  }
   if (SEND.test(label) && looksLikeApplicationForm(scope)) return 'send';
+  if (applying && SUBMIT_FINAL.test(label) && !form.password) return 'send';
   if (START_APPLICATION.test(label)) return 'start';
   return null;
 }

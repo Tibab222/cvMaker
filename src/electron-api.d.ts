@@ -4,7 +4,7 @@ import { SystemRecommendations } from '../shared/SystemRecommendation';
 import { OnProgressCallback } from '../shared/OllamaDownloadStatus';
 import { RewriteResumeOptions } from '../shared/RewriteResume.type';
 import { KeywordStat } from '../shared/Keywords.types';
-import { Application, ApplicationsChangedEvent, ApplicationDetailsDto, ApplicationEvent, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats, NewApplicationEventDto, PastApplicationDto, PastApplicationResult, Reminder, SilentApplication } from '../shared/jobApplications.type';
+import { Application, ApplicationEditDto, ApplicationsChangedEvent, ApplicationDetailsDto, ApplicationEvent, ApplicationWithEvents, CVSessionDataDTO, JobApplicationStatus, KeyStats, NewApplicationEventDto, PastApplicationDto, PastApplicationResult, Reminder, SilentApplication } from '../shared/jobApplications.type';
 import { JobOfferPayload } from '../shared/Extension.types';
 import { Language } from '../shared/profile.interface';
 import { Experience } from '../shared/Experience.interface';
@@ -65,6 +65,8 @@ declare global {
       addApplicationEvent: (applicationId: string, dto: NewApplicationEventDto) => Promise<ApplicationEvent>;
       deleteApplicationEvent: (eventId: number) => Promise<boolean>;
       updateApplicationDetails: (applicationId: string, details: ApplicationDetailsDto) => Promise<boolean>;
+      /** Corrects the offer an application is for; validation errors come back in the result. */
+      editApplication: (applicationId: string, dto: ApplicationEditDto) => Promise<PastApplicationResult>;
       getReminders: (limit?: number) => Promise<Reminder[]>;
       /** Applications marked Applied without any sign of life for NO_RESPONSE_AFTER_DAYS or more. */
       getSilentApplications: () => Promise<SilentApplication[]>;

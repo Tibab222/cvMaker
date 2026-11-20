@@ -2,7 +2,7 @@ import type { AIAnalysisStatus } from "@shared/AIAnalysisStatus";
 import type { CoverLetterStatusPayload, GenerateCoverLetterDTO } from "@shared/CoverLetter.types";
 import type { Experience } from "@shared/Experience.interface";
 import type { JobOfferPayload } from "@shared/Extension.types";
-import type { ApplicationDetailsDto, ApplicationsChangedEvent, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto, PastApplicationDto } from "@shared/jobApplications.type";
+import type { ApplicationDetailsDto, ApplicationEditDto, ApplicationsChangedEvent, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto, PastApplicationDto } from "@shared/jobApplications.type";
 import type { OnProgressCallback } from "@shared/OllamaDownloadStatus";
 import type { Language } from "@shared/profile.interface";
 import type { ProfilesData } from "@shared/profilesData.interface";
@@ -56,6 +56,7 @@ export const api = {
     addApplicationEvent: async (applicationId: string, dto: NewApplicationEventDto) => { return await window.api.addApplicationEvent(applicationId, dto) },
     deleteApplicationEvent: async (eventId: number) => { return await window.api.deleteApplicationEvent(eventId) },
     updateApplicationDetails: async (applicationId: string, details: ApplicationDetailsDto) => { return await window.api.updateApplicationDetails(applicationId, details) },
+    editApplication: async (applicationId: string, dto: ApplicationEditDto) => { return await window.api.editApplication(applicationId, dto) },
     getReminders: async (limit?: number) => { return await window.api.getReminders(limit) },
     getSilentApplications: async () => { return await window.api.getSilentApplications() },
     markNoResponse: async (ids: string[]) => { return await window.api.markNoResponse(ids) },

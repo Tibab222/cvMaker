@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { format, subDays } from "date-fns";
-import { ArrowRight, BriefcaseBusiness, Building2, CalendarDays, Link2, Loader2, Plus, TriangleAlert } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, Building2, CalendarDays, Link2, Loader2, Pencil, Plus, TriangleAlert, Wallet } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ interface FormState {
   channel: ApplicationChannel | null;
   url: string;
   description: string;
+  salary: string;
 }
 
 const emptyForm = (keep?: Pick<FormState, "appliedOn" | "channel">): FormState => ({
@@ -54,21 +56,75 @@ const emptyForm = (keep?: Pick<FormState, "appliedOn" | "channel">): FormState =
   channel: keep?.channel ?? null,
   url: "",
   description: "",
+  salary: "",
 });
+
+/** The form filled with what an application already says, to correct it. */
+const formOf = (application: Application): FormState => {
+  const applied = parseDbDate(application.applied_at);
+  return {
+    company: application.company_name,
+    title: application.job_title,
+    appliedOn: dayString(applied ?? new Date()),
+    status: application.status,
+    channel: application.channel ?? null,
+    url: application.url ?? "",
+    description: application.description ?? "",
+    salary: application.salary != null ? String(application.salary) : "",
+  };
+};
 
 const time = (application: Application) => parseDbDate(application.applied_at ?? application.created_at)?.getTime() ?? 0;
 
-/** Adds an application sent outside the app (or before using it) to the pipeline. */
-export default function AddApplicationDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { applications, addPastApplication, openApplication } = useDashboard();
-  const [form, setForm] = useState<FormState>(() => emptyForm());
+/**
+ * Adds an application sent outside the app (or before using it) to the pipeline, or, given one, corrects it:
+ * a wrong company read by the extension, a missing link, the offer text, the date it was sent.
+ */
+export default function AddApplicationDialog({ open, onOpenChange, application = null }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** The application to edit; none to add a new one. */
+  application?: Application | null;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] gap-0 overflow-y-auto p-0 sm:max-w-xl">
+        {/* mounted on each opening: the form starts from the application shown now, or empty */}
+        {open && <ApplicationForm key={application?.id ?? "new"} application={application} onClose={() => onOpenChange(false)} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ApplicationForm({ application, onClose }: { application: Application | null; onClose: () => void }) {
+  const { applications, addPastApplication, editApplication, openApplication } = useDashboard();
+  const editing = application !== null;
+  const sent = !editing || !!application.applied_at;
+  const [initial] = useState<FormState>(() => (application ? formOf(application) : emptyForm()));
+  const [form, setForm] = useState<FormState>(initial);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<"close" | "another" | null>(null);
-  const [channelTouched, setChannelTouched] = useState(false);
+  const [channelTouched, setChannelTouched] = useState(editing);
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
     setError(null);
   };
+
+  // made in the resume editor: its offer text lives in the resume session, not on the row
+  const [sessionText, setSessionText] = useState<string | null>(null);
+  useEffect(() => {
+    if (!application?.json_file_path || application.description) return;
+    let cancelled = false;
+    api.getCVSession(application.id).then((session) => {
+      const text = session?.jobInfos?.description ?? "";
+      if (cancelled || !text) return;
+      setSessionText(text);
+      setForm((current) => (current.description ? current : { ...current, description: text }));
+    }).catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [application]);
 
   const companies = useMemo(() => collectSuggestions(applications.map((a) => ({ value: a.company_name, at: time(a) }))), [applications]);
 
@@ -86,8 +142,8 @@ export default function AddApplicationDialog({ open, onOpenChange }: { open: boo
     const company = fold(form.company);
     const title = fold(form.title);
     if (!company || !title) return null;
-    return applications.find((a) => fold(a.company_name) === company && fold(a.job_title) === title) ?? null;
-  }, [applications, form.company, form.title]);
+    return applications.find((a) => a.id !== application?.id && fold(a.company_name) === company && fold(a.job_title) === title) ?? null;
+  }, [application, applications, form.company, form.title]);
 
   const today = dayString(new Date());
   const quickDays = [
@@ -96,18 +152,33 @@ export default function AddApplicationDialog({ open, onOpenChange }: { open: boo
     { label: "A week ago", value: dayString(subDays(new Date(), 7)) },
   ];
 
-  const close = (next: boolean) => {
-    if (!next) {
-      setForm(emptyForm());
-      setError(null);
-      setChannelTouched(false);
-    }
-    onOpenChange(next);
-  };
+  const close = onClose;
 
   const submit = async (mode: "close" | "another") => {
     if (!form.company.trim() || !form.title.trim()) {
       setError(!form.company.trim() ? "Which company did you apply to?" : "Which position did you apply for?");
+      return;
+    }
+    if (application) {
+      setSaving("close");
+      const descriptionBefore = initial.description || sessionText || "";
+      const result = await editApplication(application.id, {
+        company: form.company,
+        title: form.title,
+        url: form.url,
+        channel: form.channel,
+        salary: form.salary,
+        ...(sent ? { appliedOn: form.appliedOn } : {}),
+        // sent only when changed: an offer text still loading must not erase the one in the resume session
+        ...(form.description !== descriptionBefore ? { description: form.description } : {}),
+      });
+      setSaving(null);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      toast.success("Application updated");
+      close();
       return;
     }
     setSaving(mode);
@@ -131,19 +202,22 @@ export default function AddApplicationDialog({ open, onOpenChange }: { open: boo
       setForm(emptyForm({ appliedOn: form.appliedOn, channel: form.channel }));
       document.getElementById("add-app-company")?.focus();
     } else {
-      close(false);
+      close();
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="max-h-[92vh] gap-0 overflow-y-auto p-0 sm:max-w-xl">
+    <>
         <DialogHeader className="border-b border-border/70 px-6 py-5">
           <DialogTitle className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-brand-muted text-brand"><Plus className="size-4" /></span>
-            Add an application
+            <span className="flex size-8 items-center justify-center rounded-lg bg-brand-muted text-brand">{editing ? <Pencil className="size-4" /> : <Plus className="size-4" />}</span>
+            {editing ? "Edit application" : "Add an application"}
           </DialogTitle>
-          <DialogDescription>One you sent without CVMaker, or before using it. Only the company and the position are needed.</DialogDescription>
+          <DialogDescription>
+            {editing
+              ? "Fix what was saved wrong: the company, the position, the link… The status is changed from the application panel."
+              : "One you sent without CVMaker, or before using it. Only the company and the position are needed."}
+          </DialogDescription>
         </DialogHeader>
 
         <form
@@ -194,7 +268,7 @@ export default function AddApplicationDialog({ open, onOpenChange }: { open: boo
                   <TriangleAlert className="size-3.5 shrink-0" />
                   <span className="min-w-0 flex-1">
                     Already in your pipeline ({STATUS_META[duplicate.status]?.label ?? duplicate.status}
-                    {duplicate.applied_at && parseDbDate(duplicate.applied_at) ? `, applied ${format(parseDbDate(duplicate.applied_at)!, "d MMM yyyy")}` : ""}). Add it again only if you applied twice.
+                    {duplicate.applied_at && parseDbDate(duplicate.applied_at) ? `, applied ${format(parseDbDate(duplicate.applied_at)!, "d MMM yyyy")}` : ""}). {editing ? "Same company and position as this one." : "Add it again only if you applied twice."}
                   </span>
                   <Button
                     type="button"
@@ -202,7 +276,7 @@ export default function AddApplicationDialog({ open, onOpenChange }: { open: boo
                     variant="ghost"
                     className="h-6 shrink-0 gap-1 px-2 text-xs"
                     onClick={() => {
-                      close(false);
+                      close();
                       openApplication(duplicate.id);
                     }}
                   >
@@ -213,7 +287,7 @@ export default function AddApplicationDialog({ open, onOpenChange }: { open: boo
             )}
           </AnimatePresence>
 
-          <div className="grid gap-1.5">
+          {sent && <div className="grid gap-1.5">
             <Label htmlFor="add-app-date">Applied on <span className="text-destructive">*</span></Label>
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative w-44">
@@ -243,7 +317,7 @@ export default function AddApplicationDialog({ open, onOpenChange }: { open: boo
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
@@ -266,6 +340,23 @@ export default function AddApplicationDialog({ open, onOpenChange }: { open: boo
                 </SelectContent>
               </Select>
             </div>
+            {editing ? (
+              <div className="grid gap-1.5">
+                <Label htmlFor="add-app-salary">Salary <span className="font-normal text-muted-foreground">(yearly)</span></Label>
+                <div className="relative">
+                  <Wallet className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="add-app-salary"
+                    className="pl-9"
+                    inputMode="decimal"
+                    placeholder="e.g. 85000 or 85k"
+                    value={form.salary}
+                    aria-invalid={error?.includes("salary") || undefined}
+                    onChange={(event) => set("salary", event.target.value)}
+                  />
+                </div>
+              </div>
+            ) : (
             <div className="grid gap-1.5">
               <Label htmlFor="add-app-status">Where it stands</Label>
               <Select value={form.status} onValueChange={(value) => set("status", value as JobApplicationStatus)}>
@@ -279,6 +370,7 @@ export default function AddApplicationDialog({ open, onOpenChange }: { open: boo
                 </SelectContent>
               </Select>
             </div>
+            )}
           </div>
 
           <div className="grid gap-1.5">
@@ -304,7 +396,7 @@ export default function AddApplicationDialog({ open, onOpenChange }: { open: boo
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="add-app-description">Description / mandate <span className="font-normal text-muted-foreground">(if you remember it)</span></Label>
+            <Label htmlFor="add-app-description">Description / mandate <span className="font-normal text-muted-foreground">{editing ? "(the offer text)" : "(if you remember it)"}</span></Label>
             <Textarea
               id="add-app-description"
               rows={4}
@@ -331,14 +423,19 @@ export default function AddApplicationDialog({ open, onOpenChange }: { open: boo
         </form>
 
         <DialogFooter className="m-0 border-t border-border/70 px-6 py-4">
-          <Button type="button" variant="outline" disabled={saving !== null} onClick={() => void submit("another")} className="gap-1.5">
-            {saving === "another" ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />} Save and add another
-          </Button>
+          {editing ? (
+            <Button type="button" variant="outline" disabled={saving !== null} onClick={close}>
+              Cancel
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" disabled={saving !== null} onClick={() => void submit("another")} className="gap-1.5">
+              {saving === "another" ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />} Save and add another
+            </Button>
+          )}
           <Button type="submit" form="add-application-form" disabled={saving !== null} className="gap-1.5">
-            {saving === "close" && <Loader2 className="size-4 animate-spin" />} Add application
+            {saving === "close" && <Loader2 className="size-4 animate-spin" />} {editing ? "Save changes" : "Add application"}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   );
 }

@@ -5,15 +5,18 @@
  */
 import browser from 'webextension-polyfill';
 import type { ApplyAnswerResponse, SeenOffer, TabTrackMessage, TrackHelloResponse, TrackMessage } from '../core/messages';
-import { clickMeaning, confirmationText, controlOf, hasVisibleErrors, looksLikeApplicationForm, pageHints, scopeOf, submitsSomethingElse } from './applyDetect';
+import { clickMeaning, confirmationText, controlOf, hasVisibleErrors, isApplicationFlow, looksLikeApplicationForm, pageHints, scopeOf, submitsSomethingElse } from './applyDetect';
 import { readOffer } from './offerPage';
 import { hidePrompt, showPrompt } from './prompt';
 
 const isTop = window === window.top;
 /** Errors show up right after a refused send; checked before the background asks (it waits 2.5 s). */
 const ERROR_CHECK_MS = 1500;
-/** After a send, how long the page is watched for its "thank you". */
-const CONFIRMATION_WATCH_MS = 12_000;
+/** After a send, how long the page is watched for its "thank you" (Workday takes its time). */
+const CONFIRMATION_WATCH_MS = 30_000;
+/** How long an application started in this tab stays "in progress": long forms are filled over an evening. */
+const APPLYING_TTL_MS = 3 * 60 * 60 * 1000;
+const APPLYING_KEY = 'cvmaker:applying';
 
 const send = <T = unknown>(message: TrackMessage) => browser.runtime.sendMessage(message) as Promise<T>;
 
@@ -53,6 +56,46 @@ function scanForOffer(): void {
 }
 
 /* ------------------------------------------------------------------ */
+/* An application in progress (multi-step forms)                        */
+/* ------------------------------------------------------------------ */
+
+// kept in the tab's session storage too: some flows load a new page per step (Taleo, iCIMS)
+let applyingSince = 0;
+
+function readApplying(): number {
+  if (applyingSince) return applyingSince;
+  try {
+    return Number(sessionStorage.getItem(APPLYING_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function markApplying(): void {
+  applyingSince = Date.now();
+  try {
+    sessionStorage.setItem(APPLYING_KEY, String(applyingSince));
+  } catch {
+    // storage refused (sandboxed frame): this page still remembers
+  }
+}
+
+function clearApplying(): void {
+  applyingSince = 0;
+  try {
+    sessionStorage.removeItem(APPLYING_KEY);
+  } catch {
+    // nothing kept
+  }
+}
+
+/** In this tab, an application flow was entered not long ago, or this page is one. */
+function isApplying(): boolean {
+  if (isApplicationFlow(location)) return true;
+  return Date.now() - readApplying() < APPLYING_TTL_MS;
+}
+
+/* ------------------------------------------------------------------ */
 /* Sent forms                                                           */
 /* ------------------------------------------------------------------ */
 
@@ -73,6 +116,7 @@ function checkConfirmation(): boolean {
   const found = confirmationText(document);
   if (!found) return false;
   confirmedOnce = true;
+  clearApplying();
   send({ action: 'APPLY_SIGNAL', kind: 'confirmation', hints: pageHints(document) }).catch(() => undefined);
   return true;
 }
@@ -95,10 +139,14 @@ function onClick(event: MouseEvent): void {
   if (!enabled || !event.isTrusted) return;
   const control = controlOf(event.target);
   if (!control) return;
-  const meaning = clickMeaning(control);
+  const meaning = clickMeaning(control, isApplying());
   if (meaning === 'send') signalSent(scopeOf(control));
+  else if (meaning === 'step') markApplying();
   // "Apply" on a posting: what is on screen right now is the offer about to be applied to
-  else if (meaning === 'start' && isTop) reportOffer(true);
+  else if (meaning === 'start') {
+    markApplying();
+    if (isTop) reportOffer(true);
+  }
 }
 
 function onSubmit(event: SubmitEvent): void {
@@ -134,7 +182,10 @@ function watchNavigation(): void {
     if (location.href === lastHref) return;
     lastHref = location.href;
     confirmedOnce = false;
+    if (isApplicationFlow(location)) markApplying();
     void hello();
+    // the "thank you" of a single-page site comes with a new address, not a new page load
+    if (enabled) [1500, 4000].forEach((delay) => window.setTimeout(checkConfirmation, delay));
   }, 1000);
 }
 
@@ -178,5 +229,6 @@ export async function startTracking(): Promise<void> {
   // capture phase: sites often stop the click from bubbling up
   document.addEventListener('click', onClick, true);
   document.addEventListener('submit', onSubmit, true);
+  if (enabled && isApplicationFlow(location)) markApplying();
   if (enabled) window.setTimeout(checkConfirmation, 1500);
 }

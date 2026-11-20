@@ -44,6 +44,9 @@ label span { display: block; margin-bottom: 3px; color: var(--muted); font-size:
 input { width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px; }
 input:focus { outline: 2px solid var(--brand-soft); border-color: var(--brand); background: var(--surface); }
 .src { margin: 2px 0 10px; color: var(--muted); font-size: 12px; }
+.hint { margin: -2px 0 6px; color: var(--muted); font-size: 11.5px; }
+.hint b { color: var(--text); font-weight: 600; }
+input { padding-right: 28px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a9aa8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; }
 .src.warn { color: var(--warn); }
 details { margin: -4px 0 10px; }
 summary { cursor: pointer; color: var(--brand); font-size: 12px; font-weight: 500; list-style: none; }
@@ -167,7 +170,9 @@ export function showPrompt(prompt: ApplyPrompt, answer: Answer): void {
   const yes = element('button', { className: 'btn primary', type: 'button', textContent: 'Yes, save it' });
   const msg = element('p', { className: 'msg' });
   msg.setAttribute('role', 'status');
-  const body = element('div', {}, [fields, src, ...(others.length ? [choices] : []), element('div', { className: 'actions' }, [no, yes]), msg]);
+  // what was read may be wrong (a job board's name as the company…): it is fixed here, before saving
+  const hint = element('p', { className: 'hint', innerHTML: known ? 'Not right? <b>Edit the position or company</b> before saving.' : 'Type the position and company, or pick an offer below.' });
+  const body = element('div', {}, [fields, hint, src, ...(others.length ? [choices] : []), element('div', { className: 'actions' }, [no, yes]), msg]);
   card.append(header, body);
   root.append(style, card);
   // no focus stealing: the user may be typing elsewhere; the card is reachable by Tab and announced as a dialog

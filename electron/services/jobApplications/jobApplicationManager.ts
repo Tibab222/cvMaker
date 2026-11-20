@@ -5,6 +5,7 @@ import {
     Application,
     ApplicationChannel,
     ApplicationDetailsDto,
+    ApplicationEditDto,
     ApplicationEvent,
     ApplicationEventType,
     ApplicationWithEvents,
@@ -54,6 +55,16 @@ const FOLLOW_UP_AFTER_DAYS = 7;
 const STALE_DRAFT_AFTER_DAYS = 10;
 const INTERVIEW_LOOKAHEAD_DAYS = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** A yearly salary as people type it: "85000", "85 000", "$85,000", "85k". Null when empty or unreadable. */
+const typedSalary = (raw: string | null): number | null => {
+    const text = (raw ?? "").toLowerCase().replace(/\s/g, "").replace(/[$€£,_]|cad|usd|eur|\/(year|yr|an)/g, "");
+    const match = /^(\d+(?:\.\d+)?)(k)?$/.exec(text);
+    return match ? parseSalary(Number(match[1]) * (match[2] ? 1000 : 1)) : null;
+};
+
+/** "YYYY-MM-DD" of the user's own calendar. */
+const localDay = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 
@@ -315,6 +326,78 @@ export class JobApplicationManager {
         const salary = parseSalary(dto.salary);
         if (salary != null) this.getDb().prepare(`UPDATE applications SET salary = ? WHERE id = ?`).run(salary, application.id);
         return { action: "created", application: this.getApplication(application.id)! };
+    }
+
+    /**
+     * Corrects an application: the company and position (a wrong name read by the extension), the link, the offer
+     * text, the salary, how and when it was sent. The status keeps its own control. An application made in the editor
+     * gets the same change in its resume session, or the next save there would bring the old values back.
+     * @param keywords Reads the terms of an offer text; called only when one arrives on an application that had none.
+     */
+    public editApplication(id: string, dto: ApplicationEditDto, keywords: (description: string) => string[] = () => [], now: Date = new Date()): Application {
+        const row = this.getApplication(id);
+        if (!row) throw new Error("This application no longer exists.");
+        const clean = (value: unknown, max: number) => (typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : "");
+        const company = clean(dto?.company, 200);
+        const title = clean(dto?.title, 200);
+        if (!company) throw new Error("Which company did you apply to?");
+        if (!title) throw new Error("Which position did you apply for?");
+        if (dto.channel != null && !Object.values(ApplicationChannel).includes(dto.channel)) throw new Error(`Unknown channel: ${dto.channel}`);
+        const url = dto.url === undefined ? row.url ?? "" : normalizeUrl(dto.url);
+        const channel = dto.channel === undefined ? row.channel ?? null : dto.channel;
+
+        // a date only means something once sent; the same day keeps the stored time (stats order by it)
+        let appliedAt = row.applied_at ?? null;
+        const storedDay = parseDbDate(row.applied_at);
+        if (appliedAt && dto.appliedOn) {
+            const sameDay = storedDay && localDay(storedDay) === dto.appliedOn;
+            if (!sameDay) appliedAt = appliedOnToDb(dto.appliedOn, now);
+        }
+
+        const salary = dto.salary === undefined ? row.salary ?? null : typedSalary(dto.salary);
+        if (dto.salary != null && dto.salary.trim() && salary == null) throw new Error("The salary must be a yearly amount, like 85000.");
+        const description = dto.description === undefined
+            ? row.description ?? null
+            : typeof dto.description === "string" && dto.description.trim() ? dto.description.trim().slice(0, 50_000) : null;
+        const newText = description && description !== (row.description ?? null) && row.keywords.length === 0;
+        const terms = newText ? keywords(description) : row.keywords;
+
+        const rawDb = this.getDb();
+        rawDb.transaction(() => {
+            rawDb.prepare(`
+                UPDATE applications
+                SET job_title = ?, company_name = ?, url = ?, channel = ?, applied_at = ?, salary = ?, description = ?, keywords = ?
+                WHERE id = ?
+            `).run(title, company, url, channel, appliedAt, salary, description, terms.join(","), id);
+            if (appliedAt !== (row.applied_at ?? null)) {
+                // the first step of its timeline is the sending: it moves with the date, like for an application added by hand
+                rawDb.prepare(`
+                    UPDATE application_events SET event_date = ?
+                    WHERE id = (SELECT id FROM application_events WHERE application_id = ? AND event_type = '${ApplicationEventType.STATUS_CHANGE}'
+                                AND to_status IN (${sqlList(SUBMITTED_STATUSES)}) ORDER BY event_date, id LIMIT 1)
+                      AND event_date = ?
+                `).run(appliedAt, id, row.applied_at);
+            }
+        })();
+
+        if (row.json_file_path && this.sessionsDir) {
+            const file = path.join(this.sessionsDir, row.json_file_path);
+            try {
+                const session = JSON.parse(fs.readFileSync(file, "utf-8")) as CVSessionDataDTO;
+                session.jobInfos = {
+                    ...(session.jobInfos ?? { description: "" }),
+                    title,
+                    company,
+                    url,
+                    salary,
+                    ...(dto.description === undefined ? {} : { description: description ?? "" }),
+                };
+                fs.writeFileSync(file, JSON.stringify(session, null, 2), "utf-8");
+            } catch (error) {
+                console.warn(`[JobApplicationManager] Could not update the resume session of ${id}:`, error);
+            }
+        }
+        return this.getApplication(id)!;
     }
 
     private getApplication(id: string): Application | null {
