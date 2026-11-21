@@ -13,6 +13,10 @@ import { getAnswerBank } from './services/answers';
 import { recordApplicationFromBrowser } from './functions/applicationFromOffer';
 import { offerKeywordsIn, profileLanguage } from './functions/offerKeywords';
 import type { ApplicationsChangedEvent } from '../shared/jobApplications.type';
+import { handleSquirrelEvent } from './squirrelStartup';
+
+// Windows installer launches (install, update, uninstall): make or remove the shortcuts, then quit
+const squirrelEvent = handleSquirrelEvent();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,6 +88,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  if (squirrelEvent) return;
   registerIpcHandlers();
   createWindow();
   HttpServerService.getInstance().init(() => win, {
@@ -129,6 +134,7 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
+  if (squirrelEvent) return;
   getDiscoveryManager().stopScheduler();
 });
 

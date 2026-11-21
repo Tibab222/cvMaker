@@ -1,14 +1,41 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Building2, ExternalLink, Pencil, Trash2, X, Check, ChevronDown } from "lucide-react";
+import { Building2, ExternalLink, Pencil, Trash2, X, Check, ChevronDown, BriefcaseBusiness, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { BulletListEditor } from "./BulletList";
+import ProjectDateInput from "./ProjectDateInput";
 import type { Project } from "@shared/projects.interface";
+import type { Experience } from "@shared/Experience.interface";
+import { findRelatedExperience, formatProjectPeriod, parseProjectDate } from "@shared/projectDates";
+import { useProfileStore } from "@/store/profile";
 import { cn } from "@/lib/utils";
+
+const NO_EXPERIENCE = "none";
+
+const experienceYears = (exp: Experience) => {
+  const start = exp.startDate ? new Date(exp.startDate).getFullYear() : undefined;
+  const end = exp.endDate === "Present" ? "Present" : exp.endDate ? new Date(exp.endDate).getFullYear() : undefined;
+  if (!start) return "";
+  return end && end !== start ? `${start} — ${end}` : String(start);
+};
+
+const experienceLabel = (exp: Experience) =>
+  [exp.jobTitle, exp.company].filter(Boolean).join(" @ ") || "Untitled experience";
+
+/** Keeps only valid dates, and drops the link when the experience no longer exists. */
+const sanitizeProject = (project: Project, experiences: Experience[]): Project => {
+  const next = { ...project };
+  if (!parseProjectDate(next.startDate)) delete next.startDate;
+  if (next.endDate !== "Present" && !parseProjectDate(next.endDate)) delete next.endDate;
+  if (!findRelatedExperience(next, experiences)) delete next.relatedExperienceId;
+  return next;
+};
 
 interface Props {
   project: Project;
@@ -37,6 +64,7 @@ export default function ProjectCard({
   const [formData, setFormData] = useState<Project>(project);
   const [isEditing, setIsEditing] = useState(defaultEdit);
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const { experience: experiences } = useProfileStore();
 
   useEffect(() => {
     const setData = () => setFormData(project);
@@ -44,9 +72,14 @@ export default function ProjectCard({
   }, [project]);
 
   const handleSave = () => {
-    onSave(formData);
+    onSave(sanitizeProject(formData, experiences));
     setIsEditing(false);
   };
+
+  const isOngoing = formData.endDate === "Present";
+  const relatedExperience = findRelatedExperience(project, experiences);
+  const period = formatProjectPeriod(project, navigator.language || "en-US", "Present");
+  const fieldId = project.id || "new-project";
 
   const handleCancel = () => {
     if (!project.id) {
@@ -103,6 +136,70 @@ export default function ProjectCard({
                   />
                 </div>
 
+                <div className="space-y-1.5">
+                  <label htmlFor={`${fieldId}-experience`} className="text-xs font-medium text-muted-foreground">
+                    Done during
+                  </label>
+                  <Select
+                    value={findRelatedExperience(formData, experiences)?.id ?? NO_EXPERIENCE}
+                    onValueChange={(next) =>
+                      setFormData({ ...formData, relatedExperienceId: next === NO_EXPERIENCE ? undefined : next })
+                    }
+                  >
+                    <SelectTrigger id={`${fieldId}-experience`} className="w-full">
+                      <SelectValue placeholder="No linked experience" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_EXPERIENCE} className="text-muted-foreground">
+                        No linked experience (personal project, studies…)
+                      </SelectItem>
+                      {experiences.map((exp) => (
+                        <SelectItem key={exp.id} value={exp.id}>
+                          {experienceLabel(exp)}
+                          {experienceYears(exp) && (
+                            <span className="ml-1 text-muted-foreground">({experienceYears(exp)})</span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="block text-xs font-medium text-muted-foreground">Timeline (year, month optional)</span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <ProjectDateInput
+                      id={`${fieldId}-start`}
+                      label="From:"
+                      value={formData.startDate}
+                      onChange={(startDate) => setFormData((prev) => ({ ...prev, startDate }))}
+                    />
+                    {!isOngoing && (
+                      <ProjectDateInput
+                        id={`${fieldId}-end`}
+                        label="To:"
+                        value={formData.endDate === "Present" ? undefined : formData.endDate}
+                        onChange={(endDate) => setFormData((prev) => ({ ...prev, endDate }))}
+                      />
+                    )}
+                    <div className="ml-1 flex items-center gap-2">
+                      <Checkbox
+                        id={`${fieldId}-ongoing`}
+                        checked={isOngoing}
+                        onCheckedChange={(checked: boolean) =>
+                          setFormData((prev) => ({ ...prev, endDate: checked ? "Present" : undefined }))
+                        }
+                      />
+                      <label
+                        htmlFor={`${fieldId}-ongoing`}
+                        className="cursor-pointer select-none text-xs font-medium text-muted-foreground"
+                      >
+                        Ongoing
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 <BulletListEditor
                   bullets={formData.bullets || []}
                   onChange={(bullets) => setFormData({ ...formData, bullets })}
@@ -151,6 +248,22 @@ export default function ProjectCard({
                     <h3 className="truncate text-lg font-semibold tracking-tight">
                       {project.title || "Untitled project"}
                     </h3>
+                    {(period || relatedExperience) && (
+                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        {relatedExperience && (
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <BriefcaseBusiness size={13} className="shrink-0" />
+                            <span className="truncate">{experienceLabel(relatedExperience)}</span>
+                          </span>
+                        )}
+                        {period && (
+                          <span className="flex items-center gap-1.5 font-mono">
+                            <CalendarDays size={13} className="shrink-0" />
+                            {period}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex shrink-0 flex-col items-end gap-2">
