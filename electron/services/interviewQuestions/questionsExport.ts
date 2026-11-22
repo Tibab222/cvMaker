@@ -31,6 +31,7 @@ const escapeXml = (text: string) =>
 
 /** A file name from a title: no characters Windows refuses, not too long. */
 export function exportFileName(title: string, extension: string): string {
+    // eslint-disable-next-line no-control-regex
     const base = title.replace(/[<>:"/\\|?*\u0000-\u001F]/g, " ").replace(/\s+/g, " ").replace(/[. ]+$/, "").trim().slice(0, 120);
     return `${base || "Interview questions"}.${extension}`;
 }

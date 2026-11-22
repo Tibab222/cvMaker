@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNowStrict } from "date-fns";
-import { Building2, Check, ChevronsUpDown, Lightbulb, Link2, Loader2, MessagesSquare, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Building2, Check, ChevronsUpDown, Download, FileSpreadsheet, FileText, FileType2, Lightbulb, Link2, Loader2, MessagesSquare, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import type { InterviewQuestion, InterviewQuestionDto, InterviewQuestionResult, LinkedApplication } from "@shared/interviewQuestions.types";
+import type { InterviewQuestion, InterviewQuestionDto, InterviewQuestionResult, LinkedApplication, QuestionsExportFormat, QuestionsExportResult } from "@shared/interviewQuestions.types";
 import { MAX_INTERVIEW_ANSWER_LENGTH, MAX_INTERVIEW_QUESTION_LENGTH } from "@shared/interviewQuestions.types";
 import { api } from "@/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -338,6 +339,61 @@ function QuestionRow({ question, applications, onSaved, onRemoved, onPickApplica
   );
 }
 
+const EXPORT_FORMATS: { format: QuestionsExportFormat; label: string; hint: string; icon: typeof FileText }[] = [
+  { format: "pdf", label: "PDF", hint: "A prep sheet to read or print before the interview", icon: FileText },
+  { format: "docx", label: "Word", hint: "A document to rework and add to", icon: FileType2 },
+  { format: "xlsx", label: "Excel", hint: "A table, one row per question", icon: FileSpreadsheet },
+];
+
+interface ExportMenuProps {
+  questions: InterviewQuestion[];
+  /** What the shown questions are, for the title and the file name; none for the whole library. */
+  scope?: string;
+}
+
+/** Exports the questions shown (the filter and the search apply) to a PDF, Word or Excel file. */
+function ExportMenu({ questions, scope }: ExportMenuProps) {
+  const [exporting, setExporting] = useState<QuestionsExportFormat | null>(null);
+
+  const run = async (format: QuestionsExportFormat) => {
+    setExporting(format);
+    const result = await api.interviewQuestions
+      .export({ format, questionIds: questions.map((question) => question.id), scope })
+      .catch((): QuestionsExportResult => ({ ok: false, error: "The questions could not be exported." }));
+    setExporting(null);
+    if (result.ok) {
+      toast.success(`Exported to ${result.fileName}`, {
+        action: { label: "Open", onClick: () => void api.interviewQuestions.openExport().then((opened) => { if (!opened) toast.error("The file could not be opened."); }) },
+      });
+    } else if (!result.cancelled) toast.error(result.error);
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" className="gap-1.5" disabled={questions.length === 0 || exporting !== null}>
+          {exporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />} Export to…
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-72">
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+          {questions.length} question{questions.length > 1 ? "s" : ""}{scope ? ` · ${scope}` : ""}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {EXPORT_FORMATS.map(({ format, label, hint, icon: Icon }) => (
+          <DropdownMenuItem key={format} onSelect={() => void run(format)} className="items-start gap-2.5 py-1.5">
+            <Icon className="mt-0.5 text-brand" />
+            <span className="min-w-0">
+              <span className="block font-medium">{label}</span>
+              <span className="block text-xs text-muted-foreground">{hint}</span>
+            </span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 interface InterviewQuestionsPanelProps {
   /** The add form is open (the "Add a question" button lives in the page header). */
   adding: boolean;
@@ -400,6 +456,10 @@ export default function InterviewQuestionsPanel({ adding, onAddingChange: setAdd
   const drop = (id: string) => setQuestions((list) => list?.filter((question) => question.id !== id) ?? []);
   const unanswered = (questions ?? []).filter((question) => !question.answer).length;
   const filtered = shown.length !== (questions?.length ?? 0);
+  const filteredApplication = linked.find((entry) => entry.application.id === activeFilter)?.application;
+  const exportScope = filteredApplication
+    ? applicationLabel(filteredApplication)
+    : activeFilter === UNLINKED ? "not linked to an interview" : query.trim() ? `matching “${query.trim()}”` : undefined;
 
   return (
     <div className="space-y-4">
@@ -489,6 +549,7 @@ export default function InterviewQuestionsPanel({ adding, onAddingChange: setAdd
               {filtered ? `${shown.length} of ${questions.length}` : `${questions.length} question${questions.length > 1 ? "s" : ""}`}
               {!filtered && unanswered > 0 && ` · ${unanswered} to prepare`}
             </span>
+            <ExportMenu questions={shown} scope={exportScope} />
           </div>
           {shown.length === 0 ? (
             <div className="space-y-2 py-10 text-center text-sm text-muted-foreground">
