@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils";
 import { Check, FolderKanban, Circle, CheckCircle2, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import KeywordChips from "./KeywordChips";
+import { findRelatedExperience, formatProjectPeriod, localeForLanguage } from "@shared/projectDates";
 
 export default function ProjectPicker() {
-  const { projects } = useProfileStore();
+  const { projects, experience, profile } = useProfileStore();
   const { toggleProject, selection, toggleBullet, getScore, getKeywords, getCustomField } = useCVSelection();
 
   const selectBullet = (event: React.MouseEvent<HTMLDivElement>, projectId: string, bulletId: string) => {
@@ -27,6 +28,9 @@ export default function ProjectPicker() {
 
           const projectTitle = getCustomField('project', project.id, 'title', project.title);
           const projectSubtitle = getCustomField('project', project.id, 'subtitle', project.subtitle);
+          const projectPeriod = formatProjectPeriod(project, localeForLanguage(profile?.language), profile?.language === 'fr' ? 'Présent' : 'Present');
+          const projectCompany = findRelatedExperience(project, experience)?.company;
+          const projectMeta = [projectCompany, projectPeriod].filter(Boolean).join(' · ');
           
           return (
             <motion.div
@@ -65,6 +69,9 @@ export default function ProjectPicker() {
                   <p className="text-xs text-muted-foreground line-clamp-1 italic">
                     {projectSubtitle}
                   </p>
+                  {projectMeta && (
+                    <p className="text-[11px] text-muted-foreground/80 line-clamp-1 mt-0.5">{projectMeta}</p>
+                  )}
 
                   <KeywordChips matched={projectKeywords.matched} missing={projectKeywords.missing} className="mt-2" />
                 </div>

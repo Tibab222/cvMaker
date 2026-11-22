@@ -30,7 +30,7 @@ export default function CVTemplate() {
       <CVSummary lang={lang} />
       <CVEducation educations={education} lang={lang} />
       {selectedExps.length > 0 && <CVExperience experiences={selectedExps} lang={lang} />}
-      <CVProject projects={projects} lang={lang} />
+      <CVProject projects={projects} experiences={experience} lang={lang} />
       <CVSkills skills={skills} lang={lang} />
       <div className="absolute top-[297mm] left-0 w-full hidden-print border-t border-red-600">
         {/* ligne de fin de page si il y en a besoin */}

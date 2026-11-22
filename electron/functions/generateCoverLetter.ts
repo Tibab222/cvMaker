@@ -4,6 +4,8 @@ import { Language } from "../../shared/profile.interface";
 import { aiService } from "../ipcHandlers";
 import { ENGLISH_PROMPTS } from "../prompts/en";
 import { FRENCH_PROMPTS } from "../prompts/fr";
+import { ProfileService } from "../services/ProfileService";
+import { findRelatedExperience, formatProjectPeriod } from "../../shared/projectDates";
 
 const firstParagraph = (companyName: string, roleName: string, lang: Language = Language.ENGLISH) => {
   if (lang === Language.FRENCH) {
@@ -52,7 +54,12 @@ export async function generateCoverLetter(event: IpcMainInvokeEvent, options: Ge
     const { coverLetterData, experiences, projects, education, targetKeywords, language } = options;
     const educationSummary = education.map(edu => `${edu.degree} from ${edu.institution}: ${edu.description}`).join(", ");
     const experienceSummary = experiences.map(exp => `${exp.jobTitle} at ${exp.company}`).join(", ");
-    const projectSummary = projects.map(proj => `${proj.title}: ${proj.bullets.map(bullet => bullet.text).join(", ")}`).join(", ");
+    // a project may be linked to an experience that is not selected for this letter: look it up in the whole profile
+    const allExperiences = await ProfileService.getInstance().getExperiences().catch(() => experiences);
+    const projectSummary = projects.map(proj => {
+        const context = [findRelatedExperience(proj, allExperiences)?.company, formatProjectPeriod(proj, 'en-US', 'present')].filter(Boolean).join(', ');
+        return `${proj.title}${context ? ` [${context}]` : ''}: ${proj.bullets.map(bullet => bullet.text).join(", ")}`;
+    }).join(", ");
 
     const sendStatus = (status: COVER_LETTER_EVENTS, message: string, data?: CoverLetterStatusPayload['data']) => {
         event.sender.send('cover-status', { status, message, data });

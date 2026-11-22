@@ -5,9 +5,10 @@ import type { Experience } from "@shared/Experience.interface";
 import ExperienceCard from "./ExperienceCard";
 import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
 import SectionPage from "../SectionPage";
+import { unlinkProjectsFromExperience } from "@shared/projectDates";
 
 export default function ExperienceComponent() {
-    const { experience, updateSection } = useProfileStore();
+    const { experience, projects, updateSection } = useProfileStore();
     const [ addNew, setAddNew ] = useState(false);
 
     const handleAddShortcut = useCallback(() => setAddNew(true), []);
@@ -28,6 +29,10 @@ export default function ExperienceComponent() {
     const handleOnDelete = (id: string) => {
         const newExperienceList = experience.filter((exp) => exp.id !== id);
         updateSection("experience", newExperienceList);
+        // projects done during this job lose the link but are kept
+        if (projects.some((project) => project.relatedExperienceId === id)) {
+            updateSection("projects", unlinkProjectsFromExperience(projects, id));
+        }
     }
 
     return (

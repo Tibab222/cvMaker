@@ -20,6 +20,7 @@ import Dashboard from "../dashboard/Dashboard";
 import ResumeLibrary from "../resumeLibrary/ResumeLibrary";
 import Opportunities from "../opportunities/Opportunities";
 import SavedAnswers from "../answers/SavedAnswers";
+import TimelinePage from "../timeline/TimelinePage";
 
 export default function MainWindow() {
     const { selectedTab, setSelectedTab } = useUiStore();
@@ -83,6 +84,12 @@ export default function MainWindow() {
                         </SidebarTrigger>
                         <span className="ml-3 text-sm font-semibold">CV Maker</span>
                     </header>
+                    {selectedTab === Tabs.TIMELINE ? (
+                        // the timeline scrolls horizontally and fills the height, so it lives outside the vertical scroll area
+                        <motion.div key="timeline" className="min-h-0 flex-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+                            <TimelinePage />
+                        </motion.div>
+                    ) : (
                     <ScrollArea className="h-full w-full flex-1 bg-canvas">
                         {/* soft brand glow behind the content, purely decorative */}
                         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(60%_100%_at_50%_0%,var(--color-brand-muted),transparent)] opacity-60" />
@@ -100,6 +107,7 @@ export default function MainWindow() {
                             </motion.div>
                         </AnimatePresence>
                     </ScrollArea>
+                    )}
                 </SidebarInset>
             </SidebarProvider>
         </motion.div>

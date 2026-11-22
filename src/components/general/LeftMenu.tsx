@@ -10,6 +10,7 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
+  Route,
   Settings,
   Sparkles,
   Telescope,
@@ -204,6 +205,22 @@ export default function LeftMenu({ selectedTab, onSelectTab, profile, onLogout }
             <PanelLeftClose className="size-4" />
           </Button>
         </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Your timeline"
+              isActive={selectedTab === Tabs.TIMELINE}
+              onClick={() => onSelectTab(Tabs.TIMELINE)}
+              className="group/timeline relative h-9 overflow-hidden rounded-md border border-violet-300/40 bg-gradient-to-r from-violet-500/10 via-fuchsia-400/10 to-violet-500/5 text-sidebar-foreground/80 transition-[color,box-shadow] duration-300 hover:text-sidebar-foreground hover:shadow-[0_0_18px_-6px_rgba(124,58,237,0.7)] data-[active=true]:border-violet-500/60 data-[active=true]:from-violet-600/20 data-[active=true]:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:border-0"
+            >
+              <Route className="text-violet-500" />
+              <span className="group-data-[collapsible=icon]:hidden">Your timeline</span>
+              <span className="ml-auto text-[10px] font-medium text-sidebar-foreground/45 transition-transform duration-300 group-hover/timeline:translate-x-0.5 group-data-[collapsible=icon]:hidden">
+                View →
+              </span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent className="px-1 py-3">

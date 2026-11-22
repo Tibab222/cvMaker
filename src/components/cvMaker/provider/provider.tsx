@@ -10,6 +10,7 @@ import { JobApplicationStatus, type CVSelection, type CVSessionDataDTO, type Job
 import { toast } from 'sonner';
 import { useUiStore } from '@/store/ui';
 import { useKeyboardShortcut } from '@/hooks/use-keyboard-shortcut';
+import { findRelatedExperience, formatProjectPeriod } from '@shared/projectDates';
 
 export interface CVSelectionContextType {
   id: string | null; // application id, null until the session is saved
@@ -205,9 +206,13 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       .filter(p => selection.selectedProjectIds.includes(p.id))
       .map(p => {
         const selectedBulletIds = selection.selectedBullets[p.id] || [];
+        const relatedExp = findRelatedExperience(p, experience);
         return {
           project_id: p.id,
           title: p.title,
+          company: relatedExp?.company || undefined,
+          role: relatedExp?.jobTitle || undefined,
+          period: formatProjectPeriod(p, 'en-US', 'present') || undefined,
           keywords: jobInfos.keywords || [],
           bullets: p.bullets
             .filter(b => selectedBulletIds.includes(b.id))

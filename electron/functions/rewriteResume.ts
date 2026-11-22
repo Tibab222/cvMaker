@@ -110,6 +110,9 @@ export async function rewriteResume({ event, options }: RewriteResumeProps): Pro
     for (const proj of projects) {
       const context = JSON.stringify({
         project_title: proj.title,
+        done_at_company: proj.company,
+        role_at_the_time: proj.role,
+        period: proj.period,
         bullets: proj.bullets.map(b => ({
           bullet_id: b.bullet_id,
           text: b.text
@@ -151,7 +154,8 @@ export async function rewriteResume({ event, options }: RewriteResumeProps): Pro
     }).join('; ');
     const projectsHistory = projects.map(proj => {
       const bullets = proj.bullets.slice(0, 2).map(b => b.text).join(', ');
-      return `${proj.title}${bullets ? ` (${bullets})` : ''}`;
+      const context = [proj.company, proj.period].filter(Boolean).join(', ');
+      return `${proj.title}${context ? ` [${context}]` : ''}${bullets ? ` (${bullets})` : ''}`;
     }).join('; ');
 
     const profileContext = `

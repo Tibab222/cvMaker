@@ -1,10 +1,12 @@
 import type { Project } from "@shared/projects.interface";
+import type { Experience } from "@shared/Experience.interface";
+import { findRelatedExperience, formatProjectPeriod, localeForLanguage } from "@shared/projectDates";
 import { useCVSelection } from "../../provider/hook";
 import { LinkIcon } from "lucide-react";
 import { i18n } from "../i18n";
 import { TemplateInput } from "../templateFields/TemplateInput";
 
-export default function CVProject({ projects, lang = 'en' }: { projects: Project[]; lang?: string }) {
+export default function CVProject({ projects, experiences = [], lang = 'en' }: { projects: Project[]; experiences?: Experience[]; lang?: string }) {
   const { selection, isItemRewriting } = useCVSelection();
   const t = i18n[lang as keyof typeof i18n];
 
@@ -37,6 +39,11 @@ export default function CVProject({ projects, lang = 'en' }: { projects: Project
 
           if (selectedBullets.length === 0) return null;
 
+          const period = formatProjectPeriod(project, localeForLanguage(lang), t.present);
+          // name the company the project was done at, unless the subtitle already says it
+          const company = findRelatedExperience(project, experiences)?.company?.trim();
+          const showCompany = !!company && !project.subtitle?.toLowerCase().includes(company.toLowerCase());
+
           return (
             <article key={project.id} className="flex flex-col gap-1">
               {/* Header du Projet */}
@@ -48,6 +55,18 @@ export default function CVProject({ projects, lang = 'en' }: { projects: Project
                     field="title"
                     defaultValue={project.title}
                   />
+                  {showCompany && (
+                    <>
+                      <span className="text-slate-400 font-normal">@</span>
+                      <TemplateInput
+                        entityType="project"
+                        id={project.id}
+                        field="company"
+                        defaultValue={company ?? ""}
+                        className="text-slate-400 font-normal"
+                      />
+                    </>
+                  )}
                   {project.subtitle && (
                     <span className="text-slate-400 font-normal normal-case ml-2 italic">
                       —&nbsp;
@@ -60,17 +79,28 @@ export default function CVProject({ projects, lang = 'en' }: { projects: Project
                     </span>
                   )}
                 </h3>
-                {project.link && (<>
-                  <LinkIcon size={12} className="inline text-slate-400 pr-1" />
-                  <a 
-                    href={project.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-[9px] font-mono text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    {project.link.replace(/^https?:\/\//, '')}
-                  </a>
-                </>)}
+                {(project.link || period) && (
+                  <span className="flex shrink-0 items-baseline gap-2 pl-2">
+                    {project.link && (
+                      <span className="inline-flex items-baseline">
+                        <LinkIcon size={12} className="inline text-slate-400 pr-1" />
+                        <a
+                          href={project.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[9px] font-mono text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          {project.link.replace(/^https?:\/\//, '')}
+                        </a>
+                      </span>
+                    )}
+                    {period && (
+                      <span className="text-[10px] font-bold text-slate-500 tabular-nums uppercase whitespace-nowrap">
+                        {period}
+                      </span>
+                    )}
+                  </span>
+                )}
               </div>
 
               <ul className="mt-1.5 flex flex-col gap-1.5">

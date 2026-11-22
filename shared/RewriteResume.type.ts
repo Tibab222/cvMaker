@@ -17,6 +17,11 @@ export interface ExperienceToRewrite {
 export interface ProjectToRewrite {
   project_id: string;
   title: string;
+  /** company / role of the experience the project was done in, when linked */
+  company?: string;
+  role?: string;
+  /** e.g. "2022 — 2023", when the project has dates */
+  period?: string;
   bullets: BulletToRewrite[];
   keywords: string[];
 }
