@@ -10,6 +10,7 @@ import type { Project } from "@shared/projects.interface";
 import type { RewriteResumeOptions } from "@shared/RewriteResume.type";
 import type { VaultImportPayload, VaultOffer } from "@shared/vault.types";
 import type { SavedAnswerDto } from "@shared/answers.types";
+import type { InterviewQuestionDto, QuestionsExportRequest } from "@shared/interviewQuestions.types";
 import type { AdzunaQuery, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings } from "@shared/discovery.types";
 
 export const api = {
@@ -78,6 +79,15 @@ export const api = {
         add: (dto: SavedAnswerDto) => window.api.answers.add(dto),
         update: (id: string, dto: SavedAnswerDto) => window.api.answers.update(id, dto),
         remove: (id: string) => window.api.answers.remove(id),
+    },
+    interviewQuestions: {
+        list: () => window.api.interviewQuestions.list(),
+        forApplication: (applicationId: string) => window.api.interviewQuestions.forApplication(applicationId),
+        add: (dto: InterviewQuestionDto) => window.api.interviewQuestions.add(dto),
+        update: (id: string, dto: InterviewQuestionDto) => window.api.interviewQuestions.update(id, dto),
+        remove: (id: string) => window.api.interviewQuestions.remove(id),
+        export: (request: QuestionsExportRequest) => window.api.interviewQuestions.export(request),
+        openExport: () => window.api.interviewQuestions.openExport(),
     },
     discovery: {
         listSources: () => window.api.discovery.listSources(),

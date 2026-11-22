@@ -13,6 +13,7 @@ import { AIAnalysisStatus } from '../shared/AIAnalysisStatus';
 import { CoverLetterStatusPayload, GenerateCoverLetterDTO } from '../shared/CoverLetter.types';
 import type { VaultImportPayload, VaultImportResult, VaultMatch, VaultOffer, VaultResume } from '../shared/vault.types';
 import type { SavedAnswer, SavedAnswerDto, SavedAnswerResult } from '../shared/answers.types';
+import type { InterviewQuestion, InterviewQuestionDto, InterviewQuestionResult, QuestionsExportRequest, QuestionsExportResult } from '../shared/interviewQuestions.types';
 import { AddSourceResult, AdzunaConnectResult, AdzunaQuery, AdzunaStatus, DiscoveredJob, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings, JobSource, ProfileFilterSuggestion } from '../shared/discovery.types';
 
 export {};
@@ -90,6 +91,18 @@ declare global {
         add: (dto: SavedAnswerDto) => Promise<SavedAnswerResult>;
         update: (id: string, dto: SavedAnswerDto) => Promise<SavedAnswerResult>;
         remove: (id: string) => Promise<boolean>;
+      };
+      /** Interview questions with prepared answers, linked to the applications whose interviews asked them. */
+      interviewQuestions: {
+        list: () => Promise<InterviewQuestion[]>;
+        forApplication: (applicationId: string) => Promise<InterviewQuestion[]>;
+        add: (dto: InterviewQuestionDto) => Promise<InterviewQuestionResult>;
+        update: (id: string, dto: InterviewQuestionDto) => Promise<InterviewQuestionResult>;
+        remove: (id: string) => Promise<boolean>;
+        /** Asks where to save, then writes the questions as a PDF, Word or Excel file. */
+        export: (request: QuestionsExportRequest) => Promise<QuestionsExportResult>;
+        /** Opens the file exported last. */
+        openExport: () => Promise<boolean>;
       };
       discovery: {
         listSources: () => Promise<JobSource[]>;

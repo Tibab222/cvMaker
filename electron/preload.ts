@@ -9,6 +9,7 @@ import { Project } from "../shared/projects.interface";
 import { RewriteResumeOptions } from "../shared/RewriteResume.type";
 import type { VaultImportPayload, VaultOffer } from "../shared/vault.types";
 import type { SavedAnswerDto } from "../shared/answers.types";
+import type { InterviewQuestionDto, QuestionsExportRequest } from "../shared/interviewQuestions.types";
 import { AdzunaQuery, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings } from "../shared/discovery.types";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -106,6 +107,15 @@ contextBridge.exposeInMainWorld('api', {
     add: (dto: SavedAnswerDto) => ipcRenderer.invoke('answers:add', dto),
     update: (id: string, dto: SavedAnswerDto) => ipcRenderer.invoke('answers:update', id, dto),
     remove: (id: string) => ipcRenderer.invoke('answers:remove', id),
+  },
+  interviewQuestions: {
+    list: () => ipcRenderer.invoke('interview-questions:list'),
+    forApplication: (applicationId: string) => ipcRenderer.invoke('interview-questions:for-application', applicationId),
+    add: (dto: InterviewQuestionDto) => ipcRenderer.invoke('interview-questions:add', dto),
+    update: (id: string, dto: InterviewQuestionDto) => ipcRenderer.invoke('interview-questions:update', id, dto),
+    remove: (id: string) => ipcRenderer.invoke('interview-questions:remove', id),
+    export: (request: QuestionsExportRequest) => ipcRenderer.invoke('interview-questions:export', request),
+    openExport: () => ipcRenderer.invoke('interview-questions:open-export'),
   },
   discovery: {
     listSources: () => ipcRenderer.invoke('discovery:list-sources'),

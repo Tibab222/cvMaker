@@ -39,6 +39,8 @@ import { mapApplicationWithEventsToJobCard, STATUS_META } from "./mapApplication
 import ResumePreviewDialog from "./ResumePreviewDialog";
 import AddApplicationDialog from "./AddApplicationDialog";
 import EmptyState from "../general/EmptyState";
+import ApplicationInterviewQuestions from "../answers/ApplicationInterviewQuestions";
+import { Tabs as AppTabs, useUiStore } from "@/store/ui";
 
 const ALL_STATUSES = Object.values(JobApplicationStatus);
 
@@ -336,6 +338,12 @@ export default function JobDrawer() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const setSelectedTab = useUiStore((state) => state.setSelectedTab);
+
+  const openQuestionsLibrary = () => {
+    openApplication(null);
+    setSelectedTab(AppTabs.QUESTIONS_LIBRARY);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -523,8 +531,9 @@ export default function JobDrawer() {
                   </ol>
                 </TabsContent>
 
-                <TabsContent value="notes" className="mt-0">
+                <TabsContent value="notes" className="mt-0 space-y-6">
                   <NotesPanel key={job.id} job={job} />
+                  <ApplicationInterviewQuestions key={`questions-${job.id}`} applicationId={job.id} onOpenLibrary={openQuestionsLibrary} />
                 </TabsContent>
 
                 <TabsContent value="documents" className="mt-0 space-y-4">
