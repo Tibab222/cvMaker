@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CVSelectionContext } from './context';
-import { INITIAL_HEADER, type AIAnalysisState } from './types';
+import type { AIAnalysisState } from './types';
 import { api } from '@/api';
 import { AIAnalysisStatus } from '@shared/AIAnalysisStatus';
 import { useProfileStore } from '@/store/profile';
 import { Language } from '@shared/profile.interface';
 import { type EntityType, buildCustomKey, buildScoreKey } from '@shared/utils';
-import { JobApplicationStatus, type CVSelection, type CVSessionDataDTO, type JobInfos } from '@shared/jobApplications.type';
+import { DEFAULT_HEADER_INFOS, JobApplicationStatus, type CVSelection, type CVSessionDataDTO, type JobInfos } from '@shared/jobApplications.type';
 import { toast } from 'sonner';
 import { useUiStore } from '@/store/ui';
 import { useKeyboardShortcut } from '@/hooks/use-keyboard-shortcut';
@@ -76,7 +76,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
   const [applicationStatus, setApplicationStatus] = useState<JobApplicationStatus>(JobApplicationStatus.DRAFT);
   const [title, setTitle] = useState<string>(() => "Resume - " + (profile?.firstName || "Draft") + " - " + Date.now());
   const [selection, setSelection] = useState<CVSelection>({
-    headerInfos: INITIAL_HEADER,
+    headerInfos: DEFAULT_HEADER_INFOS,
     selectedExpIds: [],
     selectedProjectIds: [],
     selectedBullets: {},
@@ -137,7 +137,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     setId(null);
     setTitle("Resume - " + (profile?.firstName || "Draft") + " - " + Date.now());
     setSelection({
-      headerInfos: INITIAL_HEADER,
+      headerInfos: DEFAULT_HEADER_INFOS,
       selectedExpIds: [],
       selectedProjectIds: [],
       selectedBullets: {},
@@ -261,7 +261,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     if (!sessionData) return;
     setId(sessionData.id);
     setTitle(sessionData.title);
-    if(!sessionData.selection.headerInfos) sessionData.selection.headerInfos = INITIAL_HEADER;
+    if(!sessionData.selection.headerInfos) sessionData.selection.headerInfos = DEFAULT_HEADER_INFOS;
     setSelection(sessionData.selection);
     if (sessionData.jobInfos) {
       setJobInfos(sessionData.jobInfos);

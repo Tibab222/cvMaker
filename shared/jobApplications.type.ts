@@ -148,6 +148,22 @@ export interface selectedHeaderInfos {
   customLinks: Record<string, boolean>; // show/hide each custom link on the resume (key is label, value is true/false)
 }
 
+/** Header of a new resume: the usual contact lines, no social network. */
+export const DEFAULT_HEADER_INFOS: selectedHeaderInfos = {
+  title: undefined,
+  mail: true,
+  phone: true,
+  portfolio: true,
+  linkedin: true,
+  github: true,
+  twitter: false,
+  instagram: false,
+  tiktok: false,
+  youtube: false,
+  facebook: false,
+  customLinks: {},
+};
+
 export interface CVSessionDataDTO {
   id: string;
   title: string;

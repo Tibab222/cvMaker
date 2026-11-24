@@ -2,6 +2,7 @@ import type { ToolDef } from '../core/types';
 import { getApplication, listApplications, pipelineInsights } from './applications';
 import { recordApplication, updateApplication } from './applicationWrites';
 import { analyzeOffer, listOpportunities, updateOpportunities } from './opportunities';
+import { draftResume } from './resume';
 import { getProfileItems, profileOverview, searchProfile } from './profile';
 
 export const MCP_TOOLS: ToolDef[] = [
@@ -16,4 +17,5 @@ export const MCP_TOOLS: ToolDef[] = [
   listOpportunities,
   analyzeOffer,
   updateOpportunities,
+  draftResume,
 ];

@@ -48,11 +48,15 @@ export interface McpDeps {
     setStatus: (id: string, status: JobApplicationStatus, note?: string) => JobApplicationStatus;
     addEvent: (id: string, event: NewApplicationEventDto) => ApplicationEvent;
     updateDetails: (id: string, details: ApplicationDetailsDto) => boolean;
+    /** Creates or saves a tailored resume like the editor does; a new or DRAFT one lands in AI Review. */
+    saveDraft: (session: Partial<CVSessionDataDTO>) => { id: string; success: boolean; error?: string };
     /** Refreshes the dashboard if it is open. */
     announce: (event: ApplicationsChangedEvent) => void;
   };
   /** Terms of the offers the user analysed or applied to, most frequent first. */
   marketKeywords: (limit: number) => KeywordStat[];
+  /** Terms of an offer, counted in the market stats: once per new resume, as the editor does. */
+  offerKeywords: (description: string) => Promise<string[]>;
 
   /** The Opportunities queue (offers found by the daily search or saved while browsing). */
   opportunities: {
