@@ -1,6 +1,7 @@
 import type { ProfileFilterSuggestion } from "../../../shared/discovery.types";
 import type { ProfilesData } from "../../../shared/profilesData.interface";
-import { foldText, titleWords } from "./scoring";
+import { foldText } from "../../utils/text";
+import { titleWords } from "./scoring";
 
 /**
  * Search filters worked out from the profile, so a first search needs no setup.

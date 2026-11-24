@@ -5,6 +5,7 @@ import type Database from "better-sqlite3";
 import { Language } from "../../../shared/profile.interface";
 import { VAULT_MAX_BYTES, type VaultImportPayload, type VaultMatch, type VaultOffer, type VaultResume } from "../../../shared/vault.types";
 import { normalizeTerm, scoreJob, titleWords, type ProfileSignals } from "../discovery/scoring";
+import { foldText } from "../../utils/text";
 
 /**
  * Resume vault: PDFs the user already has, stored in <profile>/vault/, read once for their text and keywords,
@@ -241,10 +242,9 @@ export class VaultManager {
         const matches: VaultMatch[] = [];
         for (const row of rows) {
             const resume = this.toResume(row);
-            const lower = row.text.toLowerCase();
             const signals: ProfileSignals = {
                 terms: new Map(resume.keywords.map((keyword) => [normalizeTerm(keyword), keyword])),
-                text: lower,
+                text: foldText(row.text),
                 // the headline of a resume (first lines) and its name say which role it targets
                 titleWords: new Set([...titleWords(resume.name), ...titleWords(row.text.split("\n").slice(0, 3).join(" "))]),
                 summary: row.text.slice(0, 2000),

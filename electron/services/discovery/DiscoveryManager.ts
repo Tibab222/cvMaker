@@ -30,6 +30,7 @@ import {
     verifyAdzunaCredentials,
 } from "./adzuna";
 import { buildProfileSignals, hasProfileContent, matchesFilters, ProfileSignals, scoreJob, JobScore } from "./scoring";
+import { foldText } from "../../utils/text";
 
 /**
  * Background job search: reads the public boards the user follows, keeps the offers that pass the filters,
@@ -119,13 +120,12 @@ const parseDbTime = (value: unknown): number | null => {
     return Number.isNaN(time) ? null : time;
 };
 
-const fold = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 const LEGAL_WORDS = new Set(["inc", "ltd", "llc", "corp", "corporation", "company", "co", "group", "sa", "sas", "gmbh", "plc", "the", "limited"]);
 const TITLE_SMALL_WORDS = new Set(["a", "an", "the", "of", "and", "or", "for", "in", "at", "to", "de", "des", "du", "la", "le", "et", "en", "h", "f", "m", "x"]);
 
 /** "Bank of Montreal Inc." and "bank of montréal" are the same; "Shopify" is in "Shopify Canada". */
 export function sameCompany(a: string, b: string): boolean {
-    const words = (text: string) => fold(text).split(/[^a-z0-9]+/).filter((word) => word && !LEGAL_WORDS.has(word));
+    const words = (text: string) => foldText(text).split(/[^a-z0-9]+/).filter((word) => word && !LEGAL_WORDS.has(word));
     const left = words(a).join(" ");
     const right = words(b).join(" ");
     if (!left || !right) return false;
@@ -136,7 +136,7 @@ export function sameCompany(a: string, b: string): boolean {
 
 /** Share of the title words two titles have in common (by the longer one): 1 for the same title. */
 export function wordOverlap(a: string, b: string): number {
-    const words = (text: string) => new Set(fold(text).split(/[^a-z0-9+#]+/).filter((word) => word && !TITLE_SMALL_WORDS.has(word)));
+    const words = (text: string) => new Set(foldText(text).split(/[^a-z0-9+#]+/).filter((word) => word && !TITLE_SMALL_WORDS.has(word)));
     const left = words(a);
     const right = words(b);
     if (!left.size || !right.size) return 0;

@@ -1,5 +1,6 @@
 import type { DiscoveryFilters } from "../../../shared/discovery.types";
 import type { ProfilesData } from "../../../shared/profilesData.interface";
+import { containsTerm, foldText, mentions } from "../../utils/text";
 
 /**
  * Local, explainable match between an offer and the profile: no AI call, so it can run on hundreds of offers at night.
@@ -9,7 +10,7 @@ import type { ProfilesData } from "../../../shared/profilesData.interface";
 export interface ProfileSignals {
     /** normalized term -> how the user writes it ("PostgreSQL") */
     terms: Map<string, string>;
-    /** lowercased text of experiences, projects and skills */
+    /** folded text (foldText) of experiences, projects and skills */
     text: string;
     /** meaningful words of past job titles */
     titleWords: Set<string>;
@@ -46,15 +47,6 @@ export function titleWords(title: string): string[] {
         .filter((word) => word.length > 2 && !TITLE_NOISE.has(word));
 }
 
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-/** Whole-term search that also works for "c++", "c#" or "node.js" (\b does not). */
-export function containsTerm(haystack: string, term: string): boolean {
-    const needle = term.trim().toLowerCase();
-    if (!needle) return false;
-    return new RegExp(`(?<![a-z0-9])${escapeRegExp(needle)}(?![a-z0-9])`, "i").test(haystack);
-}
-
 export function buildProfileSignals(data: Pick<ProfilesData, "skills" | "projects" | "experience">): ProfileSignals {
     const terms = new Map<string, string>();
     const add = (value: string) => {
@@ -68,7 +60,7 @@ export function buildProfileSignals(data: Pick<ProfilesData, "skills" | "project
         ...data.experience.map((exp) => `${exp.jobTitle} ${exp.description ?? ""}`),
         ...data.projects.map((project) => `${project.title} ${project.subtitle ?? ""} ${project.bullets.map((b) => `${b.text} ${b.tags.join(" ")}`).join(" ")}`),
         ...data.skills.map((skill) => skill.name),
-    ].join("\n").toLowerCase();
+    ].join("\n");
 
     const recentExperience = [...data.experience]
         .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
@@ -81,7 +73,7 @@ export function buildProfileSignals(data: Pick<ProfilesData, "skills" | "project
 
     return {
         terms,
-        text,
+        text: foldText(text),
         titleWords: new Set(data.experience.flatMap((exp) => titleWords(exp.jobTitle))),
         summary,
     };
@@ -96,26 +88,6 @@ export interface FilterableJob {
     location: string | null;
     remote: boolean;
     postedAt: string | null;
-}
-
-/** "Montréal" and "Montreal", "Ingénieur" and "ingenieur" are the same word. */
-export const foldText = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-/**
- * Whole-word match, accent and case insensitive, plural allowed: "intern" does not hit "Internal Tools",
- * "developer" hits "Developers". Matching inside words would make short filter words reject good offers.
- * Hyphenated compounds are written three ways: "front-end", "front end" and "frontend" all match each other.
- */
-export function mentions(haystack: string, term: string): boolean {
-    const needle = foldText(term.trim());
-    if (!needle) return false;
-    const folded = foldText(haystack);
-    const texts = [folded.replace(/-/g, " "), folded.replace(/-/g, "")];
-    const needles = [...new Set([needle.replace(/-/g, " "), needle.replace(/-/g, "")])];
-    return needles.some((variant) => {
-        const pattern = new RegExp(`(?<![a-z0-9])${escapeRegExp(variant)}(?:s|es)?(?![a-z0-9])`);
-        return texts.some((text) => pattern.test(text));
-    });
 }
 
 /** Whether an offer is worth keeping. Rejected offers are not stored at all. */
@@ -145,7 +117,7 @@ function dot(a: Float32Array, b: Float32Array): number {
 
 export async function scoreJob(job: { title: string; description: string }, signals: ProfileSignals, deps: ScoreDeps): Promise<JobScore> {
     const jobText = `${job.title}\n${job.description}`;
-    const lowerJobText = jobText.toLowerCase();
+    const foldedJobText = foldText(jobText);
 
     // 1. keywords the offer asks for, and whether the profile has them
     const jobKeywords = deps.extractKeywords(jobText).slice(0, 20);
@@ -155,7 +127,7 @@ export async function scoreJob(job: { title: string; description: string }, sign
 
     // 2. declared skills / tags the offer mentions, even if the extractor did not pick them
     const termHits = [...signals.terms.entries()]
-        .filter(([, display]) => containsTerm(lowerJobText, display))
+        .filter(([, display]) => containsTerm(foldedJobText, display))
         .map(([, display]) => display);
     const keywordScore = 0.5 * coverage + 0.5 * clamp01(termHits.length / 5);
 
