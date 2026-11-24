@@ -1,6 +1,7 @@
 import { ApplicationEventType, JobApplicationStatus } from '../../shared/jobApplications.type';
+import { addPastApplication, announceApplicationsChanged, recordSentApplication } from '../functions/recordApplication';
 import { getInterviewQuestions } from '../services/interviewQuestions';
-import { JobApplicationManager } from '../services/jobApplications/jobApplicationManager';
+import { CLAUDE_SOURCE, JobApplicationManager } from '../services/jobApplications/jobApplicationManager';
 import { KeywordsAffinityDatabase } from '../services/KeywordsExtractor/KeywordsAffinityDatabase';
 import { ProfileService } from '../services/ProfileService';
 import { VectorDatabase } from '../services/vectorDatabase';
@@ -39,6 +40,12 @@ export function createAppDeps(): McpDeps {
         return new Set(rows.map((row) => row.id));
       },
       questions: (applicationId) => getInterviewQuestions().forApplication(applicationId),
+      record: (dto) => recordSentApplication(dto, CLAUDE_SOURCE),
+      recordPast: (dto) => addPastApplication(dto, CLAUDE_SOURCE.origin),
+      setStatus: (id, status, note) => jobs.updateStatus(id, status, note),
+      addEvent: (id, event) => jobs.addEvent(id, event),
+      updateDetails: (id, details) => jobs.updateDetails(id, details),
+      announce: announceApplicationsChanged,
     },
     marketKeywords: (limit) => KeywordsAffinityDatabase.getInstance().getTopKeywords(limit),
   };

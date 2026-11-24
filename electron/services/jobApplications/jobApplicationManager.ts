@@ -107,6 +107,16 @@ export function normalizeUrl(raw: string | undefined | null): string {
 /** First line of the timeline of applications not made in the editor (the dashboard labels them from it). */
 export const MANUAL_ORIGIN = "Created manually";
 export const BROWSER_ORIGIN = "Saved from the browser";
+export const CLAUDE_ORIGIN = "Saved from Claude";
+
+/** Who told the app about an application sent elsewhere: written in its timeline. */
+export interface RecordSource {
+    origin: string;
+    /** Note of the status change when a prepared resume moves to Applied. */
+    promotedNote: string;
+}
+export const BROWSER_SOURCE: RecordSource = { origin: BROWSER_ORIGIN, promotedNote: "sent from the browser" };
+export const CLAUDE_SOURCE: RecordSource = { origin: CLAUDE_ORIGIN, promotedNote: "sent, told to Claude" };
 
 /** "  Société  Générale " and "societe generale" name the same company. */
 const foldName = (value: unknown): string =>
@@ -281,7 +291,7 @@ export class JobApplicationManager {
      * @param offerUrl Link of the offer it was made for, when known (an offer of the Opportunities queue): an
      *   application already made from that link (a resume prepared for it) is the same one.
      */
-    public recordBrowserApplication(dto: BrowserApplicationDto, keywords: () => string[] = () => [], now: Date = new Date(), offerUrl?: string | null): BrowserApplicationResult {
+    public recordBrowserApplication(dto: BrowserApplicationDto, keywords: () => string[] = () => [], now: Date = new Date(), offerUrl?: string | null, source: RecordSource = BROWSER_SOURCE): BrowserApplicationResult {
         const company = foldName(dto.company);
         const title = foldName(dto.title);
         if (!company) throw new Error("Which company did you apply to?");
@@ -310,7 +320,7 @@ export class JobApplicationManager {
         if (prepared) {
             const rawDb = this.getDb();
             rawDb.transaction(() => {
-                this.updateStatus(prepared.id, JobApplicationStatus.APPLIED, "sent from the browser");
+                this.updateStatus(prepared.id, JobApplicationStatus.APPLIED, source.promotedNote);
                 rawDb.prepare(`
                     UPDATE applications SET
                         url = CASE WHEN url IS NULL OR url = '' THEN ? ELSE url END,
@@ -332,7 +342,7 @@ export class JobApplicationManager {
             // read only now: extracting them counts them in the market stats, once per real application
             keywords(),
             now,
-            BROWSER_ORIGIN,
+            source.origin,
         );
         const salary = parseSalary(dto.salary);
         if (salary != null) this.getDb().prepare(`UPDATE applications SET salary = ? WHERE id = ?`).run(salary, application.id);

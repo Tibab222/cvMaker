@@ -17,6 +17,14 @@ export function day(value: string | Date | null | undefined): string {
   return text.slice(0, 10);
 }
 
+/** "2026-11-28 14:00" in the user's time zone (stored dates are UTC). */
+export function localDateTime(value: string | null | undefined): string {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 /** Profile dates are ISO strings, "YYYY", "YYYY-MM" or 'Present'. */
 export function month(value: string | Date | null | undefined): string {
   if (!value) return '';

@@ -20,7 +20,8 @@ import { ProfileService } from './services/ProfileService';
 import { rewriteResume } from './functions/rewriteResume';
 import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
 import { ApplicationDetailsDto, ApplicationEditDto, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto, PastApplicationDto, PastApplicationResult } from '../shared/jobApplications.type';
-import { offerKeywords, offerKeywordsIn, profileLanguage } from './functions/offerKeywords';
+import { offerKeywordsIn, profileLanguage } from './functions/offerKeywords';
+import { addPastApplication } from './functions/recordApplication';
 import { generateCoverLetter } from './functions/generateCoverLetter';
 import { getDiscoveryManager } from './services/discovery';
 import { getVaultManager } from './services/vault';
@@ -207,17 +208,7 @@ export function registerIpcHandlers() {
     });
     ipcMain.handle('add-past-application', async (event, dto: PastApplicationDto): Promise<PastApplicationResult> => {
         try {
-            // a real application: it belongs in the market stats like the offers tailored in the editor
-            const keywords = await offerKeywords(dto?.description);
-            const application = JobApplicationManager.getInstance().addPastApplication(dto, keywords);
-            // made for an offer of the Opportunities queue: it leaves the queue
-            try {
-                const offer = getDiscoveryManager().findOfferFor({ url: dto.url, company: dto.company, title: dto.title });
-                if (offer) getDiscoveryManager().markApplied(offer.id, application.id);
-            } catch (error) {
-                console.warn("[applications] Could not link the offer:", error);
-            }
-            return { ok: true, application };
+            return { ok: true, application: (await addPastApplication(dto)).application };
         } catch (error) {
             return { ok: false, error: error instanceof Error ? error.message : String(error) };
         }

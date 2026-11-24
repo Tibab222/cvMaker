@@ -1,6 +1,6 @@
 import { ApplicationChannel, type BrowserApplicationDto, type BrowserApplicationResult } from "../../shared/jobApplications.type";
 import { JobSourceKind, type DiscoveredJob } from "../../shared/discovery.types";
-import type { JobApplicationManager } from "../services/jobApplications/jobApplicationManager";
+import { BROWSER_SOURCE, type JobApplicationManager, type RecordSource } from "../services/jobApplications/jobApplicationManager";
 import type { DiscoveryManager } from "../services/discovery/DiscoveryManager";
 
 /** A description this short is a page heading, not the offer: the queue's full text is better. */
@@ -30,6 +30,7 @@ export function recordApplicationFromBrowser(
     dto: BrowserApplicationDto,
     keywords: () => string[],
     now: Date = new Date(),
+    source: RecordSource = BROWSER_SOURCE,
 ): LinkedApplicationResult {
     let offer: DiscoveredJob | null = null;
     try {
@@ -38,7 +39,7 @@ export function recordApplicationFromBrowser(
         // the queue is a bonus: the application is recorded anyway
         console.warn("[applications] Could not look for the offer in the queue:", error);
     }
-    if (!offer) return { ...jobs.recordBrowserApplication(dto, keywords, now), offer: null };
+    if (!offer) return { ...jobs.recordBrowserApplication(dto, keywords, now, undefined, source), offer: null };
 
     const pageText = dto.description?.trim() ?? "";
     const enriched: BrowserApplicationDto = {
@@ -48,7 +49,7 @@ export function recordApplicationFromBrowser(
         channel: dto.channel ?? channelOf(offer),
     };
     const analyzed = [...offer.matched_keywords, ...offer.missing_keywords];
-    const result = jobs.recordBrowserApplication(enriched, analyzed.length ? () => analyzed : keywords, now, offer.url);
+    const result = jobs.recordBrowserApplication(enriched, analyzed.length ? () => analyzed : keywords, now, offer.url, source);
     discovery!.markApplied(offer.id, result.application.id);
     return { ...result, offer: { id: offer.id, title: offer.title, company: offer.company } };
 }

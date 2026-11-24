@@ -128,7 +128,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return () => window.clearTimeout(timeoutId);
   }, [fetchApplications, fetchKeyStats, fetchReminders]);
 
-  // the browser extension recorded an application while the dashboard is open: refresh quietly and say so
+  // the browser extension or Claude changed applications while the dashboard is open: refresh quietly and say so
   useEffect(() => {
     return api.onApplicationsChanged(async (event) => {
       try {
@@ -138,7 +138,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         console.error("Error refreshing applications:", error);
       }
       const linked = event.fromOffer ? ", linked to its offer in Opportunities" : "";
-      if (event.action === "created") toast.success(`${event.title} at ${event.company} added from your browser${linked}`);
+      const from = event.source === "claude" ? "by Claude" : "from your browser";
+      if (event.action === "created") toast.success(`${event.title} at ${event.company} added ${from}${linked}`);
+      else if (event.action === "updated") toast.success(`${event.title} at ${event.company} updated ${from}`);
       else if (event.action === "promoted") toast.success(`${event.title} at ${event.company} moved to Applied`);
     });
   }, [refreshDerived]);

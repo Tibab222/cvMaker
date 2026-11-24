@@ -2,7 +2,7 @@ import { APPLICATION_CHANNELS, JobApplicationStatus, PAST_APPLICATION_STATUSES, 
 import { foldText } from '../../utils/text';
 import { titleWords } from '../../services/discovery/scoring';
 import type { CallContext } from '../core/context';
-import { clip, clipLong, day, lines, money, parts } from '../core/format';
+import { clip, clipLong, day, lines, localDateTime, money, parts } from '../core/format';
 import { handleOf } from '../core/handles';
 import { ToolError, type ToolDef } from '../core/types';
 import { profileItems } from './profileIndex';
@@ -82,7 +82,7 @@ function timeline(app: ApplicationWithEvents, max: number): string {
     day(event.event_date),
     event.event_type,
     event.to_status ? `→ ${event.to_status}` : '',
-    event.scheduled_at ? `on ${event.scheduled_at.slice(0, 16).replace('T', ' ')}` : '',
+    event.scheduled_at ? `on ${localDateTime(event.scheduled_at)}` : '',
     clip(event.description, 140),
   ));
   return lines(`Timeline (${Math.min(max, app.events.length)} of ${app.events.length}, newest first):`, ...events);
@@ -165,7 +165,7 @@ export const getApplication: ToolDef = {
 };
 
 function reminderLine(reminder: Reminder): string {
-  const when = reminder.kind === 'interview' ? `in ${reminder.days}d (${day(reminder.date)})` : `${reminder.days}d`;
+  const when = reminder.kind === 'interview' ? `in ${reminder.days}d (${localDateTime(reminder.date)})` : `${reminder.days}d`;
   return ' ' + parts(reminder.kind, `${handleOf('application', reminder.application_id)} ${reminder.job_title} @ ${reminder.company_name}`, when, clip(reminder.detail, 80));
 }
 

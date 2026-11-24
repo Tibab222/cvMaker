@@ -6,13 +6,11 @@ import { existsSync, mkdirSync } from 'fs';
 import { HttpServerService } from './services/HttpServer/HttpServerService';
 import { getDiscoveryManager } from './services/discovery';
 import { ProfileService } from './services/ProfileService';
-import { JobApplicationManager } from './services/jobApplications/jobApplicationManager';
+import { BROWSER_SOURCE, JobApplicationManager } from './services/jobApplications/jobApplicationManager';
 import { buildAutofillProfile } from './functions/autofillProfile';
 import { getVaultManager } from './services/vault';
 import { getAnswerBank } from './services/answers';
-import { recordApplicationFromBrowser } from './functions/applicationFromOffer';
-import { offerKeywordsIn, profileLanguage } from './functions/offerKeywords';
-import type { ApplicationsChangedEvent } from '../shared/jobApplications.type';
+import { announceApplicationsChanged, recordSentApplication } from './functions/recordApplication';
 import { handleSquirrelEvent } from './squirrelStartup';
 import { startMcp } from './mcp';
 import { createAppDeps } from './mcp/wiring';
@@ -116,14 +114,8 @@ app.whenReady().then(() => {
       file: (id) => getVaultManager().readFile(id),
     },
     recordApplication: async (dto) => {
-      const language = await profileLanguage();
-      // linked to the offer of the Opportunities queue it was made for, whose analysis it reuses
-      const result = recordApplicationFromBrowser(JobApplicationManager.getInstance(), getDiscoveryManager(), dto, () => offerKeywordsIn(dto.description, language));
-      // the dashboard refreshes and says what came in
-      const event: ApplicationsChangedEvent = { source: 'extension', action: result.action, title: result.application.job_title, company: result.application.company_name, fromOffer: !!result.offer };
-      BrowserWindow.getAllWindows().forEach((window) => {
-        if (!window.isDestroyed()) window.webContents.send('applications:changed', event);
-      });
+      const result = await recordSentApplication(dto, BROWSER_SOURCE);
+      announceApplicationsChanged({ source: 'extension', action: result.action, title: result.application.job_title, company: result.application.company_name, fromOffer: !!result.offer });
       return result;
     },
     answers: {

@@ -78,6 +78,7 @@ function describeEvent(event: ApplicationEvent): Pick<TimelineEvent, "label" | "
       const isCreation = event.description?.startsWith("Created");
       if (event.description === "Created manually") return { label: `Applied outside CVMaker${status ? ` · ${status}` : ""}` };
       if (event.description === "Saved from the browser") return { label: "Applied · noticed by the browser extension" };
+      if (event.description === "Saved from Claude") return { label: `Applied · told to Claude${status ? ` · ${status}` : ""}` };
       // "New status: X : my note" -> keep only the note part
       const note = event.description?.split(" : ").slice(1).join(" : ").trim();
       return {

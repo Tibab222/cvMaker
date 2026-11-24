@@ -97,10 +97,10 @@ export interface BrowserApplicationResult {
     application: Application;
 }
 
-/** Main -> renderer: applications changed outside the renderer (the extension recorded one). */
+/** Main -> renderer: applications changed outside the renderer (the extension or Claude). */
 export interface ApplicationsChangedEvent {
-    source: "extension";
-    action: BrowserApplicationResult["action"];
+    source: "extension" | "claude";
+    action: BrowserApplicationResult["action"] | "updated";
     title: string;
     company: string;
     /** Made for an offer of the Opportunities queue (now marked applied there). */
