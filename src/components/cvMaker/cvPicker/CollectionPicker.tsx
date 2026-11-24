@@ -1,8 +1,8 @@
-import { CheckCircle2, Circle } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useProfileStore } from "@/store/profile";
+import { Tabs } from "@/store/ui";
 import type { CvmCollection, CvmCollectionSource } from "@shared/cvm/format";
 import { useCVSelection } from "../provider/hook";
+import { EmptyProfile, PickRow, SelectionBar } from "./PickerParts";
 
 interface Item {
   id: string;
@@ -25,6 +25,13 @@ const useItems = (source: CvmCollectionSource): Item[] => {
   }
 };
 
+const PROFILE_TAB: Record<CvmCollectionSource, { tab: Tabs; what: string }> = {
+  projects: { tab: Tabs.PROJECTS, what: "projects" },
+  experiences: { tab: Tabs.EXPERIENCE, what: "experience" },
+  education: { tab: Tabs.EDUCATION, what: "education" },
+  skills: { tab: Tabs.SKILLS, what: "skills" },
+};
+
 /**
  * Picks the items of a list declared by the template (meta "collections"), e.g. the projects of an appendix.
  * Items are shown in the order they are picked.
@@ -34,34 +41,35 @@ export default function CollectionPicker({ name, collection }: { name: string; c
   const items = useItems(collection.source);
   const picked = selection.collections?.[name] ?? [];
 
+  if (items.length === 0) return <EmptyProfile {...PROFILE_TAB[collection.source]} />;
+
   return (
-    <div className="space-y-2 p-1">
-      <p className="text-xs text-muted-foreground">
-        This template has a "{collection.label}" part. Pick what goes in it; they appear in the order you pick them.
+    <div className="space-y-3">
+      <SelectionBar
+        selected={items.filter((item) => picked.includes(item.id)).length}
+        total={items.length}
+        onAll={() => items.filter((item) => !picked.includes(item.id)).forEach((item) => toggleCollectionItem(name, item.id))}
+        onNone={() => picked.forEach((id) => toggleCollectionItem(name, id))}
+      />
+      <p className="text-[11px] text-muted-foreground">
+        A part of this template only. They appear in the order you pick them.
         {collection.source === "projects" && collection.bullets !== "selected" && " Every bullet of a project is shown there."}
       </p>
-      {items.map((item) => {
-        const position = picked.indexOf(item.id);
-        const isPicked = position !== -1;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => toggleCollectionItem(name, item.id)}
-            className={cn(
-              "w-full flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-colors",
-              isPicked ? "border-primary bg-primary/5" : "border-muted hover:border-muted-foreground/30",
-            )}
-          >
-            {isPicked ? <CheckCircle2 className="size-4 text-primary shrink-0" /> : <Circle className="size-4 text-muted-foreground shrink-0" />}
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold truncate">{item.title || "Untitled"}</span>
-              {item.subtitle && <span className="block text-xs text-muted-foreground truncate">{item.subtitle}</span>}
-            </span>
-            {isPicked && <span className="text-xs font-semibold text-primary">#{position + 1}</span>}
-          </button>
-        );
-      })}
+      <div className="space-y-2">
+        {items.map((item) => {
+          const order = picked.indexOf(item.id);
+          return (
+            <PickRow
+              key={item.id}
+              selected={order !== -1}
+              order={order !== -1 ? order : undefined}
+              onToggle={() => toggleCollectionItem(name, item.id)}
+              title={item.title || "Untitled"}
+              subtitle={item.subtitle}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

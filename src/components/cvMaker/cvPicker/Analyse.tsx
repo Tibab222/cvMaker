@@ -1,11 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Building2, Check, FileSearch, LoaderCircle, ScanSearch, Sparkles, Target, Wallet, Wand2, X } from 'lucide-react';
+import { Building2, Check, LoaderCircle, ScanSearch, Sparkles, Target, Wallet, Wand2, X } from 'lucide-react';
 import { parseSalary } from "@shared/utils";
 import { useCVSelection } from "../provider/hook";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUiStore } from "@/store/ui";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,44 +58,22 @@ export default function Analyse() {
             initial="hidden"
             animate="visible"
             variants={{ visible: { transition: { staggerChildren: reduceMotion ? 0 : 0.06 } } }}
-            className="mx-auto w-full max-w-3xl p-4 sm:p-6 lg:p-8"
+            className="w-full"
         >
-            <motion.div variants={entrance} transition={{ duration: 0.35 }} className="mb-5">
-                <div className="mb-2 flex items-center gap-2 text-sm font-medium text-primary">
-                    <Sparkles className="size-4" /> CV intelligence
-                </div>
-                <h1 className="text-2xl font-semibold sm:text-3xl">Analyse a job mandate</h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Add the role context, review extracted insights, and paste the mandate to find resume opportunities.
-                </p>
-            </motion.div>
-
             <motion.div variants={entrance} transition={{ duration: 0.35 }}>
-                <Card className="overflow-hidden rounded-lg border-border/80 shadow-sm">
-                    <CardHeader className="border-b bg-muted/30 px-5 py-4 sm:px-6">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <span className="flex size-9 items-center justify-center rounded-md border bg-background text-primary shadow-sm">
-                                    <FileSearch className="size-4" />
-                                </span>
-                                <div>
-                                    <CardTitle className="text-base">Analysis workspace</CardTitle>
-                                    <p className="mt-1 text-xs text-muted-foreground">Role, insights and mandate</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs font-medium">
+                <div className="space-y-5">
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs text-muted-foreground">Paste the offer: the analysis scores each item of your profile against it and picks the best ones.</p>
+                            <div className="flex shrink-0 items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-[11px] font-medium">
                                 {isBusy ? (
-                                    <LoaderCircle className="size-3.5 animate-spin text-primary" />
+                                    <LoaderCircle className="size-3 animate-spin text-primary" />
                                 ) : (
-                                    <span className="size-2 rounded-full bg-emerald-500" />
+                                    <span className="size-1.5 rounded-full bg-emerald-500" />
                                 )}
                                 {aiState.status || "Idle"}
                             </div>
                         </div>
-                    </CardHeader>
-
-                    <CardContent className="space-y-6 p-5 sm:p-6">
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
                                 <Label htmlFor="analysis-role" className="flex items-center gap-2 text-xs">
                                     <Target className="size-3.5 text-muted-foreground" /> Role
@@ -146,7 +123,7 @@ export default function Analyse() {
                                     initial={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0 }}
-                                    className="space-y-5 rounded-xl border bg-muted/20 p-4 sm:p-5"
+                                    className="space-y-4 rounded-xl border bg-muted/20 p-3.5"
                                 >
                                 <div className="flex items-center justify-between gap-3">
                                     <div>
@@ -241,15 +218,15 @@ export default function Analyse() {
                                 value={rawMandate}
                                 onChange={(event) => setRawMandate(event.target.value)}
                                 placeholder="Paste the role, responsibilities, requirements, and preferred skills…"
-                                className="min-h-56 resize-y bg-background leading-6 sm:min-h-64"
+                                className="min-h-48 resize-y bg-background text-sm leading-6"
                             />
                         </div>
 
-                        <div className="flex flex-col gap-3 sm:flex-row">
+                        <div className="flex flex-col gap-2">
                             {aiAvailable && (
                                 <Button
                                     type="button"
-                                    className="sm:flex-1 cursor-pointer"
+                                    className="cursor-pointer"
                                     disabled={!rawMandate.trim() || isBusy}
                                     onClick={handleStartAnalysis}
                                 >
@@ -264,7 +241,7 @@ export default function Analyse() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="sm:flex-1 cursor-pointer"
+                                className="cursor-pointer"
                                 disabled={!rawMandate.trim() || isBusy}
                                 onClick={handleStartLocalAnalysis}
                             >
@@ -299,8 +276,7 @@ export default function Analyse() {
                                 </Button>
                             </motion.div>
                         )}
-                    </CardContent>
-                </Card>
+                </div>
             </motion.div>
         </motion.section>
     )

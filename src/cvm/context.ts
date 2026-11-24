@@ -164,7 +164,9 @@ export const buildTemplateContext = (input: ContextInput): Record<string, unknow
         photo: input.includePhoto ? profile.photo : undefined,
         header: selection.headerInfos,
         contacts: buildContacts(profile, selection.headerInfos),
-        summary: input.showSummary ? input.summaryBullets.filter((bullet) => bullet.trim()) : [],
+        // empty sentences are kept: a summary just switched on is one empty sentence, and the template must still
+        // show it ({{#if summary}}) so it can be written in place. The editor leaves them out of the PDF.
+        summary: input.showSummary ? input.summaryBullets : [],
         experiences: pickInOrder(input.experience, selection.selectedExpIds).map(decorateExperience),
         projects: selectedProjects,
         skills: input.skills.filter((skill) => selection.selectedSkillsIds.includes(skill.id)).map(decorateSkill),

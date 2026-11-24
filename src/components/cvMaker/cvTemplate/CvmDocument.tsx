@@ -79,7 +79,10 @@ export default function CvmDocument({ template, context, lang, mode = "interacti
     const paginate = useCallback(() => {
         const root = rootRef.current;
         if (!root || mode !== "interactive") return;
-        const rootTop = root.getBoundingClientRect().top;
+        const rootRect = root.getBoundingClientRect();
+        const rootTop = rootRect.top;
+        // the editor may show the page zoomed (a transform): screen distances are divided back to page pixels
+        const scale = root.offsetWidth > 0 ? rootRect.width / root.offsetWidth || 1 : 1;
         const breaks = Array.from(root.querySelectorAll<HTMLElement>("*")).filter((element) => {
             const style = getComputedStyle(element);
             return style.breakBefore === "page" || style.pageBreakBefore === "always";
@@ -94,7 +97,7 @@ export default function CvmDocument({ template, context, lang, mode = "interacti
             }
         };
         // content pixels from the top of page 1 to the element's border box
-        const topOf = (element: HTMLElement) => element.getBoundingClientRect().top - rootTop - marginTopPx;
+        const topOf = (element: HTMLElement) => (element.getBoundingClientRect().top - rootTop) / scale - marginTopPx;
         for (const element of breaks) {
             // measured from scratch each time (push removed), so the result is the same on every call: the
             // final layout does not change and the ResizeObserver does not fire again
@@ -113,7 +116,7 @@ export default function CvmDocument({ template, context, lang, mode = "interacti
         let bottom = 0;
         for (const child of Array.from(root.children)) {
             const rect = child.getBoundingClientRect();
-            bottom = Math.max(bottom, rect.bottom - rootTop + (parseFloat(getComputedStyle(child).marginBottom) || 0));
+            bottom = Math.max(bottom, (rect.bottom - rootTop) / scale + (parseFloat(getComputedStyle(child).marginBottom) || 0));
         }
         const count = Math.max(1, Math.ceil((bottom - marginTopPx - 1) / contentHeightPx));
         setPages((previous) => (previous === count ? previous : count));

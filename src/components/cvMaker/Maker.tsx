@@ -1,51 +1,59 @@
 import { useState } from "react";
 import { CVSelectionProvider } from "./provider/provider";
-import CvPicker from "./cvPicker/CvPicker";
 import CVTemplate from "./cvTemplate/cvTemplate";
-import ResumeTitle from "./ResumeTitle";
-import ToolsButtons from "./ToolsButtons";
 import NewDialog from "./NewDialog";
 import { CoverLetterProvider } from "./CoverLetterProvider/provider";
 import CoverLetterTemplate from "./coverLetter/CoverLetterTemplate";
-import { Button } from "../ui/button";
 import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
-import CoverLetterButtons from "./coverLetter/CoverLetterButtons";
-import ResumeTools from "./cvTemplate/ResumeTools";
+import EditorTopBar, { type EditorView } from "./editor/EditorTopBar";
+import ContentSidebar from "./editor/ContentSidebar";
+import PaperCanvas from "./editor/PaperCanvas";
+
+/** The last panel open, kept between visits: people tend to come back to the same part. */
+const PANEL_KEY = "cvEditor.panel";
+const readPanel = (): string | null => {
+    const saved = localStorage.getItem(PANEL_KEY);
+    // first visit: start on the experiences, the part almost every resume needs
+    if (saved === null) return "experience";
+    return saved || null;
+};
 
 export default function Maker() {
-    const [pickerOpen, setPickerOpen] = useState(false);
-    const [coverLetterActive, setCoverLetterActive] = useState(false);
+    const [view, setView] = useState<EditorView>("resume");
+    const [panel, setPanel] = useState<string | null>(readPanel);
+    // the panel last open on the resume, to come back to it after the cover letter
+    const [resumePanel, setResumePanel] = useState<string | null>(panel);
 
-    useKeyboardShortcut("k", () => {
-        setPickerOpen((prev) => !prev);
-    });
+    const openPanel = (id: string | null) => {
+        setPanel(id);
+        if (view === "resume") {
+            setResumePanel(id);
+            localStorage.setItem(PANEL_KEY, id ?? "");
+        }
+    };
+
+    const changeView = (next: EditorView) => {
+        setView(next);
+        // the cover letter only has the job panel
+        setPanel(next === "resume" ? resumePanel : panel === "job" ? "job" : null);
+    };
+
+    useKeyboardShortcut("k", () => openPanel(panel ? null : (view === "resume" ? resumePanel ?? "experience" : "job")));
 
     return (
         <CVSelectionProvider>
             <CoverLetterProvider>
                 <NewDialog defaultOpen={true} />
-                <div className="w-full flex flex-col h-full relative p-2">
-                    <div className="m-auto w-full flex flex-row justify-start gap-5 items-baseline">
-                        <ResumeTitle />
-                        <div className="flex flex-row justify-center mt-4 mb-0 gap-2">
-                            <Button onClick={() => setCoverLetterActive(!coverLetterActive)} className="rounded" variant="outline" disabled={!coverLetterActive}>
-                                Resume
-                            </Button>
-                            <Button onClick={() => setCoverLetterActive(!coverLetterActive)} className="rounded" variant="outline" disabled={coverLetterActive}>
-                                Cover Letter
-                            </Button>
-                        </div>
+                <div className="flex h-full min-h-0 w-full flex-col bg-canvas">
+                    <EditorTopBar view={view} onViewChange={changeView} />
+                    <div className="flex min-h-0 flex-1">
+                        <PaperCanvas>
+                            {view === "coverLetter" ? <CoverLetterTemplate /> : <CVTemplate />}
+                        </PaperCanvas>
+                        <ContentSidebar view={view} active={panel} onActiveChange={openPanel} />
                     </div>
-                    <div className="flex-1 overflow-y-auto p-12 flex justify-center">
-                        <div className="shadow-2xl">
-                            {coverLetterActive ? <CoverLetterTemplate /> : <CVTemplate />}
-                        </div>
-                    </div>
-                    <ToolsButtons openPicker={() => setPickerOpen(true)} coverLetterActive={coverLetterActive} />
-                    {pickerOpen && <CvPicker onClose={() => setPickerOpen(false)} />}
-                    { coverLetterActive ? <CoverLetterButtons /> : <ResumeTools />}
                 </div>
             </CoverLetterProvider>
         </CVSelectionProvider>
-    )
+    );
 }

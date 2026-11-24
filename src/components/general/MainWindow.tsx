@@ -43,8 +43,6 @@ export default function MainWindow() {
                 return <ProjectComponent />;
             case Tabs.SKILLS:
                 return <Skills />;
-            case Tabs.CVMAKER:
-                return <Maker />;
             case Tabs.SETTINGS:
                 return <SettingsMain />;
             case Tabs.DASHBOARD:
@@ -84,10 +82,11 @@ export default function MainWindow() {
                         </SidebarTrigger>
                         <span className="ml-3 text-sm font-semibold">CV Maker</span>
                     </header>
-                    {selectedTab === Tabs.TIMELINE ? (
-                        // the timeline scrolls horizontally and fills the height, so it lives outside the vertical scroll area
-                        <motion.div key="timeline" className="min-h-0 flex-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-                            <TimelinePage />
+                    {selectedTab === Tabs.TIMELINE || selectedTab === Tabs.CVMAKER ? (
+                        // the timeline and the resume editor fill the height and scroll inside, so they live outside the
+                        // vertical scroll area
+                        <motion.div key={selectedTab} className="min-h-0 flex-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+                            {selectedTab === Tabs.TIMELINE ? <TimelinePage /> : <Maker />}
                         </motion.div>
                     ) : (
                     <ScrollArea className="h-full w-full flex-1 bg-canvas">

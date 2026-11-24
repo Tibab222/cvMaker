@@ -1,95 +1,108 @@
-import { useState, useMemo } from "react";
-import { useProfileStore } from "@/store/profile";
-import { useCVSelection } from "../provider/hook";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { Search, X, Code2, Star } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Check, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { useProfileStore } from "@/store/profile";
+import { Tabs } from "@/store/ui";
+import type { Skills } from "@shared/Skills.interface";
+import { useCVSelection } from "../provider/hook";
+import { EmptyProfile, SelectionBar } from "./PickerParts";
+
+/** Skills grouped by their category (the templates group them the same way), in first-seen order. */
+const groupByCategory = (skills: Skills[]) => {
+  const groups = new Map<string, Skills[]>();
+  for (const skill of skills) {
+    const key = skill.category?.trim() || "";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(skill);
+  }
+  return [...groups.entries()];
+};
 
 export default function SkillsPicker() {
   const { skills } = useProfileStore();
   const { toggleSkill, selection } = useCVSelection();
   const [search, setSearch] = useState("");
+  const picked = selection.selectedSkillsIds;
 
-  const filteredSkills = useMemo(() => {
-    return skills.filter((s) =>
-      s.name.toLowerCase().includes(search.toLowerCase())
-    );
+  const groups = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    const shown = needle
+      ? skills.filter((skill) => skill.name.toLowerCase().includes(needle) || skill.category?.toLowerCase().includes(needle))
+      : skills;
+    return groupByCategory(shown);
   }, [skills, search]);
 
+  if (skills.length === 0) return <EmptyProfile what="skills" tab={Tabs.SKILLS} />;
+
+  const setAll = (list: Skills[], on: boolean) =>
+    list.filter((skill) => picked.includes(skill.id) !== on).forEach((skill) => toggleSkill(skill.id));
+  const hasCategories = groups.some(([category]) => category);
+
   return (
-    <div className="flex flex-col gap-4 p-1">
-      {/* Barre de recherche stylisée */}
-      <div className="relative group">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-        <Input
-          placeholder="Search a skill..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
-        />
+    <div className="space-y-3">
+      <SelectionBar
+        selected={skills.filter((skill) => picked.includes(skill.id)).length}
+        total={skills.length}
+        onAll={() => setAll(skills, true)}
+        onNone={() => setAll(skills, false)}
+      />
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input placeholder="Search a skill" value={search} onChange={(event) => setSearch(event.target.value)} className="h-8 pl-8 text-sm" />
         {search && (
-          <button 
-            onClick={() => setSearch("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded-full"
-          >
-            <X className="h-3 w-3 text-muted-foreground" />
+          <button type="button" onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 hover:bg-muted" aria-label="Clear the search">
+            <X className="size-3 text-muted-foreground" />
           </button>
         )}
       </div>
 
-      {/* Liste des compétences en mode "Tags" */}
-      <div className="flex flex-wrap gap-2">
-        <AnimatePresence mode="popLayout">
-          {filteredSkills.map((skill) => {
-            const isSelected = selection.selectedSkillsIds.includes(skill.id);
-            
-            return (
-              <motion.button
-                key={skill.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => toggleSkill(skill.id)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border-2 transition-all",
-                  isSelected
-                    ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/20"
-                    : "bg-background border-muted text-muted-foreground hover:border-muted-foreground/50"
-                )}
-              >
-                {/* Icône contextuelle si c'est une compétence technique ou une langue (proficiency) */}
-                {skill.proficiency ? (
-                  <Star className={cn("h-3 w-3", isSelected ? "text-primary-foreground" : "text-amber-500")} />
-                ) : (
-                  <Code2 className="h-3 w-3" />
-                )}
-                
-                {skill.name}
-                
-                {skill.proficiency && (
-                  <span className={cn(
-                    "ml-1 text-[10px] opacity-70 border-l pl-1.5",
-                    isSelected ? "border-primary-foreground/30" : "border-muted-foreground/30"
-                  )}>
-                    {skill.proficiency}
-                  </span>
-                )}
-              </motion.button>
-            );
-          })}
-        </AnimatePresence>
-      </div>
+      {groups.map(([category, list]) => {
+        const count = list.filter((skill) => picked.includes(skill.id)).length;
+        return (
+          <section key={category || "_"} className="space-y-1.5">
+            {(hasCategories || category) && (
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {category || "No category"} <span className="font-normal normal-case tabular-nums">· {count}/{list.length}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setAll(list, count < list.length)}
+                  className="text-[11px] font-medium text-brand hover:underline"
+                >
+                  {count < list.length ? "Add all" : "Remove all"}
+                </button>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              {list.map((skill) => {
+                const isPicked = picked.includes(skill.id);
+                return (
+                  <button
+                    key={skill.id}
+                    type="button"
+                    aria-pressed={isPicked}
+                    onClick={() => toggleSkill(skill.id)}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                      isPicked
+                        ? "border-brand bg-brand text-brand-foreground"
+                        : "border-border bg-background text-muted-foreground hover:border-brand/40 hover:text-foreground",
+                    )}
+                  >
+                    {isPicked && <Check className="size-3" strokeWidth={3} />}
+                    {skill.name}
+                    {skill.proficiency && <span className="opacity-70">· {skill.proficiency}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
 
-      {/* État vide */}
-      {filteredSkills.length === 0 && (
-        <div className="text-center py-8 text-sm text-muted-foreground italic">
-          No skill found...
-        </div>
-      )}
+      {groups.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No skill matches “{search}”.</p>}
     </div>
   );
 }

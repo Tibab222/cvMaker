@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { useCVSelection } from "../../provider/hook";
 import { resumeLabel } from "../i18n";
@@ -18,6 +18,20 @@ export default function SummarySlot({ display, lang, className = "" }: { display
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const placeholder = resumeLabel(lang, "summaryBulletPlaceholder");
+  const rootRef = useRef<HTMLElement | null>(null);
+  const hasText = summaryBullets.some((bullet) => bullet.trim());
+
+  /**
+   * A summary with no text yet is still shown in the editor (to be written), but must not print as a lone
+   * title: the template element holding the summary (its section) is marked for the PDF export to drop.
+   */
+  useLayoutEffect(() => {
+    const slot = rootRef.current?.parentElement; // the <cv-slot> marker
+    const block = slot?.parentElement;
+    if (!block || block.classList.contains("cvm-root")) return;
+    block.classList.toggle("hidden-print", !hasText);
+    return () => block.classList.remove("hidden-print");
+  }, [hasText]);
 
   useEffect(() => {
     if (editingIndex !== null && textareaRef.current) {
@@ -91,7 +105,7 @@ export default function SummarySlot({ display, lang, className = "" }: { display
 
   if (display === "paragraph") {
     return (
-      <p className={`cv-summary group relative ${className}`}>
+      <p ref={(element) => { rootRef.current = element; }} className={`cv-summary group relative ${className}`}>
         {summaryBullets.map((bullet, index) =>
           editingIndex === index ? (
             <span key={index} className="block">{editor(index)}</span>
@@ -130,7 +144,7 @@ export default function SummarySlot({ display, lang, className = "" }: { display
   );
 
   return (
-    <ul className={`cv-summary cv-bullets ${className}`}>
+    <ul ref={(element) => { rootRef.current = element; }} className={`cv-summary cv-bullets ${className}`}>
       {summaryBullets.map((bullet, index) => (
         <li key={index} className={`group relative ${bullet.trim() ? "" : "hidden-print print:hidden"}`}>
           {index === 0 && insertButton(0, "-top-2.5")}

@@ -272,7 +272,8 @@ const registerHelpers = (hb: typeof Handlebars) => {
         const display = options.hash.style === "paragraph" ? "paragraph" : "bullets";
         const className = typeof options.hash.class === "string" ? options.hash.class : undefined;
         if (runtime.mode === "static") {
-            const bullets = ((options.data.root as Record<string, unknown>)?.summary as string[] | undefined) ?? [];
+            const bullets = (((options.data.root as Record<string, unknown>)?.summary as string[] | undefined) ?? [])
+                .filter((bullet) => String(bullet ?? "").trim());
             if (display === "paragraph") return new hb.SafeString(`<p class="cv-summary">${bullets.map(formatText).join(" ")}</p>`);
             return new hb.SafeString(`<ul class="cv-summary cv-bullets">${bullets.map((bullet) => `<li>${formatText(bullet)}</li>`).join("")}</ul>`);
         }

@@ -72,7 +72,7 @@ Lists contain only what the user selected for this resume, in the order they cho
 | `header` | What the resume shows in its header: `header.title` (the headline under the name), plus the on/off flags of each contact. |
 | `contacts` | The contacts the resume shows, already ordered and formatted: `{ key, label, url }`. `key` is `mail`, `phone`, `portfolio`, `linkedin`, `github`, `twitter`, … or `link` for custom links. `url` is ready for `href` (`mailto:`, `tel:`, `https://`). |
 | `photo` | The profile photo as a data URL, only when the resume includes it: `{{#if photo}}<img src="{{photo}}">{{/if}}`. |
-| `summary` | The summary bullets (strings). Empty when the summary is hidden. Display it with `{{editSummary}}`. |
+| `summary` | The summary sentences (strings). Empty when the summary is hidden. While the user is writing it, it can contain empty sentences, so `{{#if summary}}` stays true and the editor shows. Display it with `{{editSummary}}`. |
 | `experiences` | `jobTitle`, `company`, `location`, `startDate`, `endDate` (a date or `"Present"`), `description` (one bullet per line). |
 | `projects` | `title`, `subtitle`, `link`, `startDate`, `endDate`, `useCase`, `stack` (list), plus: `bullets` (the bullets picked for this resume, each `{ text, tags }`), `allBullets`, `tags` (every tag on its bullets, a good fallback for `stack`), `company` (from the related experience), and `showCompany` (true when the subtitle does not already name the company). Projects with no picked bullet are left out. |
 | `skills` | `name`, `proficiency`, `category`. |
@@ -113,7 +113,7 @@ Text written with `{{edit}}` can be clicked in the editor to change it on this r
   - `placeholder="…"`: text shown in the editor when the field is empty.
   - `class="…"`: a class added to the field.
 
-**`{{editSummary}}`** shows the summary with its editor (add, move and delete bullets). `{{editSummary style="paragraph"}}` shows it as one paragraph. Wrap it in `{{#if summary}}` to hide the section when there is no summary.
+**`{{editSummary}}`** shows the summary with its editor (add, move and delete bullets). `{{editSummary style="paragraph"}}` shows it as one paragraph. Wrap it in `{{#if summary}}` to hide the section when the summary is off. Put `{{editSummary}}` in its own element (e.g. its `<section>`): while the summary has no text yet, that element is left out of the PDF, so its title doesn't print alone.
 
 Text typed as `**bold**` in the app shows in bold, both in `{{edit}}` and with `{{fmt}}`.
 
