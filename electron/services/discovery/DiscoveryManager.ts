@@ -662,7 +662,13 @@ export class DiscoveryManager {
         return { signals, language: profile.profile.language, profileVector };
     }
 
-    private score(job: NormalizedJob, context: ScoringContext): Promise<JobScore> {
+    /** Any offer, scored the way the queue is; null without a profile to compare with. */
+    public async scoreOffer(job: { title: string; description: string }): Promise<JobScore | null> {
+        const context = await this.createScoringContext();
+        return context ? this.score(job, context) : null;
+    }
+
+    private score(job: { title: string; description: string }, context: ScoringContext): Promise<JobScore> {
         return scoreJob(job, context.signals, {
             extractKeywords: (text) => this.deps.extractKeywords(text, context.language),
             embed: this.deps.embed ?? undefined,

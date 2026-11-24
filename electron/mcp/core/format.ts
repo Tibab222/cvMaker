@@ -53,3 +53,10 @@ export function parts(...values: (string | number | null | undefined | false)[])
 export function lines(...values: (string | null | undefined | false)[]): string {
   return values.filter((value) => typeof value === 'string' && value.length > 0).join('\n');
 }
+
+/** "APPLIED 12 · REJECTED 5", most frequent first. */
+export function countBy<T>(items: T[], key: (item: T) => string): string {
+  const counts = new Map<string, number>();
+  for (const item of items) counts.set(key(item), (counts.get(key(item)) ?? 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([name, count]) => `${name} ${count}`).join(' · ');
+}

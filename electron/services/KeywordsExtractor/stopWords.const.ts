@@ -1,6 +1,6 @@
 export const EN_STOP_WORDS = {
     structural: [
-        'the', 'and', 'is', 'in', 'at', 'of', 'a', 'to', 'for', 'with', 'on', 'by', 'as', 'an', 'from', 'about', 'into', 'this', 'these', 'that', 'those', 'which', 'who', 'whom', 'whose', 'where', 'when', 'why', 'how', 'what', 'if', 'or', 'but', 'not', 'no', 'yes',
+        'the', 'and', 'is', 'are', 'be', 'been', 'was', 'were', 'has', 'had', 'they', 'them', 'its', 'in', 'at', 'of', 'a', 'to', 'for', 'with', 'on', 'by', 'as', 'an', 'from', 'about', 'into', 'this', 'these', 'that', 'those', 'which', 'who', 'whom', 'whose', 'where', 'when', 'why', 'how', 'what', 'if', 'or', 'but', 'not', 'no', 'yes',
         'all', 'any', 'some', 'each', 'every', 'other', 'another', 'such', 'more', 'most', 'many', 'few', 'several', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
         'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth',
         "always", "often", "rarely", "regularly", "occasionally", "solid", "very", "good", "great", "excellent", "strong", "strongly", "highly"

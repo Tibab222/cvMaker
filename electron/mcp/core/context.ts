@@ -1,3 +1,4 @@
+import type { DiscoveredJob } from '../../../shared/discovery.types';
 import type { Application } from '../../../shared/jobApplications.type';
 import type { ProfilesData } from '../../../shared/profilesData.interface';
 import type { McpDeps } from './deps';
@@ -10,6 +11,7 @@ const NO_PROFILE = 'No profile is open in CV Maker. Ask the user to open CV Make
 export class CallContext {
   private profilePromise: Promise<ProfilesData> | null = null;
   private applicationList: Application[] | null = null;
+  private opportunityList: DiscoveredJob[] | null = null;
 
   constructor(readonly deps: McpDeps) {}
 
@@ -34,5 +36,17 @@ export class CallContext {
     const application = resolveHandle('application', handle, this.applications(), (app) => app.id);
     if (!application) throw new ToolError(`No application ${handle}: list_applications gives the handles.`);
     return application;
+  }
+
+  opportunities(): DiscoveredJob[] {
+    if (!this.deps.applications.isReady()) throw new ToolError(NO_PROFILE);
+    this.opportunityList ??= this.deps.opportunities.list();
+    return this.opportunityList;
+  }
+
+  opportunity(handle: string): DiscoveredJob {
+    const job = resolveHandle('opportunity', handle, this.opportunities(), (offer) => offer.id);
+    if (!job) throw new ToolError(`No opportunity ${handle}: list_opportunities gives the handles.`);
+    return job;
   }
 }

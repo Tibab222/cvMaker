@@ -81,7 +81,7 @@ export const profileOverview: ToolDef = {
 };
 
 /** Cosine of the query with each indexed experience and bullet; null when the local model or index is not there. */
-async function semanticScores(ctx: CallContext, query: string): Promise<Map<string, number> | null> {
+export async function semanticScores(ctx: CallContext, query: string): Promise<Map<string, number> | null> {
   try {
     const index = ctx.deps.profileVectors();
     if (!index.experiences.length && !index.bullets.length) return null;
@@ -95,10 +95,12 @@ async function semanticScores(ctx: CallContext, query: string): Promise<Map<stri
   }
 }
 
+type Match = { item: ProfileItem; score: number };
+
 /** MiniLM cosines of related texts sit around 0.3-0.6: spread that range over 0..1. */
 const spread = (cosine: number) => Math.min(1, Math.max(0, (cosine - 0.15) / 0.5));
 
-export function scoreItems(items: ProfileItem[], query: string, semantic: Map<string, number> | null): { item: ProfileItem; score: number }[] {
+export function scoreItems(items: ProfileItem[], query: string, semantic: Map<string, number> | null): Match[] {
   const queryTerms = terms(query);
   const semanticOf = (item: ProfileItem): number | undefined => {
     if (!semantic) return undefined;
@@ -119,7 +121,19 @@ export function scoreItems(items: ProfileItem[], query: string, semantic: Map<st
     .sort((a, b) => b.score - a.score);
 }
 
-function matchLine({ item, score }: { item: ProfileItem; score: number }): string {
+/** A project scored through its best bullet is left out: that bullet's line already names the project. */
+export function bestMatches(ranked: Match[], limit: number): Match[] {
+  const matches: Match[] = [];
+  for (const match of ranked) {
+    if (matches.length >= limit) break;
+    const toldByBullet = match.item.kind === 'project'
+      && ranked.some((other) => other.item.kind === 'bullet' && other.item.project?.id === match.item.id && other.score >= match.score - 1e-6);
+    if (!toldByBullet) matches.push(match);
+  }
+  return matches;
+}
+
+export function matchLine({ item, score }: Match): string {
   const head = `${item.handle} ${Math.round(score * 100)} ${item.kind}`;
   switch (item.kind) {
     case 'bullet':
@@ -156,14 +170,7 @@ export const searchProfile: ToolDef = {
     const items = profileItems(await ctx.profile());
     const semantic = await semanticScores(ctx, query);
     const ranked = scoreItems(items, query, semantic).filter(({ item }) => !kinds.length || kinds.includes(item.kind));
-    const matches: typeof ranked = [];
-    for (const match of ranked) {
-      if (matches.length >= limit) break;
-      // a project scored through its best bullet: that bullet's line already names the project
-      const toldByBullet = match.item.kind === 'project'
-        && ranked.some((other) => other.item.kind === 'bullet' && other.item.project?.id === match.item.id && other.score >= match.score - 1e-6);
-      if (!toldByBullet) matches.push(match);
-    }
+    const matches = bestMatches(ranked, limit);
     if (!matches.length) return `Nothing in the profile matches "${query}".`;
     return lines(
       `Best matches for "${query}" (${semantic ? 'meaning + keywords' : 'keywords only: the local index is not built yet, the resume editor builds it'}):`,

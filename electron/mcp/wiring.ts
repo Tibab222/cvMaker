@@ -1,6 +1,8 @@
 import { ApplicationEventType, JobApplicationStatus } from '../../shared/jobApplications.type';
 import { addPastApplication, announceApplicationsChanged, recordSentApplication } from '../functions/recordApplication';
+import { getDiscoveryManager } from '../services/discovery';
 import { getInterviewQuestions } from '../services/interviewQuestions';
+import { getVaultManager } from '../services/vault';
 import { CLAUDE_SOURCE, JobApplicationManager } from '../services/jobApplications/jobApplicationManager';
 import { KeywordsAffinityDatabase } from '../services/KeywordsExtractor/KeywordsAffinityDatabase';
 import { ProfileService } from '../services/ProfileService';
@@ -48,5 +50,12 @@ export function createAppDeps(): McpDeps {
       announce: announceApplicationsChanged,
     },
     marketKeywords: (limit) => KeywordsAffinityDatabase.getInstance().getTopKeywords(limit),
+    opportunities: {
+      list: () => getDiscoveryManager().listJobs(),
+      add: (offer) => getDiscoveryManager().addFromExtension(offer),
+      setStatus: (id, status) => getDiscoveryManager().setJobStatus(id, status),
+      score: (offer) => getDiscoveryManager().scoreOffer(offer),
+    },
+    vaultMatch: (offer, limit) => getVaultManager().match(offer, limit),
   };
 }

@@ -1,8 +1,12 @@
+import type { DiscoveredJob, DiscoveredJobStatus } from '../../../shared/discovery.types';
+import type { JobOfferPayload } from '../../../shared/Extension.types';
 import type { InterviewQuestion } from '../../../shared/interviewQuestions.types';
+import type { VaultMatch, VaultOffer } from '../../../shared/vault.types';
 import type {
   Application, ApplicationDetailsDto, ApplicationEvent, ApplicationsChangedEvent, ApplicationWithEvents, BrowserApplicationDto, BrowserApplicationResult,
   CVSessionDataDTO, JobApplicationStatus, KeyStats, NewApplicationEventDto, PastApplicationDto, Reminder, SilentApplication,
 } from '../../../shared/jobApplications.type';
+import type { JobScore } from '../../services/discovery/scoring';
 import type { KeywordStat } from '../../../shared/Keywords.types';
 import type { ProfilesData } from '../../../shared/profilesData.interface';
 
@@ -49,4 +53,16 @@ export interface McpDeps {
   };
   /** Terms of the offers the user analysed or applied to, most frequent first. */
   marketKeywords: (limit: number) => KeywordStat[];
+
+  /** The Opportunities queue (offers found by the daily search or saved while browsing). */
+  opportunities: {
+    list: () => DiscoveredJob[];
+    /** Scored against the profile and shortlisted; an offer already queued is shortlisted again instead. */
+    add: (offer: JobOfferPayload) => Promise<{ id: number; score: number | null; duplicate: boolean }>;
+    setStatus: (id: number, status: DiscoveredJobStatus) => boolean;
+    /** Same 0-100 score as the queue; null when the profile is empty. */
+    score: (offer: { title: string; description: string }) => Promise<JobScore | null>;
+  };
+  /** Finished PDF resumes of the vault, ranked for an offer. */
+  vaultMatch: (offer: VaultOffer, limit: number) => Promise<VaultMatch[]>;
 }

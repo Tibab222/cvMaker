@@ -2,7 +2,7 @@ import { APPLICATION_CHANNELS, JobApplicationStatus, PAST_APPLICATION_STATUSES, 
 import { foldText } from '../../utils/text';
 import { titleWords } from '../../services/discovery/scoring';
 import type { CallContext } from '../core/context';
-import { clip, clipLong, day, lines, localDateTime, money, parts } from '../core/format';
+import { clip, clipLong, countBy, day, lines, localDateTime, money, parts } from '../core/format';
 import { handleOf } from '../core/handles';
 import { ToolError, type ToolDef } from '../core/types';
 import { profileItems } from './profileIndex';
@@ -14,12 +14,6 @@ const DETAIL_PARTS = ['offer', 'timeline', 'resume', 'questions', 'cover_letter'
 // an archived draft was never sent
 const isSent = (app: Application) => !!app.applied_at || PAST_APPLICATION_STATUSES.includes(app.status);
 const activityDate = (app: Application) => app.applied_at ?? app.created_at;
-
-function countBy<T>(items: T[], key: (item: T) => string): string {
-  const counts = new Map<string, number>();
-  for (const item of items) counts.set(key(item), (counts.get(key(item)) ?? 0) + 1);
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([name, count]) => `${name} ${count}`).join(' · ');
-}
 
 function applicationLine(app: Application): string {
   return parts(
