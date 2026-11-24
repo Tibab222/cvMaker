@@ -26,6 +26,9 @@ import { getDiscoveryManager } from './services/discovery';
 import { getVaultManager } from './services/vault';
 import { getAnswerBank } from './services/answers';
 import type { SavedAnswer, SavedAnswerDto, SavedAnswerResult } from '../shared/answers.types';
+import { getInterviewQuestions } from './services/interviewQuestions';
+import type { InterviewQuestion, InterviewQuestionDto, InterviewQuestionResult, QuestionsExportRequest } from '../shared/interviewQuestions.types';
+import { exportQuestions, openLastExport } from './services/interviewQuestions/exportQuestions';
 import type { VaultImportPayload, VaultImportResult, VaultOffer } from '../shared/vault.types';
 import { AddSourceResult, AdzunaConnectResult, AdzunaQuery, DiscoveredJobStatus, DiscoverySettings } from '../shared/discovery.types';
 
@@ -332,6 +335,24 @@ export function registerIpcHandlers() {
     ipcMain.handle('answers:add', (event, dto: SavedAnswerDto) => answerResult(() => answers.add(dto)));
     ipcMain.handle('answers:update', (event, id: string, dto: SavedAnswerDto) => answerResult(() => answers.update(id, dto)));
     ipcMain.handle('answers:remove', (event, id: string) => answers.remove(id));
+
+    // Interview questions library (prepared answers, linked to the applications whose interviews asked them)
+    const interviewQuestions = getInterviewQuestions();
+    const interviewQuestionResult = (write: () => InterviewQuestion): InterviewQuestionResult => {
+        try {
+            return { ok: true, question: write() };
+        } catch (error) {
+            return { ok: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    };
+    ipcMain.handle('interview-questions:list', () => interviewQuestions.list());
+    ipcMain.handle('interview-questions:for-application', (event, applicationId: string) => interviewQuestions.forApplication(applicationId));
+    ipcMain.handle('interview-questions:add', (event, dto: InterviewQuestionDto) => interviewQuestionResult(() => interviewQuestions.add(dto)));
+    ipcMain.handle('interview-questions:update', (event, id: string, dto: InterviewQuestionDto) => interviewQuestionResult(() => interviewQuestions.update(id, dto)));
+    ipcMain.handle('interview-questions:remove', (event, id: string) => interviewQuestions.remove(id));
+    ipcMain.handle('interview-questions:export', (event, request: QuestionsExportRequest) =>
+        exportQuestions(interviewQuestions, request, BrowserWindow.fromWebContents(event.sender)));
+    ipcMain.handle('interview-questions:open-export', () => openLastExport());
     ipcMain.handle('discovery:remove-source', (event, id: number) => discovery.removeSource(id));
     ipcMain.handle('discovery:set-source-enabled', (event, id: number, enabled: boolean) => discovery.setSourceEnabled(id, enabled));
     ipcMain.handle('discovery:get-settings', () => discovery.getSettings());

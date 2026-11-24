@@ -19,7 +19,7 @@ import { useProfileStore } from "@/store/profile";
 import Dashboard from "../dashboard/Dashboard";
 import ResumeLibrary from "../resumeLibrary/ResumeLibrary";
 import Opportunities from "../opportunities/Opportunities";
-import SavedAnswers from "../answers/SavedAnswers";
+import QuestionsLibrary from "../answers/QuestionsLibrary";
 import TimelinePage from "../timeline/TimelinePage";
 
 export default function MainWindow() {
@@ -53,8 +53,8 @@ export default function MainWindow() {
                 return <ResumeLibrary />;
             case Tabs.OPPORTUNITIES:
                 return <Opportunities />;
-            case Tabs.SAVED_ANSWERS:
-                return <SavedAnswers />;
+            case Tabs.QUESTIONS_LIBRARY:
+                return <QuestionsLibrary />;
             default:
                 return (
                     <div className="flex h-full min-h-[60vh] w-full items-center justify-center p-6">

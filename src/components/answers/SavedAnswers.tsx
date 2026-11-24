@@ -14,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import PageHeader from "../general/PageHeader";
 import EmptyState from "../general/EmptyState";
 
 const rowMotion = {
@@ -219,14 +218,20 @@ function AnswerRow({ answer, onSaved, onRemoved }: AnswerRowProps) {
   );
 }
 
+interface SavedAnswersPanelProps {
+  /** The add form is open (the "Add an answer" button lives in the page header). */
+  adding: boolean;
+  onAddingChange: (adding: boolean) => void;
+}
+
 /**
  * Answer bank: the answers given on application forms, kept by the browser extension and filled in again on the next
  * forms asking the same thing. Here the user checks them, corrects them, adds some, or deletes those to answer each time.
+ * A panel of the questions library.
  */
-export default function SavedAnswers() {
+export default function SavedAnswersPanel({ adding, onAddingChange: setAdding }: SavedAnswersPanelProps) {
   const [answers, setAnswers] = useState<SavedAnswer[] | null>(null);
   const [query, setQuery] = useState("");
-  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     const load = () =>
@@ -251,92 +256,79 @@ export default function SavedAnswers() {
   const drop = (id: string) => setAnswers((list) => list?.filter((answer) => answer.id !== id) ?? []);
 
   return (
-    <div className="min-h-full">
-      <PageHeader
-        title="Saved answers"
-        icon={MessageSquareText}
-        description="What you answered on application forms. The extension fills it in when another form asks the same."
-        actions={
-          <Button size="sm" onClick={() => setAdding(true)} disabled={adding} className="gap-1.5">
-            <Plus className="size-4" /> Add an answer
-          </Button>
-        }
-      />
-
-      <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6 md:px-6">
-        <div className="flex items-start gap-2.5 rounded-lg border border-border/60 bg-surface/70 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground">
-          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand" />
-          <p>
-            When you move on from a step of an application ("Next", "Submit"), the extension keeps your answers here.
-            When you click <span className="font-medium text-foreground">Prefill the form</span>, it fills the questions you
-            already answered, even when they are worded a little differently, and lists them so you can check them.
-            Questions about identity (gender, origin, disability…), passwords and consents are never kept.
-          </p>
-        </div>
-
-        <AnimatePresence initial={false}>
-          {adding && (
-            <motion.div key="add" {...rowMotion} transition={{ duration: 0.22, ease: EASE_OUT }}>
-              <Card className="gap-0 rounded-xl border-brand/40 px-4 py-3.5">
-                <AnswerForm
-                  initial={{ question: "", answer: "" }}
-                  submitLabel="Add"
-                  onCancel={() => setAdding(false)}
-                  onSubmit={async (dto) => {
-                    const result = await api.answers.add(dto);
-                    if (result.ok) {
-                      setAnswers((list) => [result.answer, ...(list ?? [])]);
-                      setAdding(false);
-                      toast.success("Answer added.");
-                    }
-                    return result;
-                  }}
-                />
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {answers === null ? (
-          <div className="flex justify-center py-16 text-muted-foreground">
-            <Loader2 className="size-5 animate-spin" />
-          </div>
-        ) : answers.length === 0 && !adding ? (
-          <EmptyState
-            icon={MessageSquareText}
-            title="No saved answers yet"
-            description="Apply somewhere with the browser extension on: the questions you answer (work permit, notice period, how you heard about the job…) show up here, ready for the next forms."
-            action={
-              <Button size="sm" variant="outline" onClick={() => setAdding(true)} className="gap-1.5">
-                <Plus className="size-4" /> Add one yourself
-              </Button>
-            }
-          />
-        ) : answers.length > 0 ? (
-          <>
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a question, an answer or a site" className="pl-9" aria-label="Search saved answers" />
-              </div>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                {shown.length === answers.length ? `${answers.length} answer${answers.length > 1 ? "s" : ""}` : `${shown.length} of ${answers.length}`}
-              </span>
-            </div>
-            {shown.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">No saved answer matches “{query.trim()}”.</p>
-            ) : (
-              <ul className="space-y-2.5">
-                <AnimatePresence initial={false}>
-                  {shown.map((answer) => (
-                    <AnswerRow key={answer.id} answer={answer} onSaved={replace} onRemoved={drop} />
-                  ))}
-                </AnimatePresence>
-              </ul>
-            )}
-          </>
-        ) : null}
+    <div className="space-y-4">
+      <div className="flex items-start gap-2.5 rounded-lg border border-border/60 bg-surface/70 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground">
+        <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand" />
+        <p>
+          When you move on from a step of an application ("Next", "Submit"), the extension keeps your answers here.
+          When you click <span className="font-medium text-foreground">Prefill the form</span>, it fills the questions you
+          already answered, even when they are worded a little differently, and lists them so you can check them.
+          Questions about identity (gender, origin, disability…), passwords and consents are never kept.
+        </p>
       </div>
+
+      <AnimatePresence initial={false}>
+        {adding && (
+          <motion.div key="add" {...rowMotion} transition={{ duration: 0.22, ease: EASE_OUT }}>
+            <Card className="gap-0 rounded-xl border-brand/40 px-4 py-3.5">
+              <AnswerForm
+                initial={{ question: "", answer: "" }}
+                submitLabel="Add"
+                onCancel={() => setAdding(false)}
+                onSubmit={async (dto) => {
+                  const result = await api.answers.add(dto);
+                  if (result.ok) {
+                    setAnswers((list) => [result.answer, ...(list ?? [])]);
+                    setAdding(false);
+                    toast.success("Answer added.");
+                  }
+                  return result;
+                }}
+              />
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {answers === null ? (
+        <div className="flex justify-center py-16 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin" />
+        </div>
+      ) : answers.length === 0 && !adding ? (
+        <EmptyState
+          icon={MessageSquareText}
+          title="No saved answers yet"
+          description="Apply somewhere with the browser extension on: the questions you answer (work permit, notice period, how you heard about the job…) show up here, ready for the next forms."
+          action={
+            <Button size="sm" variant="outline" onClick={() => setAdding(true)} className="gap-1.5">
+              <Plus className="size-4" /> Add one yourself
+            </Button>
+          }
+        />
+      ) : answers.length > 0 ? (
+        <>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a question, an answer or a site" className="pl-9" aria-label="Search saved answers" />
+            </div>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {shown.length === answers.length ? `${answers.length} answer${answers.length > 1 ? "s" : ""}` : `${shown.length} of ${answers.length}`}
+            </span>
+          </div>
+          {shown.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">No saved answer matches “{query.trim()}”.</p>
+          ) : (
+            <ul className="space-y-2.5">
+              <AnimatePresence initial={false}>
+                {shown.map((answer) => (
+                  <AnswerRow key={answer.id} answer={answer} onSaved={replace} onRemoved={drop} />
+                ))}
+              </AnimatePresence>
+            </ul>
+          )}
+        </>
+      ) : null}
     </div>
   );
 }

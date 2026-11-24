@@ -332,6 +332,28 @@ const MIGRATIONS: Migration[] = [
             `);
         },
     },
+    {
+        version: 10,
+        name: "interview questions (prepared answers, linked to the applications that asked them)",
+        up: (db) => {
+            // links go with a deleted application or question (ON DELETE CASCADE); reads join on applications as well
+            db.exec(`
+                CREATE TABLE interview_questions (
+                    id TEXT PRIMARY KEY,
+                    question TEXT NOT NULL,
+                    answer TEXT NOT NULL DEFAULT '',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE TABLE interview_question_applications (
+                    question_id TEXT NOT NULL REFERENCES interview_questions(id) ON DELETE CASCADE,
+                    application_id TEXT NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+                    PRIMARY KEY (question_id, application_id)
+                );
+                CREATE INDEX idx_interview_question_applications_application ON interview_question_applications(application_id);
+            `);
+        },
+    },
 ];
 
 export class JobApplicationDb {
