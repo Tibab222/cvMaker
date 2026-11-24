@@ -1,0 +1,149 @@
+<cvm version="1">
+<meta>
+{
+  "id": "modern-sidebar",
+  "name": "Modern Sidebar",
+  "description": "Two columns: contact, skills and education in a tinted sidebar, experience as a timeline with the dates on the left.",
+  "author": "cvMaker",
+  "version": "1.0.0",
+  "page": { "size": "A4", "margin": "12mm" },
+  "vars": { "accent": "#2563eb", "sidebar": "#f1f5f9", "ink": "#0f172a", "muted": "#64748b", "text": "#334155" }
+}
+</meta>
+
+<template>
+<aside>
+  {{#if photo}}<img class="photo" src="{{photo}}" alt="">{{/if}}
+
+  {{#if (or contacts profile.location)}}
+  <div class="block">
+    <h2>{{t "contact"}}</h2>
+    <ul class="contacts">
+      {{#if profile.location}}<li>{{icon "location" 11}}<span>{{profile.location}}</span></li>{{/if}}
+      {{#each contacts}}<li>{{icon key 11}}<a href="{{url}}">{{label}}</a></li>{{/each}}
+    </ul>
+  </div>
+  {{/if}}
+
+  {{#if skills}}
+  <div class="block">
+    <h2>{{edit "section:skills" "title" (t "skills")}}</h2>
+    {{#each (groupBy skills "category" fallback="")}}
+    <div class="skill-group">
+      {{#if key}}<h4>{{key}}</h4>{{/if}}
+      <div class="chips">{{#each items}}<span class="chip">{{name}}{{#if proficiency}} <i>{{proficiency}}</i>{{/if}}</span>{{/each}}</div>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{#if education}}
+  <div class="block">
+    <h2>{{edit "education:section" "title" (t "education")}}</h2>
+    {{#each education}}
+    <div class="edu">
+      <p class="degree">{{edit this "degree"}}</p>
+      <p class="school">{{edit this "institution"}}</p>
+      <p class="when">{{period startDate endDate "yyyy"}}{{#if (future endDate)}} ({{t "expected"}}){{/if}}</p>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+</aside>
+
+<main>
+  <header>
+    <h1>{{profile.firstName}} <span>{{profile.lastName}}</span></h1>
+    {{#if header.title}}<p class="headline">{{header.title}}</p>{{/if}}
+  </header>
+
+  {{#if summary}}
+  <section>
+    {{editSummary style="paragraph" class="lead"}}
+  </section>
+  {{/if}}
+
+  {{#if experiences}}
+  <section>
+    <h2>{{icon "experience" 13}}{{edit "experience:section" "title" (t "experience")}}</h2>
+    {{#each experiences}}
+    <article class="entry">
+      <div class="when">{{period startDate endDate "MMM yyyy"}}</div>
+      <div class="what">
+        <h3>{{edit this "jobTitle"}}</h3>
+        <p class="where">{{edit this "company"}}{{#if location}} · {{location}}{{/if}}</p>
+        {{#if description}}{{edit this "description" display="bullets"}}{{/if}}
+      </div>
+    </article>
+    {{/each}}
+  </section>
+  {{/if}}
+
+  {{#if projects}}
+  <section>
+    <h2>{{icon "projects" 13}}{{edit "project:section" "title" (t "projects")}}</h2>
+    {{#each projects}}
+    <article class="entry">
+      <div class="when">{{period startDate endDate "MMM yyyy"}}</div>
+      <div class="what">
+        <h3>{{edit this "title"}}{{#if link}} <a class="link" href="{{href link}}">{{shortUrl link}}</a>{{/if}}</h3>
+        {{#if subtitle}}<p class="where">{{edit this "subtitle"}}{{#if showCompany}} · {{company}}{{/if}}</p>{{/if}}
+        <ul class="cv-bullets">{{#each bullets}}<li>{{edit this "text"}}</li>{{/each}}</ul>
+      </div>
+    </article>
+    {{/each}}
+  </section>
+  {{/if}}
+</main>
+</template>
+
+<style>
+:scope {
+  display: grid;
+  grid-template-columns: 58mm 1fr;
+  gap: 8mm;
+  align-items: stretch;
+  font-family: "Inter Variable", "Inter", sans-serif;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+aside { background: var(--sidebar); border-radius: 6px; padding: 6mm 5mm; display: flex; flex-direction: column; gap: 6mm; }
+.photo { width: 34mm; height: 34mm; border-radius: 9999px; object-fit: cover; align-self: center; border: 3px solid white; }
+aside h2 { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 2.5mm; }
+.contacts { display: flex; flex-direction: column; gap: 1.5mm; word-break: break-word; }
+.contacts li { display: flex; gap: 2mm; align-items: flex-start; }
+.contacts .cv-icon { color: var(--accent); flex-shrink: 0; margin-top: 2px; }
+.contacts a { color: var(--text); }
+.skill-group + .skill-group { margin-top: 3mm; }
+h4 { font-size: 9.5px; font-weight: 600; color: var(--ink); margin-bottom: 1.5mm; }
+.chips { display: flex; flex-wrap: wrap; gap: 1.5mm; }
+.chip { background: white; border-radius: 4px; padding: 0.5mm 2mm; font-size: 9px; color: var(--ink); }
+.chip i { color: var(--muted); }
+.edu + .edu { margin-top: 3mm; }
+.degree { font-weight: 600; color: var(--ink); }
+.school { color: var(--text); }
+aside .when { color: var(--muted); font-size: 9px; }
+
+main { display: flex; flex-direction: column; gap: 6mm; padding-top: 2mm; min-width: 0; }
+h1 { font-size: 30px; font-weight: 300; line-height: 1.05; color: var(--ink); letter-spacing: -0.02em; }
+h1 span { font-weight: 800; }
+.headline { margin-top: 2mm; font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
+.lead { font-size: 10.5px; color: var(--text); }
+
+main h2 { display: flex; align-items: center; gap: 2mm; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink); padding-bottom: 1.5mm; margin-bottom: 3mm; border-bottom: 2px solid var(--accent); }
+main h2 .cv-icon { color: var(--accent); }
+.entry { display: grid; grid-template-columns: 20mm 1fr; gap: 4mm; break-inside: avoid; }
+.entry + .entry { margin-top: 4mm; }
+.entry .when { font-size: 9px; font-weight: 600; color: var(--muted); text-align: right; padding-top: 1px; font-variant-numeric: tabular-nums; }
+.what { border-left: 2px solid #e2e8f0; padding-left: 4mm; position: relative; }
+.what::before { content: ""; position: absolute; left: -5px; top: 3px; width: 8px; height: 8px; border-radius: 9999px; background: var(--accent); }
+h3 { font-size: 11.5px; font-weight: 700; color: var(--ink); }
+.where { font-size: 10px; color: var(--accent); font-weight: 500; margin-bottom: 1mm; }
+.link { font-size: 9px; font-weight: 400; color: var(--muted); margin-left: 1mm; }
+.cv-bullets { list-style: none; display: flex; flex-direction: column; gap: 1mm; }
+.cv-bullets li { position: relative; padding-left: 3.5mm; }
+.cv-bullets li::before { content: "–"; position: absolute; left: 0; color: var(--accent); }
+</style>
+</cvm>

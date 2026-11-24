@@ -13,6 +13,7 @@ import { AIAnalysisStatus } from '../shared/AIAnalysisStatus';
 import { CoverLetterStatusPayload, GenerateCoverLetterDTO } from '../shared/CoverLetter.types';
 import type { VaultImportPayload, VaultImportResult, VaultMatch, VaultOffer, VaultResume } from '../shared/vault.types';
 import type { SavedAnswer, SavedAnswerDto, SavedAnswerResult } from '../shared/answers.types';
+import type { TemplateImportResult, UserTemplateFile } from '../shared/cvm/ipc.types';
 import type { InterviewQuestion, InterviewQuestionDto, InterviewQuestionResult, QuestionsExportRequest, QuestionsExportResult } from '../shared/interviewQuestions.types';
 import { AddSourceResult, AdzunaConnectResult, AdzunaQuery, AdzunaStatus, DiscoveredJob, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings, JobSource, ProfileFilterSuggestion } from '../shared/discovery.types';
 
@@ -84,6 +85,16 @@ declare global {
         open: (id: string) => Promise<boolean>;
         reveal: (id: string) => Promise<boolean>;
         match: (offer: VaultOffer, limit?: number) => Promise<VaultMatch[]>;
+      };
+      /** Resume templates (.cvm) imported by the user. */
+      templates: {
+        list: () => Promise<UserTemplateFile[]>;
+        /** Asks for .cvm files and copies the valid ones into the templates folder. */
+        import: (reservedIds: string[]) => Promise<TemplateImportResult>;
+        remove: (fileName: string) => Promise<boolean>;
+        /** Asks where to save, then writes the template; null when cancelled. */
+        export: (source: string, suggestedName: string) => Promise<string | null>;
+        openFolder: () => Promise<void>;
       };
       /** Answers given to application-form questions, kept by the browser extension. */
       answers: {

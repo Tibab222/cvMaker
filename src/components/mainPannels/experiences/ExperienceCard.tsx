@@ -10,6 +10,7 @@ import { Building, ChevronDown, MapPin, Calendar as LucideCalendar, Edit2, Trash
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LocationInput from "@/components/ui/LocationInput";
+import ExtraFieldsEditor from "@/components/mainPannels/ExtraFieldsEditor";
 
 export default function ExperienceCard({
     experience,
@@ -187,6 +188,8 @@ export default function ExperienceCard({
                                     } 
                                 />
                             </div>
+
+                            <ExtraFieldsEditor section="experience" value={formData} onChange={setFormData} />
 
                             <div className="space-y-2 mt-1">
                                 <label className="text-xs font-medium text-muted-foreground block">Timeline</label>

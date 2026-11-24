@@ -1,5 +1,6 @@
 import { api } from "@/api";
 import { toast } from "sonner";
+import { useTemplateStore } from "@/store/templates";
 
 /** Strip the characters that are not allowed in a file name. */
 const sanitizeFileNamePart = (value: string) =>
@@ -16,6 +17,9 @@ const buildFileName = (companyName?: string, roleName?: string) => {
 export const exportToPdf = async (companyName?: string, roleName?: string, applicationId?: string) => {
   const element = document.getElementById("cv-content");
   if (!element) return;
+
+  // the page size and margins belong to the template: they replace the default A4 / 15mm print rules
+  const { size, margin } = useTemplateStore.getState().get(element.getAttribute("data-cvm") ?? undefined).template.meta.page;
 
   // const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
   //   .map(s => s.outerHTML)
@@ -45,6 +49,10 @@ export const exportToPdf = async (companyName?: string, roleName?: string, appli
           body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
           #cv-content { box-shadow: none !important; border: none !important; }
           .hidden-print { display: none !important; }
+          @media print {
+            @page { size: ${size}; margin: ${margin} !important; }
+            #cv-content { padding: 0 !important; width: 100% !important; min-height: 0 !important; }
+          }
         </style>
       </head>
       <body>
@@ -56,8 +64,8 @@ export const exportToPdf = async (companyName?: string, roleName?: string, appli
   const success = await api.generatePDF(fullHTML, buildFileName(companyName, roleName), applicationId);
   if (success) {
     const fileName = success.split(/[/\\]/).pop() || "PDF";
-    toast.success("Cover letter exported successfully!", {
-      description: `The cover letter has been exported to ${fileName}.`,
+    toast.success("Resume exported successfully!", {
+      description: `The resume has been exported to ${fileName}.`,
       action: {
         label: "Open folder",
         onClick: () => {
@@ -67,5 +75,5 @@ export const exportToPdf = async (companyName?: string, roleName?: string, appli
       }
     });
   }
-  else toast.error("Cover letter export cancelled or failed.");
+  else toast.error("Resume export cancelled or failed.");
 };

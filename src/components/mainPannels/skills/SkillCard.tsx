@@ -4,6 +4,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import type { Skills } from "@shared/Skills.interface";
 import { BicepsFlexed } from "lucide-react";
 import { useEffect, useState } from "react";
+import ExtraFieldsEditor from "@/components/mainPannels/ExtraFieldsEditor";
 
 export default function SkillCard({skill, onSave, onDelete}: { skill: Skills; onSave: (updatedSkill: Skills) => void; onDelete: (skillId: string) => void }) {
     const [formData, setFormData] = useState<Skills>(skill);
@@ -34,6 +35,7 @@ export default function SkillCard({skill, onSave, onDelete}: { skill: Skills; on
             <InputGroup>
                 <InputGroupInput placeholder="level (optional)" value={formData.proficiency} onChange={(e) => setFormData({...formData, proficiency: e.target.value})} />
             </InputGroup>
+            <ExtraFieldsEditor section="skill" value={formData} onChange={setFormData} className="mt-2" />
         </CardContent>
         <CardFooter>
             <Button variant="default" className="ml-auto" onClick={handleSave}>

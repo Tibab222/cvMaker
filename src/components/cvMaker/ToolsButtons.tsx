@@ -9,6 +9,7 @@ import useCoverLetterContext from "./CoverLetterProvider/hook";
 import { useUiStore } from "@/store/ui";
 import { getModifierKeyLabel } from "@/hooks/use-keyboard-shortcut";
 import StatusSplitButton from "./StatusSplitButton";
+import TemplatePicker from "./cvTemplate/TemplatePicker";
 
 interface ToolsButtonsProps {
     openPicker: () => void;
@@ -33,6 +34,8 @@ export default function ToolsButtons({ openPicker, coverLetterActive = false }: 
     return (
         <div className="absolute top-4 right-4 flex gap-2">
             <StatusSplitButton />
+            {/* the template only applies to the resume */}
+            {!coverLetterActive && <TemplatePicker />}
             {/* The photo only exists on the resume, so the toggle is hidden in the cover letter view */}
             {hasPhoto && !coverLetterActive && (
                 <Button

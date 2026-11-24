@@ -23,6 +23,7 @@ export interface Profile {
     youtube?: string;
     facebook?: string;
     customLinks?: CustomLink[];
+    location?: string; // city / country shown in some resume headers (see profileFields.ts)
     // others
     language: Language; // langue du profil (va générer le CV dans cette langue), ex: Language.FRENCH ou Language.ENGLISH
     photo?: string; // cropped profile photo as a JPEG data URL (kept inline so it survives the data: URL PDF export)

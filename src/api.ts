@@ -74,6 +74,13 @@ export const api = {
         reveal: (id: string) => window.api.vault.reveal(id),
         match: (offer: VaultOffer, limit?: number) => window.api.vault.match(offer, limit),
     },
+    templates: {
+        list: () => window.api.templates.list(),
+        import: (reservedIds: string[]) => window.api.templates.import(reservedIds),
+        remove: (fileName: string) => window.api.templates.remove(fileName),
+        export: (source: string, suggestedName: string) => window.api.templates.export(source, suggestedName),
+        openFolder: () => window.api.templates.openFolder(),
+    },
     answers: {
         list: () => window.api.answers.list(),
         add: (dto: SavedAnswerDto) => window.api.answers.add(dto),

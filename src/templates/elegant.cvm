@@ -1,0 +1,126 @@
+<cvm version="1">
+<meta>
+{
+  "id": "elegant",
+  "name": "Elegant",
+  "description": "Serif headings, centered header and fine rules: a classic, editorial look for less technical roles.",
+  "author": "cvMaker",
+  "version": "1.0.0",
+  "page": { "size": "A4", "margin": "16mm 18mm" },
+  "vars": { "accent": "#7f1d1d", "ink": "#1c1917", "muted": "#78716c", "rule": "#d6d3d1" }
+}
+</meta>
+
+<template>
+<header>
+  {{#if photo}}<img class="photo" src="{{photo}}" alt="">{{/if}}
+  <h1>{{profile.firstName}} {{profile.lastName}}</h1>
+  {{#if header.title}}<p class="headline">{{header.title}}</p>{{/if}}
+  <p class="contacts">
+    {{#if profile.location}}<span>{{profile.location}}</span>{{/if}}
+    {{#each contacts}}<span><a href="{{url}}">{{label}}</a></span>{{/each}}
+  </p>
+</header>
+
+{{#if summary}}
+<section>
+  <h2><span>{{edit "section:summary" "title" (t "summary")}}</span></h2>
+  {{editSummary style="paragraph" class="lead"}}
+</section>
+{{/if}}
+
+{{#if experiences}}
+<section>
+  <h2><span>{{edit "experience:section" "title" (t "experience")}}</span></h2>
+  {{#each experiences}}
+  <article>
+    <div class="line">
+      <h3>{{edit this "jobTitle"}}</h3>
+      <span class="when">{{period startDate endDate "MMMM yyyy"}}</span>
+    </div>
+    <p class="where">{{edit this "company"}}{{#if location}}, {{location}}{{/if}}</p>
+    {{#if description}}{{edit this "description" display="bullets"}}{{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if projects}}
+<section>
+  <h2><span>{{edit "project:section" "title" (t "projects")}}</span></h2>
+  {{#each projects}}
+  <article>
+    <div class="line">
+      <h3>{{edit this "title"}}</h3>
+      <span class="when">{{period startDate endDate "MMMM yyyy"}}</span>
+    </div>
+    {{#if subtitle}}<p class="where">{{edit this "subtitle"}}{{#if link}} — <a href="{{href link}}">{{shortUrl link}}</a>{{/if}}</p>{{/if}}
+    <ul class="cv-bullets">{{#each bullets}}<li>{{edit this "text"}}</li>{{/each}}</ul>
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+<div class="columns">
+  {{#if education}}
+  <section>
+    <h2><span>{{edit "education:section" "title" (t "education")}}</span></h2>
+    {{#each education}}
+    <article>
+      <h3>{{edit this "degree"}}</h3>
+      <p class="where">{{edit this "institution"}} · {{period startDate endDate "yyyy"}}</p>
+    </article>
+    {{/each}}
+  </section>
+  {{/if}}
+
+  {{#if skills}}
+  <section>
+    <h2><span>{{edit "section:skills" "title" (t "skills")}}</span></h2>
+    {{#each (groupBy skills "category" fallback="")}}
+    <p class="skills">{{#if key}}<em>{{key}}</em> — {{/if}}{{join items " · " "name"}}</p>
+    {{/each}}
+  </section>
+  {{/if}}
+</div>
+</template>
+
+<style>
+:scope {
+  font-family: "Public Sans Variable", sans-serif;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+header { text-align: center; margin-bottom: 7mm; }
+.photo { width: 26mm; height: 26mm; border-radius: 9999px; object-fit: cover; margin: 0 auto 3mm; display: block; }
+h1 { font-family: "Playfair Display Variable", Georgia, serif; font-size: 34px; font-weight: 500; line-height: 1.1; letter-spacing: 0.02em; }
+.headline { margin-top: 1.5mm; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+.contacts { margin-top: 3mm; display: flex; flex-wrap: wrap; justify-content: center; gap: 0 3mm; color: var(--muted); font-size: 9.5px; }
+.contacts span + span::before { content: "·"; margin-right: 3mm; }
+.contacts a { color: var(--muted); }
+
+section { margin-bottom: 5mm; }
+h2 { display: flex; align-items: center; gap: 3mm; margin-bottom: 3mm; font-family: "Playfair Display Variable", Georgia, serif; font-size: 15px; font-weight: 600; font-style: italic; color: var(--accent); }
+h2::after { content: ""; flex: 1; border-bottom: 1px solid var(--rule); }
+
+article { break-inside: avoid; }
+article + article { margin-top: 3.5mm; }
+.line { display: flex; justify-content: space-between; align-items: baseline; gap: 4mm; }
+h3 { font-size: 11px; font-weight: 700; }
+.when { font-size: 9.5px; color: var(--muted); font-style: italic; white-space: nowrap; }
+.where { color: var(--muted); font-style: italic; margin-bottom: 1mm; }
+.where a { color: var(--muted); }
+.lead { font-size: 10.5px; text-align: justify; }
+.cv-bullets { list-style: none; }
+.cv-bullets li { position: relative; padding-left: 4mm; text-align: justify; }
+.cv-bullets li::before { content: "◆"; position: absolute; left: 0; top: 1px; font-size: 6px; color: var(--accent); }
+
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+.columns section { margin-bottom: 0; }
+.columns article + article { margin-top: 2.5mm; }
+.skills + .skills { margin-top: 1.5mm; }
+.skills em { color: var(--accent); }
+</style>
+</cvm>

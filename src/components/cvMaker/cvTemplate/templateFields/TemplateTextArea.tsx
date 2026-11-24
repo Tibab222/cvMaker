@@ -3,6 +3,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import { useCVSelection } from "../../provider/hook";
 import { Sparkles } from "lucide-react";
@@ -19,6 +20,10 @@ interface FieldProps {
   className?: string;
   placeholder?: string;
   isLoading?: boolean;
+  /** How the value is shown when not editing (e.g. as bullet points); the raw text is edited either way. */
+  renderValue?: (value: string) => ReactNode;
+  /** Drop the built-in text styling (justify, paragraph): the resume template styles the field itself. */
+  unstyled?: boolean;
 }
 
 export function TemplateTextArea({
@@ -28,7 +33,9 @@ export function TemplateTextArea({
   defaultValue,
   className = '',
   placeholder = '...',
-  isLoading = false
+  isLoading = false,
+  renderValue,
+  unstyled = false,
 }: FieldProps) {
   const { getCustomField, updateCustomField } = useCVSelection();
   const value = getCustomField(entityType, id, field, defaultValue);
@@ -108,16 +115,18 @@ export function TemplateTextArea({
     );
   }
 
+  const Element = unstyled ? "div" : "p";
   return (
-    <p
+    <Element
       onClick={() => setIsEditing(true)}
       title="Cliquer pour modifier"
-      className={`cursor-pointer hover:bg-slate-100 rounded px-0.5 transition-colors whitespace-pre-line text-justify print:hover:bg-transparent ${className}`}
+      className={`cursor-pointer hover:bg-slate-100 rounded transition-colors print:hover:bg-transparent ${unstyled ? "" : "px-0.5 whitespace-pre-line text-justify"} ${className}`}
     >
       {value
-        ? renderFormattedText(value)
-        : <span className="italic opacity-40">{placeholder}</span>
+        ? (renderValue ? renderValue(value) : renderFormattedText(value))
+        // an empty field is only a hint for the editor: it never reaches the PDF
+        : <span className="italic opacity-40 hidden-print print:hidden">{placeholder}</span>
       }
-    </p>
+    </Element>
   );
 }

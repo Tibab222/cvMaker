@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupTextarea } from "@/components/ui/input-group";
 import LocationInput from "@/components/ui/LocationInput";
+import ExtraFieldsEditor from "@/components/mainPannels/ExtraFieldsEditor";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Education } from "@shared/Education.interface";
 import { AnimatePresence, motion } from "framer-motion";
@@ -147,6 +148,8 @@ export default function EducationCard({education, onSave, defaultEdit = false, o
                         value={formData.location} 
                         onChange={(next) => setFormData({ ...formData, location: next })} 
                     />
+
+                    <ExtraFieldsEditor section="education" value={formData} onChange={setFormData} />
 
                     {/* Date pickers row */}
                     <div className="flex flex-wrap items-center gap-4 bg-muted/20 p-3 rounded-lg border border-dashed border-muted/80">
