@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import ProfilePhoto from "./photo/ProfilePhoto";
 import { Label } from "../ui/label";
 import { Separator } from "../ui/separator";
+import ExtraFieldsEditor from "./ExtraFieldsEditor";
 
 interface FieldProps {
   label: string;
@@ -222,6 +223,7 @@ export default function Personal() {
                 onChange={(value) => handleChange("lastName", value)}
               />
             </div>
+            <ExtraFieldsEditor section="profile" value={formData} onChange={setFormData} />
           </Section>
 
           <Separator className="bg-border/60" />

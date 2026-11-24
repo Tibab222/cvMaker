@@ -6,4 +6,5 @@ export interface Education {
     startDate: Date;
     endDate?: Date | 'Present';
     description?: string;
+    kind?: 'degree' | 'certification' | 'course'; // lets templates list certifications apart (see profileFields.ts)
 }

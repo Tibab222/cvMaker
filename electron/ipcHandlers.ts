@@ -25,6 +25,7 @@ import { generateCoverLetter } from './functions/generateCoverLetter';
 import { getDiscoveryManager } from './services/discovery';
 import { getVaultManager } from './services/vault';
 import { getAnswerBank } from './services/answers';
+import { TemplateManager } from './services/templates/TemplateManager';
 import type { SavedAnswer, SavedAnswerDto, SavedAnswerResult } from '../shared/answers.types';
 import { getInterviewQuestions } from './services/interviewQuestions';
 import type { InterviewQuestion, InterviewQuestionDto, InterviewQuestionResult, QuestionsExportRequest } from '../shared/interviewQuestions.types';
@@ -335,6 +336,14 @@ export function registerIpcHandlers() {
     ipcMain.handle('answers:add', (event, dto: SavedAnswerDto) => answerResult(() => answers.add(dto)));
     ipcMain.handle('answers:update', (event, id: string, dto: SavedAnswerDto) => answerResult(() => answers.update(id, dto)));
     ipcMain.handle('answers:remove', (event, id: string) => answers.remove(id));
+
+    // Resume templates (.cvm): the user templates folder; built-in ones ship with the renderer
+    const templates = TemplateManager.getInstance();
+    ipcMain.handle('templates:list', () => templates.list());
+    ipcMain.handle('templates:import', (event, reservedIds: string[]) => templates.importFromDialog(Array.isArray(reservedIds) ? reservedIds : []));
+    ipcMain.handle('templates:remove', (event, fileName: string) => templates.remove(fileName));
+    ipcMain.handle('templates:export', (event, source: string, suggestedName: string) => templates.exportToDialog(source, suggestedName));
+    ipcMain.handle('templates:open-folder', () => templates.openFolder());
 
     // Interview questions library (prepared answers, linked to the applications whose interviews asked them)
     const interviewQuestions = getInterviewQuestions();

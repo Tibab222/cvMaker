@@ -19,4 +19,8 @@ export interface Project {
     endDate?: ProjectDate | 'Present';
     /** Id of the professional experience (job) the project was done in, if any. */
     relatedExperienceId?: string;
+    /** The problem the project solves, shown by detailed templates (see profileFields.ts). */
+    useCase?: string;
+    /** Technologies used, shown by detailed templates. */
+    stack?: string[];
 }

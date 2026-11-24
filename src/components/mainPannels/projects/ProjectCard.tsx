@@ -15,6 +15,7 @@ import type { Experience } from "@shared/Experience.interface";
 import { findRelatedExperience, formatProjectPeriod, parseProjectDate } from "@shared/projectDates";
 import { useProfileStore } from "@/store/profile";
 import { cn } from "@/lib/utils";
+import ExtraFieldsEditor from "@/components/mainPannels/ExtraFieldsEditor";
 
 const NO_EXPERIENCE = "none";
 
@@ -199,6 +200,8 @@ export default function ProjectCard({
                     </div>
                   </div>
                 </div>
+
+                <ExtraFieldsEditor section="project" value={formData} onChange={setFormData} />
 
                 <BulletListEditor
                   bullets={formData.bullets || []}

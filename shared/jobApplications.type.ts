@@ -129,6 +129,8 @@ export interface CVSelection {
   selectedEducationIds: string[];
   includePhoto?: boolean; // show the profile photo on this resume; undefined means "yes if the profile has one"
   showSummary?: boolean; // show the summary section on this resume; undefined means "yes if it has bullets"
+  templateId?: string; // .cvm template of this resume; undefined means the default template
+  collections?: Record<string, string[]>; // ids picked for the extra lists a template declares (e.g. a project appendix), by list name
 }
 
 export interface selectedHeaderInfos {

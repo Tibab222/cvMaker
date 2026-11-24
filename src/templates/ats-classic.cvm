@@ -1,0 +1,141 @@
+<cvm version="1">
+<meta>
+{
+  "id": "ats-classic",
+  "name": "ATS Classic",
+  "description": "Single column, plain and dense, easy for applicant tracking systems to read. Skills grouped by category and an optional project appendix on its own page.",
+  "author": "cvMaker",
+  "version": "1.0.0",
+  "page": { "size": "Letter", "margin": "11mm 14mm" },
+  "vars": { "rule": "#000000", "link": "#1155cc" },
+  "collections": {
+    "appendix": { "source": "projects", "label": "Appendix", "bullets": "all" }
+  }
+}
+</meta>
+
+<template>
+<header>
+  <h1>{{upper profile.firstName}} {{upper profile.lastName}}</h1>
+  {{#if (or header.title profile.location)}}
+  <p class="headline">{{header.title}}{{#if (and header.title profile.location)}} | {{/if}}{{profile.location}}</p>
+  {{/if}}
+  {{#if contacts}}
+  <p class="contacts">{{#each contacts}}{{#unless @first}} | {{/unless}}{{#if (eq key "phone")}}{{label}}{{else}}<a href="{{url}}">{{label}}</a>{{/if}}{{/each}}</p>
+  {{/if}}
+</header>
+
+{{#if summary}}
+<section>
+  <h2>{{edit "section:summary" "title" (t "summary")}}</h2>
+  {{editSummary style="paragraph"}}
+</section>
+{{/if}}
+
+{{#if skills}}
+<section class="skills">
+  <h2>{{edit "section:skills" "title" (t "technicalSkills")}}</h2>
+  {{#each (groupBy skills "category" fallback="")}}
+  <p>{{#if key}}<b>{{key}}:</b> {{/if}}{{join items ", " "name"}}</p>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if experiences}}
+<section>
+  <h2>{{edit "experience:section" "title" (t "experience")}}</h2>
+  {{#each experiences}}
+  <article>
+    <h3>{{edit this "jobTitle"}}, {{edit this "company"}}{{#if location}} | {{location}}{{/if}} | {{period startDate endDate "MMM yyyy"}}</h3>
+    {{#if description}}{{edit this "description" display="bullets"}}{{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if projects}}
+<section>
+  <h2>{{edit "project:section" "title" (t "selectedProjects")}}</h2>
+  {{#each projects}}
+  <article>
+    <h3>{{edit this "title"}}{{#if subtitle}} | {{edit this "subtitle"}}{{/if}}{{#if link}} | <a href="{{href link}}">{{shortUrl link}}</a>{{/if}}</h3>
+    <ul class="cv-bullets">
+      {{#each bullets}}<li>{{edit this "text"}}</li>{{/each}}
+    </ul>
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if education}}
+<section class="education">
+  <h2>{{edit "education:section" "title" (t "educationCertifications")}}</h2>
+  {{#each education}}
+  <p>
+    <b>{{edit this "degree"}}{{#if institution}}, {{edit this "institution"}}{{/if}}</b>{{#if description}} - {{description}}{{/if}}
+    {{#if (eq kind "certification")}}
+      {{#if (or (eq endDate "Present") (future endDate))}}<i>{{t "inProgress"}}</i>{{else}}| {{year endDate}}{{/if}}
+    {{else}}
+      {{#if (future endDate)}}| {{year startDate}} – {{date endDate "MMM yyyy"}} ({{t "expected"}}){{else}}| {{period startDate endDate "yyyy"}}{{/if}}
+    {{/if}}
+  </p>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if appendix}}
+{{pageBreak}}
+<section class="appendix">
+  <h2>{{edit "section:appendix" "title" (t "projectAppendix")}}</h2>
+  {{#each appendix}}
+  <article>
+    <h3>{{title}}{{#if subtitle}} | {{subtitle}}{{/if}}{{#if link}} | <a href="{{href link}}">{{shortUrl link}}</a>{{/if}}</h3>
+    {{#if useCase}}<p><b>{{t "useCase"}}:</b> {{edit this "useCase" multiline=true}}</p>{{/if}}
+    <ul class="cv-bullets">
+      {{#each bullets}}<li>{{edit this "text"}}</li>{{/each}}
+    </ul>
+    {{#if (or stack tags)}}<p><b>{{t "stack"}}:</b> {{#if stack}}{{join stack ", "}}{{else}}{{join tags ", "}}{{/if}}</p>{{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+</template>
+
+<style>
+:scope {
+  font-family: "Noto Sans Variable", "Noto Sans", Arial, sans-serif;
+  font-size: 10.5px;
+  line-height: 1.38;
+  color: #000;
+}
+
+header { text-align: center; margin-bottom: 4px; }
+h1 { font-family: Arial, Helvetica, sans-serif; font-size: 28px; font-weight: 800; line-height: 1.1; letter-spacing: 0.01em; }
+.headline { font-size: 12px; font-weight: 700; margin-top: 2px; }
+.contacts { margin-top: 1px; }
+
+a { color: var(--link); text-decoration: underline; }
+
+h2 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule);
+  margin: 9px 0 4px;
+  padding-bottom: 1px;
+}
+h3 { font-size: 10.5px; font-weight: 700; margin-top: 4px; }
+b { font-weight: 700; }
+
+article { break-inside: avoid; }
+.cv-bullets { list-style: disc outside; padding-left: 22px; }
+.cv-bullets li { padding-left: 2px; }
+.cv-bullets li::marker { font-size: 9px; }
+
+.cv-summary { text-align: left; }
+.skills p { margin-bottom: 1px; }
+.education p { margin-bottom: 1px; }
+.appendix h3 { font-size: 11.5px; margin-top: 7px; }
+.appendix h3 a { font-weight: 700; }
+</style>
+</cvm>

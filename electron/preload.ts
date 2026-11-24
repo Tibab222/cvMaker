@@ -102,6 +102,13 @@ contextBridge.exposeInMainWorld('api', {
     reveal: (id: string) => ipcRenderer.invoke('vault:reveal', id),
     match: (offer: VaultOffer, limit?: number) => ipcRenderer.invoke('vault:match', offer, limit),
   },
+  templates: {
+    list: () => ipcRenderer.invoke('templates:list'),
+    import: (reservedIds: string[]) => ipcRenderer.invoke('templates:import', reservedIds),
+    remove: (fileName: string) => ipcRenderer.invoke('templates:remove', fileName),
+    export: (source: string, suggestedName: string) => ipcRenderer.invoke('templates:export', source, suggestedName),
+    openFolder: () => ipcRenderer.invoke('templates:open-folder'),
+  },
   answers: {
     list: () => ipcRenderer.invoke('answers:list'),
     add: (dto: SavedAnswerDto) => ipcRenderer.invoke('answers:add', dto),

@@ -13,6 +13,8 @@ interface FieldProps {
   className?: string;
   placeholder?: string;
   isLoading?: boolean;
+  /** No side padding: the resume template spaces the field itself. */
+  unstyled?: boolean;
 }
 
 export function TemplateInput({
@@ -22,7 +24,8 @@ export function TemplateInput({
   defaultValue,
   className = '',
   placeholder = '...',
-  isLoading = false
+  isLoading = false,
+  unstyled = false,
 }: FieldProps) {
   const { getCustomField, updateCustomField } = useCVSelection();
   const value = getCustomField(entityType, id, field, defaultValue);
@@ -114,11 +117,12 @@ export function TemplateInput({
     <span
       onClick={() => setIsEditing(true)}
       title="Cliquer pour modifier"
-      className={`cursor-text hover:bg-slate-100 rounded px-0.5 transition-colors print:hover:bg-transparent ${className}`}
+      className={`cursor-text hover:bg-slate-100 rounded transition-colors print:hover:bg-transparent ${unstyled ? "" : "px-0.5"} ${className}`}
     >
       {value
         ? renderFormattedText(value)
-        : <span className="italic opacity-40">{placeholder}</span>
+        // an empty field is only a hint for the editor: it never reaches the PDF
+        : <span className="italic opacity-40 hidden-print print:hidden">{placeholder}</span>
       }
     </span>
   );

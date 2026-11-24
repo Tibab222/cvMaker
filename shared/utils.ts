@@ -1,4 +1,5 @@
-export type EntityType = 'experience' | 'project' | 'bullet' | 'education' | 'skill';
+/** 'section' holds texts that belong to no profile item, e.g. a template section title (section:<name>:title). */
+export type EntityType = 'experience' | 'project' | 'bullet' | 'education' | 'skill' | 'section';
 
 export const buildCustomKey = (entityType: EntityType, id: string, field: string): string => {
   return `${entityType}:${id}:${field}`;

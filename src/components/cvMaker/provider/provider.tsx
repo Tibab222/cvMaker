@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { useUiStore } from '@/store/ui';
 import { useKeyboardShortcut } from '@/hooks/use-keyboard-shortcut';
 import { findRelatedExperience, formatProjectPeriod } from '@shared/projectDates';
+import { useTemplateStore } from '@/store/templates';
+import { DEFAULT_TEMPLATE_ID } from '@/cvm/builtins';
 
 export interface CVSelectionContextType {
   id: string | null; // application id, null until the session is saved
@@ -39,6 +41,11 @@ export interface CVSelectionContextType {
   setHeaderInfo: (field: keyof CVSelection['headerInfos'], value: boolean | string, customLinkLabel?: string) => void;
   setIncludePhoto: (include: boolean) => void;
   setShowSummary: (show: boolean) => void;
+  /** Id of the .cvm template this resume is rendered with (resolved: never undefined). */
+  templateId: string;
+  setTemplateId: (templateId: string) => void;
+  /** Adds or removes an item of a template collection (e.g. a project of the appendix). */
+  toggleCollectionItem: (collection: string, id: string) => void;
   runFullAIAnalysis: (rawMandate: string) => Promise<void>;
   runLocalAnalysis: (rawMandate: string) => Promise<void>;
   removeKeyword: (keyword: string) => void;
@@ -556,6 +563,22 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     setSelection(prev => ({ ...prev, includePhoto: include }));
   }, []);
 
+  const setTemplateId = useCallback((templateId: string) => {
+    setSelection(prev => ({ ...prev, templateId }));
+  }, []);
+
+  const toggleCollectionItem = useCallback((collection: string, itemId: string) => {
+    setSelection(prev => {
+      const current = prev.collections?.[collection] ?? [];
+      const next = current.includes(itemId) ? current.filter(i => i !== itemId) : [...current, itemId];
+      return { ...prev, collections: { ...prev.collections, [collection]: next } };
+    });
+  }, []);
+
+  // a resume saved before templates existed keeps the look it was made with; a new one starts with the default
+  const defaultTemplateId = useTemplateStore((state) => state.defaultId);
+  const templateId = selection.templateId ?? (id ? DEFAULT_TEMPLATE_ID : defaultTemplateId);
+
   const setShowSummary = useCallback((show: boolean) => {
     setSelection(prev => ({ ...prev, showSummary: show }));
     // an empty summary can't be edited in place, so start it with one placeholder bullet
@@ -587,7 +610,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       const payload: Omit<CVSessionDataDTO, 'id'> & { id?: string } = {
         id: id || undefined,
         title,
-        selection,
+        selection: { ...selection, templateId },
         jobInfos,
         customTexts,
         scores,
@@ -609,7 +632,7 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     } finally {
       setIsSaving(false);
     }
-  }, [id, title, selection, jobInfos, customTexts, scores, summaryBullets, applicationStatus]);
+  }, [id, title, selection, templateId, jobInfos, customTexts, scores, summaryBullets, applicationStatus]);
 
   useKeyboardShortcut('s', () => {
     if (!isSaving) {
@@ -664,6 +687,9 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
       setHeaderInfo,
       setIncludePhoto,
       setShowSummary,
+      templateId,
+      setTemplateId,
+      toggleCollectionItem,
       isBulletSelected,
       runFullAIAnalysis,
       runLocalAnalysis,
