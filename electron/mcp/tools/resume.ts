@@ -7,6 +7,7 @@ import { foldText } from '../../utils/text';
 import type { Args } from '../core/args';
 import type { CallContext } from '../core/context';
 import { clip, lines } from '../core/format';
+import { newNumbers } from '../core/text';
 import { handleOf } from '../core/handles';
 import { ToolError, type ToolDef } from '../core/types';
 import { evidenceOf, findItem, profileItems, type ProfileItem, type ProfileItemKind } from './profileIndex';
@@ -20,14 +21,6 @@ interface Start {
   session: Session;
   isNew: boolean;
   opportunityId?: number;
-}
-
-const numbersIn = (text: string) => new Set((text.match(/\d+(?:[.,]\d+)?/g) ?? []).map((number) => number.replace(',', '.')));
-
-/** Figures the new text has and the original has not: the likeliest invention in a rewrite. */
-function newNumbers(text: string, original: string): string[] {
-  const known = numbersIn(original);
-  return [...numbersIn(text)].filter((number) => !known.has(number));
 }
 
 /** The editable resume made earlier for the same offer, so drafting twice updates it. */

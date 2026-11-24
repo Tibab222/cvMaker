@@ -3,6 +3,7 @@ import { addPastApplication, announceApplicationsChanged, recordSentApplication 
 import { offerKeywords } from '../functions/offerKeywords';
 import { getDiscoveryManager } from '../services/discovery';
 import { editorSession } from '../services/editorSession';
+import { getAnswerBank } from '../services/answers';
 import { getInterviewQuestions } from '../services/interviewQuestions';
 import { getVaultManager } from '../services/vault';
 import { CLAUDE_SOURCE, JobApplicationManager } from '../services/jobApplications/jobApplicationManager';
@@ -10,6 +11,7 @@ import { KeywordsAffinityDatabase } from '../services/KeywordsExtractor/Keywords
 import { ProfileService } from '../services/ProfileService';
 import { VectorDatabase } from '../services/vectorDatabase';
 import { VectorService } from '../services/VectorService';
+import { broadcast } from '../utils/broadcast';
 import { bufferToFloat32Array } from '../utils/math';
 import type { McpDeps } from './core/deps';
 
@@ -43,7 +45,6 @@ export function createAppDeps(): McpDeps {
         `).all(ApplicationEventType.INTERVIEW_SCHEDULED, ...REACHED_INTERVIEW, ...REACHED_INTERVIEW) as { id: string }[];
         return new Set(rows.map((row) => row.id));
       },
-      questions: (applicationId) => getInterviewQuestions().forApplication(applicationId),
       record: (dto) => recordSentApplication(dto, CLAUDE_SOURCE),
       recordPast: (dto) => addPastApplication(dto, CLAUDE_SOURCE.origin),
       setStatus: (id, status, note) => jobs.updateStatus(id, status, note),
@@ -55,6 +56,14 @@ export function createAppDeps(): McpDeps {
     },
     marketKeywords: (limit) => KeywordsAffinityDatabase.getInstance().getTopKeywords(limit),
     offerKeywords,
+    interview: {
+      list: () => getInterviewQuestions().list(),
+      forApplication: (applicationId) => getInterviewQuestions().forApplication(applicationId),
+      add: (dto) => getInterviewQuestions().add(dto),
+      update: (id, dto) => getInterviewQuestions().update(id, dto),
+      announce: () => broadcast('interview-questions:changed'),
+      formAnswers: () => getAnswerBank().list(),
+    },
     opportunities: {
       list: () => getDiscoveryManager().listJobs(),
       add: (offer) => getDiscoveryManager().addSavedOffer(offer, { origin: 'external_ai', addedBy: 'claude' }),

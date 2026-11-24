@@ -29,7 +29,7 @@ Everything runs on your computer: a small bridge (`dist-mcp/cvmaker-mcp.mjs`) st
      "mcpServers": {
        "cvmaker": {
          "command": "node",
-         "args": ["D:/path/to/cvMaker/dist-mcp/cvmaker-mcp.mjs"]
+         "args": ["C:/path/to/cvMaker/dist-mcp/cvmaker-mcp.mjs"]
        }
      }
    }

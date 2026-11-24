@@ -134,7 +134,7 @@ export const getApplication: ToolDef = {
     const app = ctx.deps.applications.get(ctx.application(handle).id)!;
     const session = app.json_file_path ? ctx.deps.applications.session(app.id) : null;
     const offerText = session?.jobInfos?.description || app.description || '';
-    const questions = include.has('questions') ? ctx.deps.applications.questions(app.id) : [];
+    const questions = include.has('questions') ? ctx.deps.interview.forApplication(app.id) : [];
     const letter = session?.coverLetter;
 
     return lines(

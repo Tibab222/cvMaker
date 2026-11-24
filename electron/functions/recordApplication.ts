@@ -1,7 +1,7 @@
-import { BrowserWindow } from "electron";
 import type { Application, ApplicationsChangedEvent, BrowserApplicationDto, PastApplicationDto } from "../../shared/jobApplications.type";
 import { getDiscoveryManager } from "../services/discovery";
 import { JobApplicationManager, MANUAL_ORIGIN, type RecordSource } from "../services/jobApplications/jobApplicationManager";
+import { broadcast } from "../utils/broadcast";
 import { recordApplicationFromBrowser, type LinkedApplicationResult } from "./applicationFromOffer";
 import { offerKeywords, offerKeywordsIn, profileLanguage } from "./offerKeywords";
 
@@ -34,7 +34,5 @@ export async function recordSentApplication(dto: BrowserApplicationDto, source: 
 
 /** The dashboard refreshes and says what came in. */
 export function announceApplicationsChanged(event: ApplicationsChangedEvent): void {
-    BrowserWindow.getAllWindows().forEach((window) => {
-        if (!window.isDestroyed()) window.webContents.send("applications:changed", event);
-    });
+    broadcast("applications:changed", event);
 }

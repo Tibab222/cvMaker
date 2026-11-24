@@ -1,6 +1,7 @@
 import type { DiscoveredJob, DiscoveredJobStatus } from '../../../shared/discovery.types';
 import type { JobOfferPayload } from '../../../shared/Extension.types';
-import type { InterviewQuestion } from '../../../shared/interviewQuestions.types';
+import type { SavedAnswer } from '../../../shared/answers.types';
+import type { InterviewQuestion, InterviewQuestionDto } from '../../../shared/interviewQuestions.types';
 import type { VaultMatch, VaultOffer } from '../../../shared/vault.types';
 import type {
   Application, ApplicationDetailsDto, ApplicationEvent, ApplicationsChangedEvent, ApplicationWithEvents, BrowserApplicationDto, BrowserApplicationResult,
@@ -39,7 +40,6 @@ export interface McpDeps {
     silent: () => SilentApplication[];
     /** Applications that reached an interview at some point, whatever their status now. */
     interviewedIds: () => Set<string>;
-    questions: (applicationId: string) => InterviewQuestion[];
 
     /** Same path as the browser extension: merged with a prepared resume or a recent duplicate, linked to its queue offer. */
     record: (dto: BrowserApplicationDto) => Promise<BrowserApplicationResult & { offer: { id: number } | null }>;
@@ -59,6 +59,19 @@ export interface McpDeps {
   marketKeywords: (limit: number) => KeywordStat[];
   /** Terms of an offer, counted in the market stats: once per new resume, as the editor does. */
   offerKeywords: (description: string) => Promise<string[]>;
+
+  /** Interview questions library: questions recruiters ask, the user's prepared answers, the interviews that asked them. */
+  interview: {
+    list: () => InterviewQuestion[];
+    forApplication: (applicationId: string) => InterviewQuestion[];
+    /** Throw with a readable message (duplicate question, too long). */
+    add: (dto: InterviewQuestionDto) => InterviewQuestion;
+    update: (id: string, dto: InterviewQuestionDto) => InterviewQuestion;
+    /** Refreshes the library if it is open. */
+    announce: () => void;
+    /** Answers the user gave in application forms, kept by the browser extension. */
+    formAnswers: () => SavedAnswer[];
+  };
 
   /** The Opportunities queue (offers found by the daily search or saved while browsing). */
   opportunities: {

@@ -422,7 +422,12 @@ export default function InterviewQuestionsPanel({ adding, onAddingChange: setAdd
   useEffect(() => {
     void load();
     // an application renamed or deleted elsewhere: its links follow
-    return api.onApplicationsChanged(() => void load());
+    const offApplications = api.onApplicationsChanged(() => void load());
+    const offQuestions = api.interviewQuestions.onChanged(() => void load());
+    return () => {
+      offApplications();
+      offQuestions();
+    };
   }, [load]);
 
   /** Applications some question is linked to, with how many questions, for the filter. */

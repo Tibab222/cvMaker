@@ -18,3 +18,11 @@ export function keywordScore(queryTerms: string[], text: string): number {
   if (!queryTerms.length) return 0;
   return queryTerms.filter((term) => mentions(text, term)).length / queryTerms.length;
 }
+
+const numbersIn = (text: string) => new Set((text.match(/\d+(?:[.,]\d+)?/g) ?? []).map((number) => number.replace(',', '.')));
+
+/** Figures a written text has and its source has not: the likeliest invention in a rewrite. */
+export function newNumbers(text: string, source: string): string[] {
+  const known = numbersIn(source);
+  return [...numbersIn(text)].filter((number) => !known.has(number));
+}

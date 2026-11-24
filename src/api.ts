@@ -96,6 +96,7 @@ export const api = {
         remove: (id: string) => window.api.interviewQuestions.remove(id),
         export: (request: QuestionsExportRequest) => window.api.interviewQuestions.export(request),
         openExport: () => window.api.interviewQuestions.openExport(),
+        onChanged: (callback: () => void) => window.api.interviewQuestions.onChanged(callback),
     },
     discovery: {
         listSources: () => window.api.discovery.listSources(),

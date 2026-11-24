@@ -26,10 +26,15 @@ export default function ApplicationInterviewQuestions({ applicationId, onOpenLib
 
   useEffect(() => {
     let cancelled = false;
-    api.interviewQuestions.list()
+    const load = () => api.interviewQuestions.list()
       .then((list) => { if (!cancelled) setAll(list); })
       .catch(() => { if (!cancelled) setAll([]); });
-    return () => { cancelled = true; };
+    void load();
+    const off = api.interviewQuestions.onChanged(() => void load());
+    return () => {
+      cancelled = true;
+      off();
+    };
   }, [applicationId]);
 
   const linked = useMemo(

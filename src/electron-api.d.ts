@@ -115,6 +115,8 @@ declare global {
         export: (request: QuestionsExportRequest) => Promise<QuestionsExportResult>;
         /** Opens the file exported last. */
         openExport: () => Promise<boolean>;
+        /** The library changed outside the window (Claude saved prep); returns the unsubscribe. */
+        onChanged: (callback: () => void) => () => void;
       };
       discovery: {
         listSources: () => Promise<JobSource[]>;

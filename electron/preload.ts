@@ -124,6 +124,11 @@ contextBridge.exposeInMainWorld('api', {
     remove: (id: string) => ipcRenderer.invoke('interview-questions:remove', id),
     export: (request: QuestionsExportRequest) => ipcRenderer.invoke('interview-questions:export', request),
     openExport: () => ipcRenderer.invoke('interview-questions:open-export'),
+    onChanged: (callback: () => void) => {
+      const subscription = () => callback();
+      ipcRenderer.on('interview-questions:changed', subscription);
+      return () => ipcRenderer.removeListener('interview-questions:changed', subscription);
+    },
   },
   discovery: {
     listSources: () => ipcRenderer.invoke('discovery:list-sources'),
