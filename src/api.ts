@@ -49,6 +49,7 @@ export const api = {
     addPastApplication: (dto: PastApplicationDto) => window.api.addPastApplication(dto),
     updateApplicationStatus: async (id: string, newStatus: JobApplicationStatus) => { return await window.api.updateApplicationStatus(id, newStatus) },
     getApplicationWithTimeline: async (applicationId: string) => { return await window.api.getApplicationWithTimeline(applicationId) },
+    setEditorSession: (applicationId: string | null) => window.api.setEditorSession(applicationId),
     getCVSession: async (applicationId: string) => { return await window.api.getCVSession(applicationId) },
     openResumeFolder: async (applicationId: string) => { return await window.api.openResumeFolder(applicationId) },
     getResumePdf: async (applicationId: string) => { return await window.api.getResumePdf(applicationId) },

@@ -2,6 +2,7 @@ import { ApplicationEventType, JobApplicationStatus } from '../../shared/jobAppl
 import { addPastApplication, announceApplicationsChanged, recordSentApplication } from '../functions/recordApplication';
 import { offerKeywords } from '../functions/offerKeywords';
 import { getDiscoveryManager } from '../services/discovery';
+import { editorSession } from '../services/editorSession';
 import { getInterviewQuestions } from '../services/interviewQuestions';
 import { getVaultManager } from '../services/vault';
 import { CLAUDE_SOURCE, JobApplicationManager } from '../services/jobApplications/jobApplicationManager';
@@ -49,6 +50,7 @@ export function createAppDeps(): McpDeps {
       addEvent: (id, event) => jobs.addEvent(id, event),
       updateDetails: (id, details) => jobs.updateDetails(id, details),
       saveDraft: (session) => jobs.saveOrUpdateApplication(session, JobApplicationStatus.REVIEW),
+      openInEditor: editorSession,
       announce: announceApplicationsChanged,
     },
     marketKeywords: (limit) => KeywordsAffinityDatabase.getInstance().getTopKeywords(limit),

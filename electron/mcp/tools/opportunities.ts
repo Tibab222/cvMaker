@@ -9,7 +9,7 @@ import { handleOf } from '../core/handles';
 import { terms } from '../core/text';
 import { ToolError, type ToolDef } from '../core/types';
 import { bestMatches, matchLine, scoreItems, semanticScores } from './profile';
-import { profileItems } from './profileIndex';
+import { evidenceOf, isDeclaredSkill, profileItems } from './profileIndex';
 
 const STATUSES = Object.values(DiscoveredJobStatus);
 const TRIAGE_STATUSES = [DiscoveredJobStatus.NEW, DiscoveredJobStatus.SHORTLISTED, DiscoveredJobStatus.DISMISSED];
@@ -202,7 +202,12 @@ export const analyzeOffer: ToolDef = {
     const has = telling(score?.matched ?? [], target.company);
     const lacks = telling(score?.missing ?? [], target.company);
     const keywordQuery = [target.title, ...has, ...lacks].join(', ');
-    const items = profileItems(profile).filter((item) => EVIDENCE_KINDS.has(item.kind));
+    const allItems = profileItems(profile);
+    const items = allItems.filter((item) => EVIDENCE_KINDS.has(item.kind));
+    const undeclared = has
+      .filter((term) => !isDeclaredSkill(profile, term))
+      .map((term) => ({ term, evidence: evidenceOf(profile, allItems, term) }))
+      .filter(({ evidence }) => evidence.tagged);
     const evidence = bestMatches(scoreItems(items, keywordQuery, semantic), evidenceCount);
 
     return lines(
@@ -211,6 +216,9 @@ export const analyzeOffer: ToolDef = {
       score ? `Match ${score.score}/100` : 'No match score: the profile has no skills or experience yet.',
       has.length ? `Profile has: ${has.join(', ')}` : '',
       lacks.length ? `Offer asks, not in the profile: ${lacks.join(', ')}` : '',
+      undeclared.length
+        ? `Used in the profile but missing from its Skills list (a resume can only show declared skills): ${undeclared.map(({ term, evidence }) => `${term} (${evidence.handles.slice(0, 3).join(', ')})`).join(', ')}`
+        : '',
       evidence.length ? `Best evidence (${semantic ? 'meaning + keywords' : 'keywords only'}):` : 'Nothing in the profile stands out for this offer.',
       ...evidence.map((match) => ' ' + matchLine(match)),
       vault,

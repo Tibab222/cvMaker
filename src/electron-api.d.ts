@@ -57,6 +57,7 @@ declare global {
       addPastApplication: (dto: PastApplicationDto) => Promise<PastApplicationResult>;
       /** The browser extension recorded an application. Returns the unsubscribe function. */
       onApplicationsChanged: (callback: (event: ApplicationsChangedEvent) => void) => () => void;
+      setEditorSession: (applicationId: string | null) => void;
       updateApplicationStatus: (id: string, newStatus: JobApplicationStatus) => Promise<JobApplicationStatus | null>;
       getApplicationWithTimeline: (applicationId: string) => Promise<ApplicationWithEvents | null>;
       getCVSession: (applicationId: string) => Promise<CVSessionDataDTO | null>;

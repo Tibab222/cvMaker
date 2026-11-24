@@ -73,6 +73,7 @@ contextBridge.exposeInMainWorld('api', {
   },
   getApplicationWithTimeline: (applicationId: string) => ipcRenderer.invoke('get-application-with-timeline', applicationId) as Promise<ApplicationWithEvents | null>,
   updateApplicationStatus: (applicationId: string, newStatus: JobApplicationStatus, note?: string) => ipcRenderer.invoke('update-application-status', applicationId, newStatus, note) as Promise<void>,
+  setEditorSession: (applicationId: string | null) => ipcRenderer.send('editor-session', applicationId),
   getCVSession: (applicationId: string) => ipcRenderer.invoke('get-CV-session', applicationId) as Promise<CVSessionDataDTO | null>,
   openResumeFolder: (applicationId: string) => ipcRenderer.invoke('open-resume-folder', applicationId) as Promise<boolean>,
   getResumePdf: (applicationId: string) => ipcRenderer.invoke('get-resume-pdf', applicationId) as Promise<Uint8Array | null>,

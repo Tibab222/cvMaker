@@ -9,7 +9,7 @@ import type { CallContext } from '../core/context';
 import { clip, lines } from '../core/format';
 import { handleOf } from '../core/handles';
 import { ToolError, type ToolDef } from '../core/types';
-import { findItem, profileItems, type ProfileItem, type ProfileItemKind } from './profileIndex';
+import { evidenceOf, findItem, profileItems, type ProfileItem, type ProfileItemKind } from './profileIndex';
 
 /** A resume already sent stays as it was sent. */
 const EDITABLE = [JobApplicationStatus.DRAFT, JobApplicationStatus.REVIEW];
@@ -88,6 +88,8 @@ const textArg = (args: Args, name: string, max: number) => (args.has(name) ? arg
 class DraftBuilder {
   readonly problems: string[] = [];
   readonly warnings: string[] = [];
+  /** Skills the profile shows but does not declare: they cannot be on the resume until the user adds them. */
+  readonly undeclared: string[] = [];
   private readonly items: ProfileItem[];
 
   constructor(private readonly data: ProfilesData, private readonly session: Session) {
@@ -179,9 +181,15 @@ class DraftBuilder {
       if (skill && (!('kind' in skill) || skill.kind === 'skill')) ids.push(skill.id);
       else unknown.push(ref);
     }
-    if (unknown.length) {
-      this.problems.push(`Not declared as skills: ${unknown.join(', ')}. The profile's skills: ${this.data.skills.map((skill) => skill.name).join(', ')}. ` +
-        'A skill only shown in bullets can stay in a bullet; the user adds new skills to the profile.');
+    const nowhere: string[] = [];
+    for (const ref of unknown) {
+      const { handles } = evidenceOf(this.data, this.items, ref);
+      if (handles.length) this.undeclared.push(`${ref} (${handles.slice(0, 3).join(', ')})`);
+      else nowhere.push(ref);
+    }
+    if (nowhere.length) {
+      this.problems.push(`Found nowhere in the profile: ${nowhere.join(', ')}. Declared skills: ${this.data.skills.map((skill) => skill.name).join(', ')}. ` +
+        'If the user has them, they add them to their profile first.');
     }
     this.session.selection.selectedSkillsIds = [...new Set(ids)];
   }
@@ -305,17 +313,23 @@ export const draftResume: ToolDef = {
     }
     if (builder.problems.length) throw new ToolError(lines('Nothing saved:', ...builder.problems.map((problem) => ` ${problem}`)));
 
+    const openInEditor = !isNew && ctx.deps.applications.openInEditor() === session.id;
     const saved = ctx.deps.applications.saveDraft(session);
     if (!saved.success) throw new ToolError(`CV Maker could not save the draft: ${saved.error ?? 'unknown error'}`);
     if (opportunityId !== undefined) ctx.deps.opportunities.setStatus(opportunityId, DiscoveredJobStatus.PREPARED);
     const title = session.jobInfos?.title ?? session.title;
     const company = session.jobInfos?.company ?? '';
-    ctx.deps.applications.announce({ source: 'claude', action: isNew ? 'created' : 'updated', title, company, fromOffer: opportunityId !== undefined });
+    ctx.deps.applications.announce({ source: 'claude', action: isNew ? 'created' : 'updated', title, company, fromOffer: opportunityId !== undefined, resumeOf: saved.id });
 
     return lines(
       `Draft ${handleOf('application', saved.id)} ${isNew ? 'created' : 'updated'} for ${title}${company ? ` @ ${company}` : ''}, in AI Review:`,
       ...describe(session, data),
       builder.warnings.length ? `Check these figures with the user before they send it: ${builder.warnings.join('; ')}` : '',
+      builder.undeclared.length
+        ? `Not shown, missing from the profile's Skills list though the profile uses them: ${builder.undeclared.join(', ')}. ` +
+          'Suggest the user adds them in CV Maker (Profile → Skills), then draft again with them.'
+        : '',
+      openInEditor ? 'The user has this resume open in the editor: CV Maker asks them to reload it, tell them too, or their next save replaces your changes.' : '',
       'The user opens it in CV Maker (Dashboard → AI Review) to review, choose the template and export the PDF.',
     );
   },

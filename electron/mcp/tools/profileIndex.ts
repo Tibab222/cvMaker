@@ -1,5 +1,7 @@
 import type { Project, ProjectBullet } from '../../../shared/projects.interface';
 import type { ProfilesData } from '../../../shared/profilesData.interface';
+import { normalizeTerm } from '../../services/discovery/scoring';
+import { mentions } from '../../utils/text';
 import { handleOf, kindOfHandle, type HandleKind } from '../core/handles';
 
 export type ProfileItemKind = Extract<HandleKind, 'experience' | 'project' | 'bullet' | 'education' | 'skill'>;
@@ -53,4 +55,20 @@ export function findItem(items: ProfileItem[], ref: string): ProfileItem | undef
   const wanted = ref.trim();
   const kind = kindOfHandle(wanted);
   return items.find((item) => item.id === wanted) ?? (kind ? items.find((item) => item.kind === kind && item.handle === wanted) : undefined);
+}
+
+export const isDeclaredSkill = (data: ProfilesData, term: string) => data.skills.some((skill) => normalizeTerm(skill.name) === normalizeTerm(term));
+
+/**
+ * Where the profile shows a term besides its Skills list: a skill the user may have forgotten to declare.
+ * `tagged`: the user labelled it as a technology (bullet tag or project stack), not just a word of a text.
+ */
+export function evidenceOf(data: ProfilesData, items: ProfileItem[], term: string): { handles: string[]; tagged: boolean } {
+  const same = (value: string) => normalizeTerm(value) === normalizeTerm(term);
+  const inStacks = data.projects.filter((project) => project.stack?.some(same)).map((project) => handleOf('project', project.id));
+  const inTags = data.projects.flatMap((project) => project.bullets).filter((bullet) => bullet.tags?.some(same)).map((bullet) => handleOf('bullet', bullet.id));
+  const inTexts = items
+    .filter((item) => (item.kind === 'experience' || item.kind === 'bullet' || item.kind === 'education') && mentions(item.text, term))
+    .map((item) => item.handle);
+  return { handles: [...new Set([...inStacks, ...inTags, ...inTexts])], tagged: inStacks.length + inTags.length > 0 };
 }

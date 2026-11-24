@@ -105,6 +105,8 @@ export interface ApplicationsChangedEvent {
     company: string;
     /** Made for an offer of the Opportunities queue (now marked applied there). */
     fromOffer?: boolean;
+    /** Application whose tailored resume was rewritten: the editor warns when it has that resume open. */
+    resumeOf?: string;
 }
 
 export type PastApplicationResult = { ok: true; application: Application } | { ok: false; error: string };

@@ -50,6 +50,8 @@ export interface McpDeps {
     updateDetails: (id: string, details: ApplicationDetailsDto) => boolean;
     /** Creates or saves a tailored resume like the editor does; a new or DRAFT one lands in AI Review. */
     saveDraft: (session: Partial<CVSessionDataDTO>) => { id: string; success: boolean; error?: string };
+    /** The application whose resume is loaded in the editor, if any: saving there would replace a draft changed meanwhile. */
+    openInEditor: () => string | null;
     /** Refreshes the dashboard if it is open. */
     announce: (event: ApplicationsChangedEvent) => void;
   };

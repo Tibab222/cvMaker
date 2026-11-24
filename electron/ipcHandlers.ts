@@ -32,6 +32,7 @@ import { getInterviewQuestions } from './services/interviewQuestions';
 import type { InterviewQuestion, InterviewQuestionDto, InterviewQuestionResult, QuestionsExportRequest } from '../shared/interviewQuestions.types';
 import { exportQuestions, openLastExport } from './services/interviewQuestions/exportQuestions';
 import type { VaultImportPayload, VaultImportResult, VaultOffer } from '../shared/vault.types';
+import { setEditorSession } from './services/editorSession';
 import { AddSourceResult, AdzunaConnectResult, AdzunaQuery, DiscoveredJobStatus, DiscoverySettings } from '../shared/discovery.types';
 
 /** Pushes an event to every open window (the discovery runs in the background, not for one request). */
@@ -219,6 +220,7 @@ export function registerIpcHandlers() {
     ipcMain.handle('update-application-status', (event, applicationId: string, newStatus: JobApplicationStatus, note?: string) => {
         return JobApplicationManager.getInstance().updateStatus(applicationId, newStatus as JobApplicationStatus, note);
     });
+    ipcMain.on('editor-session', (_event, applicationId: unknown) => setEditorSession(applicationId));
     ipcMain.handle('get-CV-session', (event, applicationId: string) => {
         return JobApplicationManager.getInstance().getCVSession(applicationId);
     });

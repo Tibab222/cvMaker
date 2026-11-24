@@ -304,6 +304,32 @@ export function CVSelectionProvider({ children }: { children: React.ReactNode })
     fetchAndHydrate();
   }, [activeCvSessionId, loadSession]);
 
+  // Claude can rewrite a draft through the MCP connection: the main process needs to know which one is open here
+  useEffect(() => {
+    api.setEditorSession(id);
+    return () => api.setEditorSession(null);
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    return api.onApplicationsChanged((event) => {
+      if (event.resumeOf !== id) return;
+      toast.warning(`${event.source === "claude" ? "Claude" : "Another tool"} just changed this resume`, {
+        id: `resume-changed-${id}`,
+        description: "Reload to see its version. Saving now would replace it with yours.",
+        duration: Infinity,
+        action: {
+          label: "Reload",
+          onClick: () => {
+            api.getCVSession(id)
+              .then((sessionData) => sessionData && loadSession(sessionData))
+              .catch(() => toast.error("Could not reload the resume"));
+          },
+        },
+      });
+    });
+  }, [id, loadSession]);
+
   useEffect(() => {
     const removeStatus = api.onAnalysisStatus((data: { status: AIAnalysisStatus; message?: string; data?: unknown }) => {
       switch (data.status) {
