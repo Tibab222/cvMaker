@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { timingSafeEqual } from 'crypto';
-import type { McpCallRequest } from '../../shared/mcp.types';
+import type { McpCallRequest, McpPromptRequest } from '../../shared/mcp.types';
+import { ToolError } from './core/types';
 import type { McpRegistry } from './core/registry';
 
 export type McpRoute = (req: IncomingMessage, res: ServerResponse, route: string) => void;
@@ -69,6 +70,19 @@ export function createMcpRoute(registry: McpRegistry, token: string, serverUrl: 
           const { name, arguments: args } = (body ?? {}) as McpCallRequest;
           if (typeof name !== 'string') return send(res, 400, { error: 'Tool name missing' });
           send(res, 200, await registry.call(name, args));
+        })
+        .catch((error: Error) => send(res, 400, { error: error.message }));
+    } else if (req.method === 'POST' && route === '/api/mcp/prompt') {
+      readJson(req)
+        .then((body) => {
+          const { name, arguments: args } = (body ?? {}) as McpPromptRequest;
+          if (typeof name !== 'string') return send(res, 400, { error: 'Prompt name missing' });
+          try {
+            send(res, 200, registry.prompt(name, args));
+          } catch (error) {
+            if (!(error instanceof ToolError)) throw error;
+            send(res, 400, { error: error.message });
+          }
         })
         .catch((error: Error) => send(res, 400, { error: error.message }));
     } else {

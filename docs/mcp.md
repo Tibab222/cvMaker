@@ -39,6 +39,20 @@ Everything runs on your computer: a small bridge (`dist-mcp/cvmaker-mcp.mjs`) st
 
 CV Maker must be open, with a profile loaded, for the tools to work.
 
+## Ready-made tasks
+
+CV Maker also offers prompts: tasks Claude runs step by step with the tools, asking before it changes anything.
+
+| Prompt | What it does |
+| --- | --- |
+| `tailor_resume` | Analyzes an offer (`o42`, `a1b2c3d` or pasted text) and drafts a tailored resume in AI Review |
+| `prepare_interview` | Brief, likely questions, answers from your profile and a mock interview for one application |
+| `weekly_review` | What moved in the pipeline, follow-ups due, best new offers, next week's actions |
+| `find_jobs` | Ranks the offers found (and new ones, if Claude can search the web) and queues your picks |
+| `career_advice` | An honest read of your profile and results, with next steps |
+
+In Claude Code they are slash commands: `/mcp__cvmaker__tailor_resume o42`. In Claude Desktop, pick them from the `+` menu, under CV Maker.
+
 ## How it works
 
 - `electron/mcp/`: tools, the `/api/mcp/*` routes and the connection file. `core/deps.ts` is all the tools can use from the app, and `wiring.ts` is the only file that knows the app's services.

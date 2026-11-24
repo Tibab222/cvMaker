@@ -1,4 +1,4 @@
-import type { McpToolAnnotations } from '../../../shared/mcp.types';
+import type { McpPromptArgument, McpToolAnnotations } from '../../../shared/mcp.types';
 import type { Args } from './args';
 import type { CallContext } from './context';
 
@@ -16,3 +16,12 @@ export interface ToolDef {
 
 /** Sent back to the model as a tool error it can act on. */
 export class ToolError extends Error {}
+
+/** A ready-made task the user picks in the client (a slash command in Claude Code); `render` gets its arguments. */
+export interface PromptDef {
+  name: string;
+  title: string;
+  description: string;
+  arguments: McpPromptArgument[];
+  render: (args: Record<string, string>) => string;
+}

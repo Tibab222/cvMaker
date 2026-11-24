@@ -3,12 +3,13 @@ import type { McpDeps } from './core/deps';
 import { McpRegistry } from './core/registry';
 import { createMcpRoute, type McpRoute } from './http';
 import { MCP_INSTRUCTIONS } from './instructions';
+import { MCP_PROMPTS } from './prompts';
 import { MCP_TOOLS } from './tools';
 
 export type { McpRoute } from './http';
 
 export function createMcpRegistry(deps: McpDeps): McpRegistry {
-  return new McpRegistry(deps, MCP_INSTRUCTIONS, MCP_TOOLS);
+  return new McpRegistry(deps, MCP_INSTRUCTIONS, MCP_TOOLS, MCP_PROMPTS);
 }
 
 /** Publishes the connection file and returns the route the local server mounts under /api/mcp/. */

@@ -69,8 +69,9 @@ async function post<T>(route: string, body: object): Promise<T> {
     throw new AppUnreachable(NOT_RUNNING);
   }
   if (!response.ok) {
-    const detail = await response.text().catch(() => '');
-    throw new Error(`CV Maker answered ${response.status} ${detail}`.trim());
+    const detail = await response.json().then((body: { error?: unknown }) => (typeof body?.error === 'string' ? body.error : '')).catch(() => '');
+    // 400: the request itself is wrong (unknown prompt, missing argument), which JSON-RPC calls invalid params
+    throw Object.assign(new Error(detail || `CV Maker answered ${response.status}`), { code: response.status === 400 ? -32602 : -32603 });
   }
   return (await response.json()) as T;
 }
