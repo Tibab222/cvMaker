@@ -52,7 +52,7 @@ export function createAppDeps(): McpDeps {
     marketKeywords: (limit) => KeywordsAffinityDatabase.getInstance().getTopKeywords(limit),
     opportunities: {
       list: () => getDiscoveryManager().listJobs(),
-      add: (offer) => getDiscoveryManager().addFromExtension(offer),
+      add: (offer) => getDiscoveryManager().addSavedOffer(offer, { origin: 'external_ai', addedBy: 'claude' }),
       setStatus: (id, status) => getDiscoveryManager().setJobStatus(id, status),
       score: (offer) => getDiscoveryManager().scoreOffer(offer),
     },

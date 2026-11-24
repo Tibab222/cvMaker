@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import path from "node:path";
 import fs from "node:fs";
 import { ApplicationEventType, JobApplicationStatus } from "../../../shared/jobApplications.type";
-import { DiscoveredJobStatus, JobSourceKind } from "../../../shared/discovery.types";
+import { DISCOVERED_JOB_ORIGINS, DiscoveredJobStatus, JobSourceKind } from "../../../shared/discovery.types";
 import { addColumnIfMissing, Migration, runMigrations } from "../db/migrations";
 
 const statusList = (statuses: string[]) => statuses.map((status) => `'${status}'`).join(", ");
@@ -351,6 +351,45 @@ const MIGRATIONS: Migration[] = [
                     PRIMARY KEY (question_id, application_id)
                 );
                 CREATE INDEX idx_interview_question_applications_application ON interview_question_applications(application_id);
+            `);
+        },
+    },
+    {
+        version: 11,
+        name: "offers added by an external AI assistant",
+        up: (db) => {
+            // new external_ai origin: discovered_jobs is rebuilt for its CHECK, as in migration 9
+            const columns = "id, source_id, origin, external_key, company, title, location, remote, url, description, salary, posted_at, discovered_at, "
+                + "score, matched_keywords, missing_keywords, status, opened_at, application_id";
+            db.exec(`
+                CREATE TABLE discovered_jobs_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    source_id INTEGER REFERENCES job_sources(id) ON DELETE SET NULL,
+                    origin TEXT NOT NULL DEFAULT 'board' CHECK (origin IN (${statusList([...DISCOVERED_JOB_ORIGINS])})),
+                    added_by TEXT,
+                    external_key TEXT NOT NULL UNIQUE,
+                    company TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    location TEXT,
+                    remote INTEGER NOT NULL DEFAULT 0,
+                    url TEXT,
+                    description TEXT NOT NULL DEFAULT '',
+                    salary TEXT,
+                    posted_at DATETIME,
+                    discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    score REAL,
+                    matched_keywords TEXT,
+                    missing_keywords TEXT,
+                    status TEXT NOT NULL DEFAULT 'NEW' CHECK (status IN (${statusList(Object.values(DiscoveredJobStatus))})),
+                    opened_at DATETIME,
+                    application_id TEXT
+                );
+                INSERT INTO discovered_jobs_new (${columns}) SELECT ${columns} FROM discovered_jobs;
+                DROP TABLE discovered_jobs;
+                ALTER TABLE discovered_jobs_new RENAME TO discovered_jobs;
+                CREATE INDEX idx_discovered_jobs_status ON discovered_jobs(status, score);
+                CREATE INDEX idx_discovered_jobs_company_title ON discovered_jobs(company COLLATE NOCASE, title COLLATE NOCASE);
+                CREATE INDEX idx_discovered_jobs_opened ON discovered_jobs(opened_at);
             `);
         },
     },

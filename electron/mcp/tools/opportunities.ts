@@ -28,6 +28,7 @@ function opportunityLine(job: DiscoveredJob): string {
     clip(job.salary, 30),
     job.posted_at ? `posted ${day(job.posted_at)}` : `found ${day(job.discovered_at)}`,
     job.status,
+    job.origin === 'external_ai' ? `added by ${job.added_by ?? 'an AI'}` : '',
     job.application_id ? `applied as ${handleOf('application', job.application_id)}` : '',
     matched.length ? `+${matched.join(', ')}` : '',
     missing.length ? `−${missing.join(', ')}` : '',

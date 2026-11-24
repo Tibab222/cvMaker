@@ -77,12 +77,16 @@ export enum DiscoveredJobStatus {
   APPLIED = "APPLIED",
 }
 
-export type DiscoveredJobOrigin = "board" | "extension";
+/** board: found by a search; extension: saved while browsing; external_ai: added by an AI assistant through the MCP connection. */
+export const DISCOVERED_JOB_ORIGINS = ["board", "extension", "external_ai"] as const;
+export type DiscoveredJobOrigin = (typeof DISCOVERED_JOB_ORIGINS)[number];
 
 export interface DiscoveredJob {
   id: number;
   source_id: number | null;
   origin: DiscoveredJobOrigin;
+  /** The assistant that added an external_ai offer ("claude"). */
+  added_by: string | null;
   company: string;
   title: string;
   location: string | null;

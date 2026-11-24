@@ -104,7 +104,7 @@ app.whenReady().then(() => {
       const data = await ProfileService.getInstance().getCurrentProfile();
       return data ? buildAutofillProfile(data) : null;
     },
-    queueJob: (payload) => getDiscoveryManager().addFromExtension(payload),
+    queueJob: (payload) => getDiscoveryManager().addSavedOffer(payload),
     openedOffers: () => getDiscoveryManager().openedOffers(),
     vault: {
       list: () => getVaultManager().list().map(({ id, name, file_name, pages, language, has_text, keywords }) => ({

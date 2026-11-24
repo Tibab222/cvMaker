@@ -2,6 +2,7 @@ import type Database from "better-sqlite3";
 import {
     DEFAULT_DISCOVERY_SETTINGS,
     DiscoveredJob,
+    DiscoveredJobOrigin,
     DiscoveredJobStatus,
     DiscoveryRunStatus,
     AdzunaQuery,
@@ -55,6 +56,11 @@ export interface DiscoveryDeps {
         set: (credentials: AdzunaCredentials | null) => void;
     };
     now?: () => Date;
+}
+
+export interface SavedOfferSource {
+    origin: Exclude<DiscoveredJobOrigin, "board">;
+    addedBy?: string;
 }
 
 interface ScoringContext {
@@ -577,8 +583,11 @@ export class DiscoveryManager {
         this.emitJobsChanged();
     }
 
-    /** An offer the user picked while browsing: queued as shortlisted, scored right away. */
-    public async addFromExtension(payload: JobOfferPayload): Promise<{ id: number; score: number | null; duplicate: boolean }> {
+    /** An offer picked while browsing or by an AI assistant: queued as shortlisted, scored right away. */
+    public async addSavedOffer(
+        payload: JobOfferPayload,
+        from: SavedOfferSource = { origin: "extension" },
+    ): Promise<{ id: number; score: number | null; duplicate: boolean }> {
         const db = this.deps.getDb();
         const url = payload.url ? normalizeUrl(payload.url) : null;
         const key = url ? `url:${url}` : `manual:${payload.company}|${payload.title}`.toLowerCase();
@@ -606,7 +615,7 @@ export class DiscoveryManager {
             postedAt: null,
         };
         const score = context ? await this.score(job, context) : null;
-        const id = this.insertJob(db, job, { key, sourceId: null, origin: "extension", status: DiscoveredJobStatus.SHORTLISTED, score });
+        const id = this.insertJob(db, job, { key, sourceId: null, origin: from.origin, addedBy: from.addedBy, status: DiscoveredJobStatus.SHORTLISTED, score });
         this.emitJobsChanged();
         return { id, score: score?.score ?? null, duplicate: false };
     }
@@ -614,15 +623,16 @@ export class DiscoveryManager {
     private insertJob(
         db: Database.Database,
         job: NormalizedJob,
-        meta: { key: string; sourceId: number | null; origin: "board" | "extension"; status: DiscoveredJobStatus; score: JobScore | null },
+        meta: { key: string; sourceId: number | null; origin: DiscoveredJobOrigin; addedBy?: string; status: DiscoveredJobStatus; score: JobScore | null },
     ): number {
         const result = db.prepare(`
             INSERT INTO discovered_jobs
-                (source_id, origin, external_key, company, title, location, remote, url, description, salary, posted_at, score, matched_keywords, missing_keywords, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (source_id, origin, added_by, external_key, company, title, location, remote, url, description, salary, posted_at, score, matched_keywords, missing_keywords, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
             meta.sourceId,
             meta.origin,
+            meta.addedBy ?? null,
             meta.key,
             job.company,
             job.title,

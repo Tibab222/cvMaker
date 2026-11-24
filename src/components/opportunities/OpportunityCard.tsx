@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { formatDistanceToNowStrict } from "date-fns";
-import { Building2, ExternalLink, Puzzle, Globe2, MapPin, RotateCcw, Star, WandSparkles, X } from "lucide-react";
+import { Bot, Building2, ExternalLink, Puzzle, Globe2, MapPin, RotateCcw, Star, WandSparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { listItem } from "@/lib/motion";
@@ -23,6 +23,8 @@ interface OpportunityCardProps {
 }
 
 /** One offer of the queue: who, where, how well it matches, and the next move. */
+const aiName = (source: string | null) => (source ? source.charAt(0).toUpperCase() + source.slice(1) : "an AI assistant");
+
 const OpportunityCard = forwardRef<HTMLDivElement, OpportunityCardProps>(function OpportunityCard({ job, onOpen, onStatus, onPrepare, onOpenLink }, ref) {
   const posted = parseDbDate(job.posted_at) ?? parseDbDate(job.discovered_at);
   const applicationMeta = job.application_status ? STATUS_META[job.application_status as JobApplicationStatus] : null;
@@ -67,6 +69,11 @@ const OpportunityCard = forwardRef<HTMLDivElement, OpportunityCardProps>(functio
           {job.origin === "extension" && (
             <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-700" title="Sent from the browser extension">
               <Puzzle className="size-3" /> Saved while browsing
+            </span>
+          )}
+          {job.origin === "external_ai" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-700" title="Added by an external AI assistant connected to CV Maker">
+              <Bot className="size-3" /> Added by {aiName(job.added_by)}
             </span>
           )}
           <AdzunaAttribution job={job} />
