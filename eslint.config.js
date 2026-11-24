@@ -11,6 +11,7 @@ export default defineConfig([
     ignores: [
       'dist', 
       'dist-electron', 
+      'dist-mcp',
       'out', 
       'src/components/ui/**/*',
       'src/hooks/use-mobile.ts'

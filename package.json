@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:mcp": "esbuild mcp-bridge/cvmaker-mcp.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist-mcp/cvmaker-mcp.mjs",
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",

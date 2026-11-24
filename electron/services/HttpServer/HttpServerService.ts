@@ -30,6 +30,8 @@ export interface LocalServerHandlers {
   answers?: LocalAnswerHandlers;
   /** Offers opened from the app lately: what the user is probably applying to in the browser. */
   openedOffers?: () => OpenedOffer[];
+  /** /api/mcp/* routes of the MCP bridge (electron/mcp), which checks its own token. */
+  mcp?: (req: IncomingMessage, res: ServerResponse, route: string) => void;
 }
 
 const RECORD_MESSAGES: Record<BrowserApplicationResult['action'], string> = {
@@ -64,6 +66,10 @@ export class HttpServerService {
   private handlers: LocalServerHandlers | null = null;
 
   private constructor() {}
+
+  public get url(): string {
+    return `http://${this.HOST}:${this.PORT}`;
+  }
 
   public static getInstance(): HttpServerService {
     if (!HttpServerService.instance) {
@@ -142,6 +148,8 @@ export class HttpServerService {
         void this.handleAnswers(req, res, route);
       } else if (req.method === 'POST' && route === '/api/job') {
         this.handleJobEndpoint(req, res, mainWindowGetter);
+      } else if (route.startsWith('/api/mcp/') && this.handlers?.mcp) {
+        this.handlers.mcp(req, res, route);
       } else {
         this.sendJson(res, 404, { status: 'error', message: 'Route not found' });
       }

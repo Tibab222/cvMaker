@@ -25,6 +25,7 @@ dist-ssr
 
 # electron builds
 dist-electron
+dist-mcp
 build
 out/
 perso.md

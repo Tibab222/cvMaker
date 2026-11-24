@@ -14,6 +14,8 @@ import { recordApplicationFromBrowser } from './functions/applicationFromOffer';
 import { offerKeywordsIn, profileLanguage } from './functions/offerKeywords';
 import type { ApplicationsChangedEvent } from '../shared/jobApplications.type';
 import { handleSquirrelEvent } from './squirrelStartup';
+import { startMcp } from './mcp';
+import { createAppDeps } from './mcp/wiring';
 
 // Windows installer launches (install, update, uninstall): make or remove the shortcuts, then quit
 const squirrelEvent = handleSquirrelEvent();
@@ -128,6 +130,7 @@ app.whenReady().then(() => {
       capture: (answers) => getAnswerBank().capture(answers),
       match: (questions) => getAnswerBank().match(questions),
     },
+    mcp: startMcp({ userDataDir: app.getPath('userData'), serverUrl: HttpServerService.getInstance().url, deps: createAppDeps() }),
   });
   // daily job search; it only runs while the app is open (a missed run happens at the next launch)
   getDiscoveryManager().startScheduler();
