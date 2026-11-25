@@ -10,6 +10,8 @@ export const MCP_CONNECTION_FILE = 'mcp.json';
 export const MCP_APP_DIR = 'cv-maker';
 /** Bumped when the bridge and the app stop understanding each other. */
 export const MCP_CONTRACT_VERSION = 1;
+/** App launch argument that runs the bridge instead of the app, for computers without Node.js. */
+export const MCP_STDIO_FLAG = '--mcp-stdio';
 
 /** Hints shown to the MCP client, as in the MCP specification. */
 export interface McpToolAnnotations {
@@ -102,18 +104,16 @@ export const allMcpPermissions = (allowed: boolean): McpPermissions =>
 /** What Settings → Claude shows. */
 export interface McpStatus {
   permissions: McpPermissions;
-  /** False when the bridge file is missing (a dev build without `npm run build:mcp`). */
-  bridgeReady: boolean;
-  /** Node.js the bridge runs with, null when none was found. */
-  node: { path: string; version: string } | null;
+  /** What Claude starts: Node.js with the bridge file, or the app itself when Node is not installed. */
+  runner: { kind: 'node'; version: string } | { kind: 'app' };
   claudeDesktop: {
     /** Its settings folder exists on this computer. */
     installed: boolean;
     connected: boolean;
     configPath: string | null;
   };
-  /** Ready to paste in a terminal, null without Node or bridge. */
-  claudeCodeCommand: string | null;
+  /** Ready to paste in a terminal. */
+  claudeCodeCommand: string;
 }
 
 export type McpConnectResult = { ok: true; status: McpStatus } | { ok: false; error: string };

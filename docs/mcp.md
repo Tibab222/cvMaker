@@ -13,7 +13,7 @@ Then, in **Settings → Claude**:
 - **Connect to Claude Desktop** adds CV Maker to Claude Desktop's settings file (a copy of the original is kept as `claude_desktop_config.json.before-cvmaker`). Quit Claude Desktop completely and open it again.
 - For **Claude Code**, copy the command shown and run it once.
 
-Claude runs the bridge with Node.js 20 or later, which must be installed: the packaged app cannot run it itself (its `RunAsNode` fuse is off for security).
+With Node.js 20 or later installed, Claude runs the bridge with it. Otherwise it starts CV Maker itself with `--mcp-stdio`: no window, only the bridge to the open app (about 4 s to start and more memory, but nothing to install). The `RunAsNode` fuse stays off.
 
 CV Maker must be open, with a profile loaded, for the tools to work.
 
@@ -38,6 +38,6 @@ In Claude Code they are slash commands: `/mcp__cvmaker__tailor_resume o42`. In C
 ## How it works
 
 - `electron/mcp/`: tools, the `/api/mcp/*` routes and the connection file. `core/deps.ts` is all the tools can use from the app, and `wiring.ts` is the only file that knows the app's services. `settings.ts` holds the permissions and the Claude Desktop connection.
-- `mcp-bridge/`: the stdio bridge, without dependencies.
+- `mcp-bridge/`: the stdio bridge, without dependencies (`bridge.ts`, run by Node through `cvmaker-mcp.ts` or by the app through `electron/mcp/stdio.ts`).
 - The routes refuse any request coming from a browser (an `Origin` header, or a `Host` other than the loopback address) and any request without the token from `mcp.json`.
 - Set `CVMAKER_MCP_FILE` to point the bridge to another `mcp.json`.

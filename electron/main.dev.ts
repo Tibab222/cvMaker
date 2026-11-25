@@ -1,4 +1,5 @@
 import { app, BrowserWindow, protocol, shell } from 'electron';
+import { isMcpStdioLaunch, runAsMcpBridge } from './mcp/stdio';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { registerIpcHandlers } from './ipcHandlers';
@@ -17,6 +18,8 @@ import { createAppDeps } from './mcp/wiring';
 
 // Windows installer launches (install, update, uninstall): make or remove the shortcuts, then quit
 const squirrelEvent = handleSquirrelEvent();
+const mcpBridgeOnly = isMcpStdioLaunch();
+if (mcpBridgeOnly) runAsMcpBridge();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -88,7 +91,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  if (squirrelEvent) return;
+  if (squirrelEvent || mcpBridgeOnly) return;
   registerIpcHandlers();
   createWindow();
   HttpServerService.getInstance().init(() => win, {
@@ -130,7 +133,7 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
-  if (squirrelEvent) return;
+  if (squirrelEvent || mcpBridgeOnly) return;
   getDiscoveryManager().stopScheduler();
 });
 

@@ -4,7 +4,7 @@ import path from 'path';
 import { promisify } from 'util';
 import { app } from 'electron';
 import {
-  allMcpPermissions, MCP_CONNECTION_FILE, MCP_PERMISSIONS,
+  allMcpPermissions, MCP_CONNECTION_FILE, MCP_PERMISSIONS, MCP_STDIO_FLAG,
   type McpConnectResult, type McpPermissions, type McpStatus,
 } from '../../shared/mcp.types';
 import { ConfigurationManager } from '../services/config/ConfigurationManager';
@@ -52,9 +52,9 @@ function installBridge(): string | null {
 
 // Apps started from the Dock do not get the shell's PATH on macOS.
 const NODE_CANDIDATES = process.platform === 'win32' ? ['node'] : ['node', '/opt/homebrew/bin/node', '/usr/local/bin/node', '/usr/bin/node'];
-let foundNode: McpStatus['node'] = null;
+let foundNode: { path: string; version: string } | null = null;
 
-async function findNode(): Promise<McpStatus['node']> {
+async function findNode(): Promise<typeof foundNode> {
   if (foundNode) return foundNode;
   for (const candidate of NODE_CANDIDATES) {
     try {
@@ -113,9 +113,24 @@ function writeClaudeConfig(file: string, config: ClaudeConfig): void {
   fs.renameSync(temp, file);
 }
 
-const serverEntry = (nodePath: string, bridge: string) => ({
-  command: nodePath,
-  args: [bridge],
+interface Launcher {
+  command: string;
+  args: string[];
+  runner: McpStatus['runner'];
+}
+
+/** Node runs the bridge with less memory; without it, the app runs the bridge itself. */
+async function launcher(): Promise<Launcher> {
+  const node = await findNode();
+  const bridge = node ? installBridge() : null;
+  if (node && bridge) return { command: node.path, args: [bridge], runner: { kind: 'node', version: node.version } };
+  // in development the app is electron.exe plus the project folder
+  return { command: process.execPath, args: [...(app.isPackaged ? [] : [app.getAppPath()]), MCP_STDIO_FLAG], runner: { kind: 'app' } };
+}
+
+const serverEntry = ({ command, args }: Launcher) => ({
+  command,
+  args,
   // the Store version of Claude may not see %APPDATA% as it is
   env: { CVMAKER_MCP_FILE: path.join(app.getPath('userData'), MCP_CONNECTION_FILE) },
 });
@@ -129,19 +144,17 @@ function connectedEntry(file: string | null): unknown {
 }
 
 export async function mcpStatus(): Promise<McpStatus> {
-  const bridge = fs.existsSync(installedBridge()) ? installedBridge() : installBridge();
-  const node = await findNode();
+  const launch = await launcher();
   const configPath = claudeConfigPath();
   return {
     permissions: mcpPermissions(),
-    bridgeReady: !!bridge,
-    node,
+    runner: launch.runner,
     claudeDesktop: { installed: !!configPath, connected: !!connectedEntry(configPath), configPath },
-    claudeCodeCommand: bridge && node ? `claude mcp add --scope user ${SERVER_NAME} -- "${node.path}" "${bridge}"` : null,
+    claudeCodeCommand: `claude mcp add --scope user ${SERVER_NAME} -- ${[launch.command, ...launch.args].map((arg) => `"${arg}"`).join(' ')}`,
   };
 }
 
-async function editClaudeServers(edit: (servers: Record<string, unknown>, file: string) => Promise<string | null>): Promise<McpConnectResult> {
+async function editClaudeServers(edit: (servers: Record<string, unknown>) => Promise<void>): Promise<McpConnectResult> {
   const file = claudeConfigPath();
   if (!file) return { ok: false, error: 'Claude Desktop was not found on this computer. Install it from claude.ai/download and open it once.' };
   let config: ClaudeConfig;
@@ -151,8 +164,7 @@ async function editClaudeServers(edit: (servers: Record<string, unknown>, file: 
     return { ok: false, error: `Claude Desktop's settings file is not valid JSON, so CV Maker left it alone: ${file}` };
   }
   const servers = config.mcpServers && typeof config.mcpServers === 'object' ? { ...config.mcpServers } : {};
-  const error = await edit(servers, file);
-  if (error) return { ok: false, error };
+  await edit(servers);
   try {
     writeClaudeConfig(file, { ...config, mcpServers: servers });
   } catch (writeError) {
@@ -163,30 +175,21 @@ async function editClaudeServers(edit: (servers: Record<string, unknown>, file: 
 
 export function connectClaudeDesktop(): Promise<McpConnectResult> {
   return editClaudeServers(async (servers) => {
-    const bridge = installBridge();
-    if (!bridge) return app.isPackaged ? 'The connector is missing from this install of CV Maker. Reinstall it.' : 'The connector is not built: run npm run build:mcp.';
-    const node = await findNode();
-    if (!node) return `Claude starts CV Maker's connector with Node.js ${MIN_NODE} or later, which was not found on this computer. Install it from nodejs.org, then try again.`;
-    servers[SERVER_NAME] = serverEntry(node.path, bridge);
-    return null;
+    servers[SERVER_NAME] = serverEntry(await launcher());
   });
 }
 
 export function disconnectClaudeDesktop(): Promise<McpConnectResult> {
   return editClaudeServers(async (servers) => {
     delete servers[SERVER_NAME];
-    return null;
   });
 }
 
-/** At launch: a new version or a moved Node install must not break a connection made earlier. */
+/** At launch: a new version, or Node installed or moved, must not break a connection made earlier. */
 export async function setupMcpClients(): Promise<void> {
-  const bridge = installBridge();
+  installBridge();
   const entry = connectedEntry(claudeConfigPath());
-  if (!bridge || !entry) return;
-  const node = await findNode();
-  if (node && JSON.stringify(entry) !== JSON.stringify(serverEntry(node.path, bridge))) {
-    const result = await connectClaudeDesktop();
-    if (!result.ok) console.error('[MCP] Claude Desktop entry not refreshed:', result.error);
-  }
+  if (!entry || JSON.stringify(entry) === JSON.stringify(serverEntry(await launcher()))) return;
+  const result = await connectClaudeDesktop();
+  if (!result.ok) console.error('[MCP] Claude Desktop entry not refreshed:', result.error);
 }

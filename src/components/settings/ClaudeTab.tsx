@@ -94,19 +94,16 @@ function ConnectionCard({ status, onStatus }: { status: McpStatus | null; onStat
         </span>
       </div>
 
-      {status && !status.node && (
-        <p className="mt-4 flex items-start gap-2 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
-          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          Claude runs CV Maker's connector with Node.js 20 or later, which is not installed. Get it from nodejs.org, then reopen this page.
-        </p>
-      )}
-
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <Button disabled={busy || !desktop?.installed} variant={desktop?.connected ? "outline" : "default"} onClick={toggle} className="gap-2">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : desktop?.connected ? <Unplug className="h-4 w-4" /> : <PlugZap className="h-4 w-4" />}
           {desktop?.connected ? "Disconnect" : "Connect to Claude Desktop"}
         </Button>
-        {status?.node && <span className="text-xs text-muted-foreground">Node.js {status.node.version}</span>}
+        {status && (
+          <span className="text-xs text-muted-foreground">
+            {status.runner.kind === "node" ? `Runs with Node.js ${status.runner.version}` : "Runs with CV Maker itself, no Node.js needed"}
+          </span>
+        )}
       </div>
       {justConnected && (
         <p className="mt-3 text-xs text-foreground">
@@ -114,7 +111,7 @@ function ConnectionCard({ status, onStatus }: { status: McpStatus | null; onStat
         </p>
       )}
 
-      {status?.claudeCodeCommand && (
+      {status && (
         <div className="mt-6">
           <p className="text-xs font-medium text-foreground">Claude Code</p>
           <p className="text-xs text-muted-foreground">Run once in a terminal:</p>
