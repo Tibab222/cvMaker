@@ -66,6 +66,7 @@ function formAnswersSection(ctx: CallContext, search: string | undefined): strin
 
 export const interviewPrep: ToolDef = {
   name: 'interview_prep',
+  permissions: ['interview_read'],
   title: 'Read interview prep',
   description:
     "The user's interview questions library in CV Maker: questions recruiters asked or may ask, the answers the user prepared, and the interviews that asked them. " +
@@ -91,6 +92,8 @@ export const interviewPrep: ToolDef = {
     const unanswered = args.boolean('unanswered') ?? false;
     const withFormAnswers = args.boolean('form_answers') ?? false;
     const limit = args.number('limit', { min: 1, max: 60, fallback: 25 });
+    if (withFormAnswers) ctx.need('form_answers_read');
+    if (applicationId) ctx.need('applications_read');
 
     ctx.applications();
     const questions = ctx.deps.interview.list();
@@ -137,6 +140,7 @@ export const interviewPrep: ToolDef = {
 
 export const savePrep: ToolDef = {
   name: 'save_prep',
+  permissions: ['interview_write'],
   title: 'Save interview prep',
   description:
     "Adds questions and prepared answers to the user's interview library, or updates them, and links them to the applications whose interviews ask them. " +

@@ -76,3 +76,44 @@ export interface McpPromptResult {
   description: string;
   text: string;
 }
+
+/**
+ * What an AI assistant connected through MCP may read from the app or write into it, as the user sets it in
+ * Settings → Claude. The browser extension is part of the app: its routes never depend on these.
+ */
+export const MCP_PERMISSIONS = [
+  { id: 'profile_read', area: 'Profile', direction: 'read', description: 'Experiences, projects, skills and education. Never contact details or the photo.' },
+  { id: 'applications_read', area: 'Applications', direction: 'read', description: 'Your applications, their timeline and your pipeline stats.' },
+  { id: 'applications_write', area: 'Applications', direction: 'write', description: 'Log status changes, interviews and notes, record applications you sent.' },
+  { id: 'opportunities_read', area: 'Job offers', direction: 'read', description: 'The Opportunities queue and offer analysis.' },
+  { id: 'opportunities_write', area: 'Job offers', direction: 'write', description: 'Add offers to the queue, shortlist or dismiss them.' },
+  { id: 'resumes_write', area: 'Resumes', direction: 'write', description: 'Draft tailored resumes, saved in AI Review for you to check.' },
+  { id: 'interview_read', area: 'Interview prep', direction: 'read', description: 'Your interview questions and prepared answers.' },
+  { id: 'interview_write', area: 'Interview prep', direction: 'write', description: 'Save questions and answers to your library.' },
+  { id: 'form_answers_read', area: 'Form answers', direction: 'read', description: 'Answers saved from application forms (salary expectation, work permit...). Contact details always stay out.' },
+] as const;
+
+export type McpPermissionId = (typeof MCP_PERMISSIONS)[number]['id'];
+export type McpPermissions = Record<McpPermissionId, boolean>;
+
+export const allMcpPermissions = (allowed: boolean): McpPermissions =>
+  Object.fromEntries(MCP_PERMISSIONS.map(({ id }) => [id, allowed])) as McpPermissions;
+
+/** What Settings → Claude shows. */
+export interface McpStatus {
+  permissions: McpPermissions;
+  /** False when the bridge file is missing (a dev build without `npm run build:mcp`). */
+  bridgeReady: boolean;
+  /** Node.js the bridge runs with, null when none was found. */
+  node: { path: string; version: string } | null;
+  claudeDesktop: {
+    /** Its settings folder exists on this computer. */
+    installed: boolean;
+    connected: boolean;
+    configPath: string | null;
+  };
+  /** Ready to paste in a terminal, null without Node or bridge. */
+  claudeCodeCommand: string | null;
+}
+
+export type McpConnectResult = { ok: true; status: McpStatus } | { ok: false; error: string };

@@ -1,8 +1,8 @@
-import { MCP_CONTRACT_VERSION, type McpCallResult, type McpManifest, type McpPromptResult } from '../../../shared/mcp.types';
+import { MCP_CONTRACT_VERSION, type McpCallResult, type McpManifest, type McpPermissionId, type McpPromptResult } from '../../../shared/mcp.types';
 import { Args } from './args';
 import { CallContext } from './context';
 import type { McpDeps } from './deps';
-import { ToolError, type PromptDef, type ToolDef } from './types';
+import { ToolError, turnedOff, type PromptDef, type ToolDef } from './types';
 
 /** Safety net: tools are meant to stay far below it. */
 const MAX_ANSWER_CHARS = 24_000;
@@ -24,12 +24,19 @@ export class McpRegistry {
     }
   }
 
+  /** The first permission of `needed` the user turned off, if any. */
+  private blocked(needed: McpPermissionId[]): McpPermissionId | undefined {
+    const permissions = this.deps.permissions();
+    return needed.find((permission) => !permissions[permission]);
+  }
+
+  /** Only what the user allows: a tool turned off is not even described to the client. */
   manifest(): McpManifest {
     return {
       version: MCP_CONTRACT_VERSION,
       instructions: this.instructions,
-      tools: [...this.tools.values()].map(({ name, title, description, inputSchema, annotations }) => ({ name, title, description, inputSchema, annotations })),
-      prompts: [...this.prompts.values()].map(({ name, title, description, arguments: args }) => ({ name, title, description, arguments: args })),
+      tools: [...this.tools.values()].filter((tool) => !this.blocked(tool.permissions)).map(({ name, title, description, inputSchema, annotations }) => ({ name, title, description, inputSchema, annotations })),
+      prompts: [...this.prompts.values()].filter((prompt) => !this.blocked(prompt.permissions)).map(({ name, title, description, arguments: args }) => ({ name, title, description, arguments: args })),
     };
   }
 
@@ -37,6 +44,8 @@ export class McpRegistry {
   prompt(name: string, rawArgs: unknown): McpPromptResult {
     const prompt = this.prompts.get(name);
     if (!prompt) throw new ToolError(`Unknown prompt "${name}".`);
+    const off = this.blocked(prompt.permissions);
+    if (off) throw new ToolError(turnedOff(off));
     const given = rawArgs && typeof rawArgs === 'object' ? (rawArgs as Record<string, unknown>) : {};
     const args: Record<string, string> = {};
     for (const { name: argName, required } of prompt.arguments) {
@@ -50,6 +59,8 @@ export class McpRegistry {
   async call(name: string, rawArgs: unknown): Promise<McpCallResult> {
     const tool = this.tools.get(name);
     if (!tool) return { text: `Unknown tool "${name}".`, isError: true };
+    const off = this.blocked(tool.permissions);
+    if (off) return { text: turnedOff(off), isError: true };
     try {
       const text = await tool.run(new Args(rawArgs), new CallContext(this.deps));
       return { text: text.length > MAX_ANSWER_CHARS ? `${text.slice(0, MAX_ANSWER_CHARS)}\n… [answer cut: narrow the request]` : text, isError: false };

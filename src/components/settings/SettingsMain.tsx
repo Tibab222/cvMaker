@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, Database, FolderOutput, Settings } from "lucide-react";
+import { Bot, Database, FolderOutput, Plug, Settings } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { pageVariants } from "@/lib/motion";
@@ -7,17 +7,20 @@ import PageHeader from "../general/PageHeader";
 import SyncTab from "./SyncTab";
 import AITab from "./AI/AItab";
 import ExportPathSettings from "./PathTab";
+import ClaudeTab from "./ClaudeTab";
 
 enum TabsSettings {
     SYNC_DATABASE = "sync",
     AI_SETTINGS = "ai",
     PATH_SETTINGS = "path",
+    CLAUDE = "claude",
 }
 
 const SETTINGS_TABS = [
     { id: TabsSettings.PATH_SETTINGS, label: "Exports", icon: FolderOutput },
     { id: TabsSettings.SYNC_DATABASE, label: "Matching index", icon: Database },
     { id: TabsSettings.AI_SETTINGS, label: "AI", icon: Bot },
+    { id: TabsSettings.CLAUDE, label: "Claude", icon: Plug },
 ];
 
 export default function SettingsMain() {
@@ -28,7 +31,7 @@ export default function SettingsMain() {
             <PageHeader
                 icon={Settings}
                 title="Settings"
-                description="Exports, matching index and AI providers"
+                description="Exports, matching index, AI providers and Claude"
                 actions={
                     <nav className="flex gap-1 rounded-lg bg-muted p-1" aria-label="Settings sections">
                         {SETTINGS_TABS.map(({ id, label, icon: Icon }) => (
@@ -69,6 +72,7 @@ export default function SettingsMain() {
                     {settingsTab === TabsSettings.SYNC_DATABASE && <SyncTab />}
                     {settingsTab === TabsSettings.AI_SETTINGS && <AITab />}
                     {settingsTab === TabsSettings.PATH_SETTINGS && <ExportPathSettings />}
+                    {settingsTab === TabsSettings.CLAUDE && <ClaudeTab />}
                 </motion.div>
             </AnimatePresence>
         </div>

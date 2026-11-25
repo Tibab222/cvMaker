@@ -33,6 +33,7 @@ function sinceArg(value: string | undefined): string | undefined {
 
 export const listApplications: ToolDef = {
   name: 'list_applications',
+  permissions: ['applications_read'],
   title: 'List applications',
   description: "The user's job applications, one line each, most recent first, with status counts. Filter by status, company/title text or date.",
   inputSchema: {
@@ -111,6 +112,7 @@ async function resumeSection(session: CVSessionDataDTO, ctx: CallContext): Promi
 
 export const getApplication: ToolDef = {
   name: 'get_application',
+  permissions: ['applications_read'],
   title: 'Read an application',
   description:
     'One application: status, dates, channel, salary, keywords, recruiter, notes, latest timeline events. ' +
@@ -129,6 +131,7 @@ export const getApplication: ToolDef = {
   run: async (args, ctx) => {
     const handle = args.string('id', { required: true });
     const include = new Set(args.has('include') ? args.oneOfList('include', DETAIL_PARTS) : ['timeline']);
+    if (include.has('questions')) ctx.need('interview_read');
     const offerChars = args.number('offer_chars', { min: 500, max: 20000, fallback: 3000 });
 
     const app = ctx.deps.applications.get(ctx.application(handle).id)!;
@@ -192,6 +195,7 @@ function topKeywords(apps: Application[], max: number): string {
 
 export const pipelineInsights: ToolDef = {
   name: 'pipeline_insights',
+  permissions: ['applications_read'],
   title: 'Job search insights',
   description:
     'What works in the job search, computed locally: key rates, outcomes by channel and by job-title word, keywords of the offers that led to interviews, ' +

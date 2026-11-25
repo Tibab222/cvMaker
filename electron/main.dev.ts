@@ -12,7 +12,7 @@ import { getVaultManager } from './services/vault';
 import { getAnswerBank } from './services/answers';
 import { announceApplicationsChanged, recordSentApplication } from './functions/recordApplication';
 import { handleSquirrelEvent } from './squirrelStartup';
-import { startMcp } from './mcp';
+import { setupMcpClients, startMcp } from './mcp';
 import { createAppDeps } from './mcp/wiring';
 
 // Windows installer launches (install, update, uninstall): make or remove the shortcuts, then quit
@@ -124,6 +124,7 @@ app.whenReady().then(() => {
     },
     mcp: startMcp({ userDataDir: app.getPath('userData'), serverUrl: HttpServerService.getInstance().url, deps: createAppDeps() }),
   });
+  void setupMcpClients();
   // daily job search; it only runs while the app is open (a missed run happens at the next launch)
   getDiscoveryManager().startScheduler();
 });

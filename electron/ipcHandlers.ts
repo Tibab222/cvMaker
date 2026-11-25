@@ -33,6 +33,7 @@ import type { InterviewQuestion, InterviewQuestionDto, InterviewQuestionResult, 
 import { exportQuestions, openLastExport } from './services/interviewQuestions/exportQuestions';
 import type { VaultImportPayload, VaultImportResult, VaultOffer } from '../shared/vault.types';
 import { setEditorSession } from './services/editorSession';
+import { connectClaudeDesktop, disconnectClaudeDesktop, mcpStatus, refreshMcp, saveMcpPermissions } from './mcp';
 import { AddSourceResult, AdzunaConnectResult, AdzunaQuery, DiscoveredJobStatus, DiscoverySettings } from '../shared/discovery.types';
 
 /** Pushes an event to every open window (the discovery runs in the background, not for one request). */
@@ -333,6 +334,15 @@ export function registerIpcHandlers() {
     // Resume templates (.cvm): the user templates folder; built-in ones ship with the renderer
     const templates = TemplateManager.getInstance();
     ipcMain.handle('templates:list', () => templates.list());
+    ipcMain.handle('mcp:status', () => mcpStatus());
+    ipcMain.handle('mcp:set-permissions', (event, changes: unknown) => {
+        const permissions = saveMcpPermissions(changes);
+        refreshMcp();
+        return permissions;
+    });
+    ipcMain.handle('mcp:connect-claude-desktop', () => connectClaudeDesktop());
+    ipcMain.handle('mcp:disconnect-claude-desktop', () => disconnectClaudeDesktop());
+
     ipcMain.handle('templates:import', (event, reservedIds: string[]) => templates.importFromDialog(Array.isArray(reservedIds) ? reservedIds : []));
     ipcMain.handle('templates:remove', (event, fileName: string) => templates.remove(fileName));
     ipcMain.handle('templates:export', (event, source: string, suggestedName: string) => templates.exportToDialog(source, suggestedName));

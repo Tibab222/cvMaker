@@ -1,6 +1,7 @@
 import type { AIAnalysisStatus } from "@shared/AIAnalysisStatus";
 import type { CoverLetterStatusPayload, GenerateCoverLetterDTO } from "@shared/CoverLetter.types";
 import type { Experience } from "@shared/Experience.interface";
+import type { McpPermissions } from "@shared/mcp.types";
 import type { JobOfferPayload } from "@shared/Extension.types";
 import type { ApplicationDetailsDto, ApplicationEditDto, ApplicationsChangedEvent, CVSessionDataDTO, JobApplicationStatus, NewApplicationEventDto, PastApplicationDto } from "@shared/jobApplications.type";
 import type { OnProgressCallback } from "@shared/OllamaDownloadStatus";
@@ -74,6 +75,12 @@ export const api = {
         open: (id: string) => window.api.vault.open(id),
         reveal: (id: string) => window.api.vault.reveal(id),
         match: (offer: VaultOffer, limit?: number) => window.api.vault.match(offer, limit),
+    },
+    mcp: {
+        status: () => window.api.mcp.status(),
+        setPermissions: (changes: Partial<McpPermissions>) => window.api.mcp.setPermissions(changes),
+        connectClaudeDesktop: () => window.api.mcp.connectClaudeDesktop(),
+        disconnectClaudeDesktop: () => window.api.mcp.disconnectClaudeDesktop(),
     },
     templates: {
         list: () => window.api.templates.list(),

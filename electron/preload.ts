@@ -10,6 +10,7 @@ import { RewriteResumeOptions } from "../shared/RewriteResume.type";
 import type { VaultImportPayload, VaultOffer } from "../shared/vault.types";
 import type { SavedAnswerDto } from "../shared/answers.types";
 import type { InterviewQuestionDto, QuestionsExportRequest } from "../shared/interviewQuestions.types";
+import type { McpPermissions } from "../shared/mcp.types";
 import { AdzunaQuery, DiscoveredJobStatus, DiscoveryRunStatus, DiscoverySettings } from "../shared/discovery.types";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -102,6 +103,12 @@ contextBridge.exposeInMainWorld('api', {
     open: (id: string) => ipcRenderer.invoke('vault:open', id),
     reveal: (id: string) => ipcRenderer.invoke('vault:reveal', id),
     match: (offer: VaultOffer, limit?: number) => ipcRenderer.invoke('vault:match', offer, limit),
+  },
+  mcp: {
+    status: () => ipcRenderer.invoke('mcp:status'),
+    setPermissions: (changes: Partial<McpPermissions>) => ipcRenderer.invoke('mcp:set-permissions', changes),
+    connectClaudeDesktop: () => ipcRenderer.invoke('mcp:connect-claude-desktop'),
+    disconnectClaudeDesktop: () => ipcRenderer.invoke('mcp:disconnect-claude-desktop'),
   },
   templates: {
     list: () => ipcRenderer.invoke('templates:list'),

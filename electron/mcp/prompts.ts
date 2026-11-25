@@ -20,6 +20,7 @@ function offerTarget(offer: string | undefined): { what: string; how: string; te
 export const MCP_PROMPTS: PromptDef[] = [
   {
     name: 'tailor_resume',
+    permissions: ['profile_read', 'opportunities_read', 'resumes_write'],
     title: 'Tailor my resume to an offer',
     description: 'Analyzes an offer against the profile and drafts a tailored resume in CV Maker, for the user to review and export.',
     arguments: [
@@ -43,6 +44,7 @@ export const MCP_PROMPTS: PromptDef[] = [
   },
   {
     name: 'prepare_interview',
+    permissions: ['applications_read', 'interview_read', 'profile_read'],
     title: 'Prepare an interview',
     description: 'Brief, likely questions, answers from the profile and a mock interview for one application; saves the prep the user keeps.',
     arguments: [
@@ -62,6 +64,7 @@ export const MCP_PROMPTS: PromptDef[] = [
   },
   {
     name: 'weekly_review',
+    permissions: ['applications_read'],
     title: 'Weekly job search review',
     description: 'What moved in the pipeline, what works, follow-ups due and the best new offers, with next week\'s actions.',
     arguments: [{ name: 'since', description: 'Start day, YYYY-MM-DD (default: 7 days ago).' }],
@@ -80,6 +83,7 @@ export const MCP_PROMPTS: PromptDef[] = [
   },
   {
     name: 'find_jobs',
+    permissions: ['profile_read', 'opportunities_read'],
     title: 'Find jobs worth applying to',
     description: 'Ranks the offers CV Maker found (and, if the client can search the web, new ones) against the profile, then queues the user\'s picks.',
     arguments: [{ name: 'criteria', description: 'E.g. "remote backend, Toronto, 90k+".' }],
@@ -94,6 +98,7 @@ export const MCP_PROMPTS: PromptDef[] = [
   },
   {
     name: 'career_advice',
+    permissions: ['profile_read', 'applications_read'],
     title: 'Career advice from my data',
     description: 'An honest read of the profile and of what the applications show, with concrete next steps.',
     arguments: [{ name: 'question', description: 'What you want advice on (optional).' }],

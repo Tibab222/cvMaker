@@ -14,6 +14,7 @@ import { VectorService } from '../services/VectorService';
 import { broadcast } from '../utils/broadcast';
 import { bufferToFloat32Array } from '../utils/math';
 import type { McpDeps } from './core/deps';
+import { mcpPermissions } from './settings';
 
 const REACHED_INTERVIEW = [JobApplicationStatus.INTERVIEW, JobApplicationStatus.OFFER, JobApplicationStatus.ACCEPTED];
 
@@ -23,6 +24,7 @@ export function createAppDeps(): McpDeps {
   const vectors = VectorDatabase.getInstance();
   const jobs = JobApplicationManager.getInstance();
   return {
+    permissions: mcpPermissions,
     getProfile: () => profiles.getCurrentProfile(),
     embed: (text) => VectorService.getInstance().generateEmbedding(text),
     profileVectors: () => ({

@@ -37,6 +37,7 @@ function opportunityLine(job: DiscoveredJob): string {
 
 export const listOpportunities: ToolDef = {
   name: 'list_opportunities',
+  permissions: ['opportunities_read'],
   title: 'List job opportunities',
   description:
     "Offers in CV Maker's Opportunities queue (found by its daily job-board search or saved while browsing), best match first. " +
@@ -113,6 +114,7 @@ function readTarget(args: Args, ctx: CallContext): Target {
     };
   }
   if (applicationId) {
+    ctx.need('applications_read');
     const app = ctx.application(applicationId);
     return {
       title: app.job_title,
@@ -149,6 +151,7 @@ async function vaultLine(ctx: CallContext, target: Target): Promise<string> {
 }
 
 function historyLines(ctx: CallContext, target: Target): string[] {
+  if (!ctx.allows('applications_read')) return [];
   const others = ctx.applications().filter((app) => app.id !== target.applicationId);
   const atCompany = target.company ? others.filter((app) => sameCompany(app.company_name, target.company)) : [];
   const alike = others.filter((app) => app.applied_at && wordOverlap(app.job_title, target.title) >= 0.5);
@@ -165,6 +168,7 @@ function historyLines(ctx: CallContext, target: Target): string[] {
 
 export const analyzeOffer: ToolDef = {
   name: 'analyze_offer',
+  permissions: ['opportunities_read', 'profile_read'],
   title: 'Analyze a job offer',
   description:
     'Matches one offer against the profile, all computed locally: 0-100 score, skills the profile has and lacks, the best experiences and bullets to put forward ' +
@@ -238,6 +242,7 @@ const opportunityNumber = (ref: string): number => {
 
 export const updateOpportunities: ToolDef = {
   name: 'update_opportunities',
+  permissions: ['opportunities_write'],
   title: 'Queue or triage opportunities',
   description:
     'Adds offers to the Opportunities queue (scored locally and shortlisted; one already queued is shortlisted again) and/or sorts queued ones: ' +

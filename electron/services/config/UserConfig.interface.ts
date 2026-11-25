@@ -1,3 +1,5 @@
+import type { McpPermissions } from '../../../shared/mcp.types';
+
 export interface UserConfig {
     preferredAiProvider: 'ollama' | 'openai' | 'gemini' | 'claude' | null;
     exportPath?: string;
@@ -26,4 +28,6 @@ export interface UserConfig {
         appId: string;
         appKey: string;
     },
+    /** What AI assistants may read and write through the MCP server; missing means allowed. */
+    mcpPermissions?: Partial<McpPermissions>,
 }

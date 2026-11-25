@@ -98,7 +98,7 @@ async function handle(message: Message): Promise<object | undefined> {
       const manifest = readConnection()?.manifest;
       return {
         protocolVersion: PROTOCOL_VERSIONS.includes(asked) ? asked : PROTOCOL_VERSIONS[0],
-        capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } },
+        capabilities: { tools: { listChanged: true }, prompts: { listChanged: true } },
         serverInfo: { name: 'cvmaker', title: 'CV Maker', version: BRIDGE_VERSION },
         instructions: manifest?.instructions ?? NOT_STARTED,
       };
@@ -137,5 +137,22 @@ async function onLine(line: string): Promise<void> {
   }
 }
 
+const listed = () => {
+  const manifest = readConnection()?.manifest;
+  return JSON.stringify([manifest?.tools.map((tool) => tool.name), manifest?.prompts?.map((prompt) => prompt.name)]);
+};
+
+// the app rewrites the file when the user changes what the assistant may use
+let lastListed = listed();
+fs.watchFile(connectionFile, { interval: 2000 }, () => {
+  const now = listed();
+  if (now === lastListed) return;
+  lastListed = now;
+  write({ jsonrpc: '2.0', method: 'notifications/tools/list_changed' });
+  write({ jsonrpc: '2.0', method: 'notifications/prompts/list_changed' });
+});
+
 log(`started, connection file: ${connectionFile}`);
-readline.createInterface({ input: process.stdin }).on('line', (line) => void onLine(line));
+readline.createInterface({ input: process.stdin })
+  .on('line', (line) => void onLine(line))
+  .on('close', () => process.exit(0));

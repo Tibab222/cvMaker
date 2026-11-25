@@ -1,9 +1,10 @@
 import type { DiscoveredJob } from '../../../shared/discovery.types';
 import type { Application } from '../../../shared/jobApplications.type';
+import type { McpPermissionId, McpPermissions } from '../../../shared/mcp.types';
 import type { ProfilesData } from '../../../shared/profilesData.interface';
 import type { McpDeps } from './deps';
 import { resolveHandle } from './handles';
-import { ToolError } from './types';
+import { ToolError, turnedOff } from './types';
 
 const NO_PROFILE = 'No profile is open in CV Maker. Ask the user to open CV Maker and load their profile, then retry.';
 
@@ -13,7 +14,20 @@ export class CallContext {
   private applicationList: Application[] | null = null;
   private opportunityList: DiscoveredJob[] | null = null;
 
-  constructor(readonly deps: McpDeps) {}
+  private readonly permissions: McpPermissions;
+
+  constructor(readonly deps: McpDeps) {
+    this.permissions = deps.permissions();
+  }
+
+  /** For the parts of an answer that depend on another permission than the tool's own. */
+  allows(permission: McpPermissionId): boolean {
+    return this.permissions[permission];
+  }
+
+  need(permission: McpPermissionId): void {
+    if (!this.permissions[permission]) throw new ToolError(turnedOff(permission));
+  }
 
   profile(): Promise<ProfilesData> {
     if (!this.profilePromise) {

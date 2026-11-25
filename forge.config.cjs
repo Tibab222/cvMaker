@@ -8,7 +8,8 @@ module.exports = {
     appBundleId: 'com.electron.cv-maker',
     icon: path.resolve(__dirname, 'assets/logo'),
     extraResource: [
-      path.resolve(__dirname, 'assets')
+      path.resolve(__dirname, 'assets'),
+      path.resolve(__dirname, 'dist-mcp')
     ],
     asar: {
       unpack: [

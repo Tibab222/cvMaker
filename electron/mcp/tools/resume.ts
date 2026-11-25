@@ -63,6 +63,7 @@ async function start(args: Args, ctx: CallContext): Promise<Start> {
   }
   if (applicationId) return editableSession(ctx, applicationId);
   if (opportunityId) {
+    ctx.need('opportunities_read');
     const job = ctx.opportunity(opportunityId);
     return startFor(ctx, { title: job.title, company: job.company, url: job.url ?? '', description: job.description }, job.id);
   }
@@ -225,6 +226,7 @@ function describe(session: Session, data: ProfilesData): string[] {
 
 export const draftResume: ToolDef = {
   name: 'draft_resume',
+  permissions: ['resumes_write', 'profile_read'],
   title: 'Draft a tailored resume',
   description:
     'Saves a resume tailored to an offer in CV Maker, in the "AI Review" column, for the user to check, pick a template and export the PDF. ' +

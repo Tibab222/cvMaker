@@ -9,6 +9,7 @@ import type {
 } from '../../../shared/jobApplications.type';
 import type { JobScore } from '../../services/discovery/scoring';
 import type { KeywordStat } from '../../../shared/Keywords.types';
+import type { McpPermissions } from '../../../shared/mcp.types';
 import type { ProfilesData } from '../../../shared/profilesData.interface';
 
 export interface IndexedVector {
@@ -21,6 +22,8 @@ export interface IndexedVector {
  * so the MCP code stays out of the business logic.
  */
 export interface McpDeps {
+  /** What the user lets the assistant read and write (Settings → Claude). */
+  permissions: () => McpPermissions;
   /** Re-read from disk; null when no profile is open. */
   getProfile: () => Promise<ProfilesData | null>;
   /** Local embedding model. Throws when it cannot load: tools then fall back to keywords. */

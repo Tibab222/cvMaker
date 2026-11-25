@@ -18,6 +18,7 @@ function announce(ctx: CallContext, app: Application, action: 'created' | 'promo
 
 export const updateApplication: ToolDef = {
   name: 'update_application',
+  permissions: ['applications_write'],
   title: 'Update an application',
   description:
     'Logs what happened on an application, as the user would in the app: a new status, a scheduled interview, a follow-up sent, a note, ' +
@@ -83,6 +84,7 @@ export const updateApplication: ToolDef = {
 
 export const recordApplication: ToolDef = {
   name: 'record_application',
+  permissions: ['applications_write'],
   title: 'Record an application sent elsewhere',
   description:
     'Adds to the pipeline an application the user sent outside CV Maker (company site, email, referral...). ' +

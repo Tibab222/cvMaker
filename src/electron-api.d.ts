@@ -1,4 +1,5 @@
 import { ProfilesData } from '../shared/profilesData.interface';
+import type { McpConnectResult, McpPermissions, McpStatus } from '../shared/mcp.types';
 import { UserConfig } from '../electron/services/config/UserConfig.interface';
 import { SystemRecommendations } from '../shared/SystemRecommendation';
 import { OnProgressCallback } from '../shared/OllamaDownloadStatus';
@@ -86,6 +87,13 @@ declare global {
         open: (id: string) => Promise<boolean>;
         reveal: (id: string) => Promise<boolean>;
         match: (offer: VaultOffer, limit?: number) => Promise<VaultMatch[]>;
+      };
+      /** What AI assistants such as Claude can use through the MCP server, and their connection. */
+      mcp: {
+        status: () => Promise<McpStatus>;
+        setPermissions: (changes: Partial<McpPermissions>) => Promise<McpPermissions>;
+        connectClaudeDesktop: () => Promise<McpConnectResult>;
+        disconnectClaudeDesktop: () => Promise<McpConnectResult>;
       };
       /** Resume templates (.cvm) imported by the user. */
       templates: {

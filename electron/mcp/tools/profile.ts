@@ -36,6 +36,7 @@ function skillsLine(skills: ProfilesData['skills']): string {
 
 export const profileOverview: ToolDef = {
   name: 'profile_overview',
+  permissions: ['profile_read'],
   title: 'Profile overview',
   description:
     "Map of the user's master profile in CV Maker: every experience, project, education item and skill on one line, with its handle. " +
@@ -148,6 +149,7 @@ export function matchLine({ item, score }: Match): string {
 
 export const searchProfile: ToolDef = {
   name: 'search_profile',
+  permissions: ['profile_read'],
   title: 'Search the profile',
   description:
     'Finds the experiences, projects, bullets, education and skills that best match a need, computed locally (embeddings + keywords). ' +
@@ -227,6 +229,7 @@ function itemDetail(item: ProfileItem, data: ProfilesData): string {
 
 export const getProfileItems: ToolDef = {
   name: 'get_profile_items',
+  permissions: ['profile_read'],
   title: 'Read profile items',
   description: 'Full text of profile items by handle (from profile_overview or search_profile). A project comes with all its bullets.',
   inputSchema: {
